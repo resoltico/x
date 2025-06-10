@@ -1,6 +1,6 @@
 # Engraving Processor Pro
 
-Advanced image processing application for historical engravings and documents, built with Remix, React 19+, and Node.js 22+.
+Advanced image processing application for historical engravings and documents, built with Remix, React 18+, and Node.js 22+.
 
 ## Author
 
@@ -239,23 +239,3 @@ export class MyBinarizer extends BaseBinarizer {
 - Preview images are limited to 512px for fast updates
 - WebSocket debouncing prevents excessive updates
 - Algorithms are optimized for binary images
-
-## Browser Support
-
-- Chrome 90+
-- Firefox 88+
-- Safari 14+
-- Edge 90+
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new features
-4. Submit a pull request
-
-## Acknowledgments
-
-- Scale2x algorithm by Andrea Mazzoleni
-- Sauvola binarization method by Jaakko Sauvola
-- Built with Remix and React
