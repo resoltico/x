@@ -4,7 +4,9 @@ import { createReadableStreamFromReadable } from "@remix-run/node";
 import { RemixServer } from "@remix-run/react";
 import { isbot } from "isbot";
 import { renderToPipeableStream } from "react-dom/server";
-import { wsManager } from './services/websocket.server';
+
+// Export wsManager so it can be imported by server.js
+export { wsManager } from './services/websocket.server';
 
 const ABORT_DELAY = 5_000;
 
@@ -122,16 +124,4 @@ function handleBrowserRequest(
 
     setTimeout(abort, ABORT_DELAY);
   });
-}
-
-// Initialize WebSocket server when the server starts
-let serverInstance: any = null;
-
-export function handleServerStart(server: any) {
-  serverInstance = server;
-  wsManager.initialize(server);
-}
-
-export function handleServerClose() {
-  wsManager.close();
 }

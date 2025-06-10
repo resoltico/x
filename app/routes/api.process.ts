@@ -1,6 +1,5 @@
 import { type ActionFunctionArgs, json } from "@remix-run/node";
 import { v4 as uuidv4 } from 'uuid';
-import { ProcessingPipeline } from '../../../src/engine/pipeline/ProcessingPipeline.js';
 import { imageStore } from '~/services/imageStore.server';
 import { jobStore } from '~/services/jobStore.server';
 import { processImage } from '~/services/processing.server';

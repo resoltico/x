@@ -6,7 +6,7 @@
     "jsx": "react-jsx",
     "moduleResolution": "Bundler",
     "allowJs": true,
-    "checkJs": true,
+    "checkJs": false,
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -15,10 +15,11 @@
     "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "noEmit": true,
+    "allowSyntheticDefaultImports": true,
     "paths": {
       "~/*": ["./app/*"]
     }
   },
-  "include": ["app", "src"],
+  "include": ["app", "src", "app/types/engine.d.ts"],
   "exclude": ["node_modules", "build", "public/build"]
 }

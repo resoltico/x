@@ -18,4 +18,18 @@ export default defineConfig({
   server: {
     port: 3000,
   },
+  resolve: {
+    // Allow importing .js files without extension
+    extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json'],
+  },
+  ssr: {
+    // Include the src directory for server-side builds
+    noExternal: [/^src/],
+  },
+  build: {
+    // Ensure src files are included in the build
+    commonjsOptions: {
+      include: [/src/, /app/, /node_modules/],
+    },
+  },
 });
