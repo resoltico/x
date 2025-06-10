@@ -1,4 +1,4 @@
-[7:03:32 PM] % pnpm build
+[7:32:01 PM] % pnpm build
 
 > engraving-processor-pro@1.0.0 build /Users/erst/Library/CloudStorage/Dropbox/Websites/x
 > remix vite:build
@@ -17,176 +17,157 @@ Generated an empty chunk: "api.download._jobId".
 Generated an empty chunk: "api.job._jobId".
 Generated an empty chunk: "api.process".
 Generated an empty chunk: "api.upload".
-build/client/.vite/manifest.json                       2.29 kB │ gzip:   0.47 kB
-build/client/assets/tailwind-ByY1mmpy.css             15.86 kB │ gzip:   3.98 kB
+build/client/.vite/manifest.json                       2.29 kB │ gzip:   0.48 kB
+build/client/assets/tailwind-M9hvG73Y.css             19.79 kB │ gzip:   4.72 kB
 build/client/assets/api.download._jobId-l0sNRNKZ.js    0.00 kB │ gzip:   0.02 kB
 build/client/assets/api.job._jobId-l0sNRNKZ.js         0.00 kB │ gzip:   0.02 kB
 build/client/assets/api.process-l0sNRNKZ.js            0.00 kB │ gzip:   0.02 kB
 build/client/assets/api.upload-l0sNRNKZ.js             0.00 kB │ gzip:   0.02 kB
-build/client/assets/root-Cnu7iGRL.js                   1.61 kB │ gzip:   0.94 kB
+build/client/assets/root-C0pGo8dM.js                   1.65 kB │ gzip:   0.97 kB
 build/client/assets/entry.client-kqxXSlx6.js           4.19 kB │ gzip:   1.59 kB
-build/client/assets/_index-CGVqtHIZ.js                23.38 kB │ gzip:   5.72 kB
+build/client/assets/_index-vAgkchrf.js                30.07 kB │ gzip:   7.58 kB
 build/client/assets/index-yqQ8kitn.js                 40.18 kB │ gzip:  12.95 kB
 build/client/assets/components-DKuix-jd.js           406.39 kB │ gzip: 127.03 kB
-✓ built in 1.75s
+✓ built in 1.79s
 vite v6.3.5 building SSR bundle for production...
 ✓ 40 modules transformed.
 build/server/.vite/manifest.json            0.48 kB
-build/server/assets/tailwind-ByY1mmpy.css  15.86 kB
-build/server/index.js                      82.97 kB
-✓ built in 108ms
-[7:03:43 PM] % pnpm start
+build/server/assets/tailwind-M9hvG73Y.css  19.79 kB
+build/server/index.js                      97.14 kB
+✓ built in 126ms
+[7:32:15 PM] % pnpm start
 
 > engraving-processor-pro@1.0.0 start /Users/erst/Library/CloudStorage/Dropbox/Websites/x
 > node server.js
 
 Server listening on http://localhost:3000
-Error: No route matches URL "/assets/tailwind-ByY1mmpy.css"
+Error: No route matches URL "/ws"
     at getInternalRouterError (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:5229:59)
     at Object.query (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:3808:19)
     at handleDocumentRequest (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/server.js:313:35)
     at requestHandler (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/server.js:170:24)
     at /Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+express@2.16.8_express@4.21.2_typescript@5.8.3/node_modules/@remix-run/express/dist/server.js:41:28
-No routes matched location "/assets/tailwind-ByY1mmpy.css" 
+No routes matched location "/ws" 
 ErrorResponseImpl {
   status: 404,
   statusText: 'Not Found',
   internal: true,
-  data: 'Error: No route matches URL "/assets/tailwind-ByY1mmpy.css"',
-  error: Error: No route matches URL "/assets/tailwind-ByY1mmpy.css"
+  data: 'Error: No route matches URL "/ws"',
+  error: Error: No route matches URL "/ws"
       at getInternalRouterError (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:5229:59)
       at Object.query (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:3808:19)
       at handleDocumentRequest (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/server.js:313:35)
       at requestHandler (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/server.js:170:24)
       at /Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+express@2.16.8_express@4.21.2_typescript@5.8.3/node_modules/@remix-run/express/dist/server.js:41:28
 }
-Error: No route matches URL "/assets/manifest-c63f1fe9.js"
+Error: No route matches URL "/ws"
     at getInternalRouterError (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:5229:59)
     at Object.query (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:3808:19)
     at handleDocumentRequest (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/server.js:313:35)
     at requestHandler (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/server.js:170:24)
     at /Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+express@2.16.8_express@4.21.2_typescript@5.8.3/node_modules/@remix-run/express/dist/server.js:41:28
-No routes matched location "/assets/manifest-c63f1fe9.js" 
+No routes matched location "/ws" 
 ErrorResponseImpl {
   status: 404,
   statusText: 'Not Found',
   internal: true,
-  data: 'Error: No route matches URL "/assets/manifest-c63f1fe9.js"',
-  error: Error: No route matches URL "/assets/manifest-c63f1fe9.js"
+  data: 'Error: No route matches URL "/ws"',
+  error: Error: No route matches URL "/ws"
       at getInternalRouterError (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:5229:59)
       at Object.query (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:3808:19)
       at handleDocumentRequest (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/server.js:313:35)
       at requestHandler (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/server.js:170:24)
       at /Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+express@2.16.8_express@4.21.2_typescript@5.8.3/node_modules/@remix-run/express/dist/server.js:41:28
 }
-Error: No route matches URL "/assets/_index-CGVqtHIZ.js"
+Error: No route matches URL "/ws"
     at getInternalRouterError (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:5229:59)
     at Object.query (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:3808:19)
     at handleDocumentRequest (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/server.js:313:35)
     at requestHandler (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/server.js:170:24)
     at /Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+express@2.16.8_express@4.21.2_typescript@5.8.3/node_modules/@remix-run/express/dist/server.js:41:28
-Error: No route matches URL "/assets/entry.client-kqxXSlx6.js"
-    at getInternalRouterError (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:5229:59)
-    at Object.query (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:3808:19)
-    at handleDocumentRequest (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/server.js:313:35)
-    at requestHandler (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/server.js:170:24)
-    at /Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+express@2.16.8_express@4.21.2_typescript@5.8.3/node_modules/@remix-run/express/dist/server.js:41:28
-No routes matched location "/assets/_index-CGVqtHIZ.js" 
+No routes matched location "/ws" 
 ErrorResponseImpl {
   status: 404,
   statusText: 'Not Found',
   internal: true,
-  data: 'Error: No route matches URL "/assets/_index-CGVqtHIZ.js"',
-  error: Error: No route matches URL "/assets/_index-CGVqtHIZ.js"
+  data: 'Error: No route matches URL "/ws"',
+  error: Error: No route matches URL "/ws"
       at getInternalRouterError (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:5229:59)
       at Object.query (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:3808:19)
       at handleDocumentRequest (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/server.js:313:35)
       at requestHandler (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/server.js:170:24)
       at /Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+express@2.16.8_express@4.21.2_typescript@5.8.3/node_modules/@remix-run/express/dist/server.js:41:28
 }
-No routes matched location "/assets/entry.client-kqxXSlx6.js" 
+Error: No route matches URL "/ws"
+    at getInternalRouterError (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:5229:59)
+    at Object.query (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:3808:19)
+    at handleDocumentRequest (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/server.js:313:35)
+    at requestHandler (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/server.js:170:24)
+    at /Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+express@2.16.8_express@4.21.2_typescript@5.8.3/node_modules/@remix-run/express/dist/server.js:41:28
+No routes matched location "/ws" 
 ErrorResponseImpl {
   status: 404,
   statusText: 'Not Found',
   internal: true,
-  data: 'Error: No route matches URL "/assets/entry.client-kqxXSlx6.js"',
-  error: Error: No route matches URL "/assets/entry.client-kqxXSlx6.js"
+  data: 'Error: No route matches URL "/ws"',
+  error: Error: No route matches URL "/ws"
       at getInternalRouterError (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:5229:59)
       at Object.query (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:3808:19)
       at handleDocumentRequest (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/server.js:313:35)
       at requestHandler (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/server.js:170:24)
       at /Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+express@2.16.8_express@4.21.2_typescript@5.8.3/node_modules/@remix-run/express/dist/server.js:41:28
 }
-Error: No route matches URL "/assets/index-yqQ8kitn.js"
+Error: No route matches URL "/ws"
     at getInternalRouterError (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:5229:59)
     at Object.query (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:3808:19)
     at handleDocumentRequest (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/server.js:313:35)
     at requestHandler (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/server.js:170:24)
     at /Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+express@2.16.8_express@4.21.2_typescript@5.8.3/node_modules/@remix-run/express/dist/server.js:41:28
-No routes matched location "/assets/index-yqQ8kitn.js" 
+No routes matched location "/ws" 
 ErrorResponseImpl {
   status: 404,
   statusText: 'Not Found',
   internal: true,
-  data: 'Error: No route matches URL "/assets/index-yqQ8kitn.js"',
-  error: Error: No route matches URL "/assets/index-yqQ8kitn.js"
+  data: 'Error: No route matches URL "/ws"',
+  error: Error: No route matches URL "/ws"
       at getInternalRouterError (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:5229:59)
       at Object.query (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:3808:19)
       at handleDocumentRequest (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/server.js:313:35)
       at requestHandler (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/server.js:170:24)
       at /Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+express@2.16.8_express@4.21.2_typescript@5.8.3/node_modules/@remix-run/express/dist/server.js:41:28
 }
-Error: No route matches URL "/assets/components-DKuix-jd.js"
+Error: No route matches URL "/ws"
     at getInternalRouterError (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:5229:59)
     at Object.query (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:3808:19)
     at handleDocumentRequest (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/server.js:313:35)
     at requestHandler (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/server.js:170:24)
     at /Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+express@2.16.8_express@4.21.2_typescript@5.8.3/node_modules/@remix-run/express/dist/server.js:41:28
-No routes matched location "/assets/components-DKuix-jd.js" 
+No routes matched location "/ws" 
 ErrorResponseImpl {
   status: 404,
   statusText: 'Not Found',
   internal: true,
-  data: 'Error: No route matches URL "/assets/components-DKuix-jd.js"',
-  error: Error: No route matches URL "/assets/components-DKuix-jd.js"
+  data: 'Error: No route matches URL "/ws"',
+  error: Error: No route matches URL "/ws"
       at getInternalRouterError (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:5229:59)
       at Object.query (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:3808:19)
       at handleDocumentRequest (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/server.js:313:35)
       at requestHandler (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/server.js:170:24)
       at /Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+express@2.16.8_express@4.21.2_typescript@5.8.3/node_modules/@remix-run/express/dist/server.js:41:28
 }
-Error: No route matches URL "/assets/root-Cnu7iGRL.js"
+Error: No route matches URL "/ws"
     at getInternalRouterError (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:5229:59)
     at Object.query (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:3808:19)
     at handleDocumentRequest (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/server.js:313:35)
     at requestHandler (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/server.js:170:24)
     at /Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+express@2.16.8_express@4.21.2_typescript@5.8.3/node_modules/@remix-run/express/dist/server.js:41:28
-No routes matched location "/assets/root-Cnu7iGRL.js" 
+No routes matched location "/ws" 
 ErrorResponseImpl {
   status: 404,
   statusText: 'Not Found',
   internal: true,
-  data: 'Error: No route matches URL "/assets/root-Cnu7iGRL.js"',
-  error: Error: No route matches URL "/assets/root-Cnu7iGRL.js"
-      at getInternalRouterError (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:5229:59)
-      at Object.query (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:3808:19)
-      at handleDocumentRequest (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/server.js:313:35)
-      at requestHandler (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/server.js:170:24)
-      at /Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+express@2.16.8_express@4.21.2_typescript@5.8.3/node_modules/@remix-run/express/dist/server.js:41:28
-}
-Error: No route matches URL "/favicon.ico"
-    at getInternalRouterError (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:5229:59)
-    at Object.query (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:3808:19)
-    at handleDocumentRequest (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/server.js:313:35)
-    at requestHandler (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/server.js:170:24)
-    at /Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+express@2.16.8_express@4.21.2_typescript@5.8.3/node_modules/@remix-run/express/dist/server.js:41:28
-No routes matched location "/favicon.ico" 
-ErrorResponseImpl {
-  status: 404,
-  statusText: 'Not Found',
-  internal: true,
-  data: 'Error: No route matches URL "/favicon.ico"',
-  error: Error: No route matches URL "/favicon.ico"
+  data: 'Error: No route matches URL "/ws"',
+  error: Error: No route matches URL "/ws"
       at getInternalRouterError (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:5229:59)
       at Object.query (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/dist/router.cjs.js:3808:19)
       at handleDocumentRequest (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/server.js:313:35)

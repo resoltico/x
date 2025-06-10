@@ -17,7 +17,10 @@ export async function processImage(
   parameters: ProcessingParameters
 ) {
   const job = jobStore.get(jobId);
-  if (!job) return;
+  if (!job) {
+    console.error('Job not found:', jobId);
+    return;
+  }
 
   // Update job status
   job.status = 'processing';
@@ -33,9 +36,12 @@ export async function processImage(
     const result = await pipeline.process(
       storedImage.imageData,
       (progress) => {
-        job.progress = progress.progress;
-        job.updatedAt = new Date();
-        jobStore.set(jobId, job);
+        const currentJob = jobStore.get(jobId);
+        if (currentJob) {
+          currentJob.progress = Math.round(progress.progress);
+          currentJob.updatedAt = new Date();
+          jobStore.set(jobId, currentJob);
+        }
 
         // Send progress via WebSocket
         wsManager.broadcast({
@@ -43,7 +49,7 @@ export async function processImage(
           payload: {
             jobId,
             stage: progress.stage,
-            progress: progress.progress,
+            progress: Math.round(progress.progress),
           },
         });
       }
@@ -53,17 +59,24 @@ export async function processImage(
     const resultBase64 = await ImageSaver.toBase64(result, 'png');
 
     // Update job with result
-    job.status = 'completed';
-    job.progress = 100;
-    job.result = resultBase64;
-    job.updatedAt = new Date();
-    jobStore.set(jobId, job);
+    const finalJob = jobStore.get(jobId);
+    if (finalJob) {
+      finalJob.status = 'completed';
+      finalJob.progress = 100;
+      finalJob.result = resultBase64;
+      finalJob.updatedAt = new Date();
+      jobStore.set(jobId, finalJob);
+    }
 
   } catch (error) {
-    job.status = 'failed';
-    job.error = error instanceof Error ? error.message : 'Unknown error';
-    job.updatedAt = new Date();
-    jobStore.set(jobId, job);
+    console.error('Processing error:', error);
+    const errorJob = jobStore.get(jobId);
+    if (errorJob) {
+      errorJob.status = 'failed';
+      errorJob.error = error instanceof Error ? error.message : 'Unknown error';
+      errorJob.updatedAt = new Date();
+      jobStore.set(jobId, errorJob);
+    }
     throw error;
   }
 }
@@ -74,20 +87,27 @@ export async function processPreview(
 ): Promise<{ preview: string; histogram: number[]; processingTime: number }> {
   const startTime = Date.now();
 
-  // Create processing pipeline
-  const pipeline = new ProcessingPipeline();
-  pipeline.configure(parameters);
+  try {
+    // Create processing pipeline
+    const pipeline = new ProcessingPipeline();
+    pipeline.configure(parameters);
 
-  // Process image
-  const result = await pipeline.process(imageData);
+    // Process image (no progress callback for preview)
+    const result = await pipeline.process(imageData);
 
-  // Get histogram
-  const histogram = result.getHistogram();
+    // Get histogram
+    const histogram = result.getHistogram();
 
-  // Convert to base64
-  const preview = await ImageSaver.toBase64(result, 'png');
+    // Convert to base64
+    const preview = await ImageSaver.toBase64(result, 'png', {
+      compressionLevel: 6 // Faster compression for previews
+    });
 
-  const processingTime = Date.now() - startTime;
+    const processingTime = Date.now() - startTime;
 
-  return { preview, histogram, processingTime };
+    return { preview, histogram, processingTime };
+  } catch (error) {
+    console.error('Preview processing error:', error);
+    throw new Error(`Failed to process preview: ${error.message}`);
+  }
 }

@@ -18,6 +18,7 @@ export default function Index() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingProgress, setProcessingProgress] = useState(0);
   const [histogram, setHistogram] = useState<number[]>([]);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [parameters, setParameters] = useState<ProcessingParameters>({
     binarization: {
       method: 'sauvola',
@@ -43,8 +44,9 @@ export default function Index() {
     },
   });
 
-  const ws = useWebSocket();
+  const { ws, isConnected, connectionError } = useWebSocket();
   const downloadLinkRef = useRef<HTMLAnchorElement>(null);
+  const previewDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (ws) {
@@ -56,15 +58,35 @@ export default function Index() {
             setProcessedPreview(data.payload.preview);
             setHistogram(data.payload.histogram || []);
             break;
+          case 'preview.processing':
+            console.log('Processing preview for image:', data.payload.imageId);
+            break;
           case 'processing.progress':
             setProcessingProgress(data.payload.progress);
+            break;
+          case 'error':
+            console.error('WebSocket error:', data.payload.message);
+            if (data.payload.imageId === uploadedImage?.id) {
+              setUploadError(data.payload.message);
+            }
             break;
         }
       };
     }
-  }, [ws]);
+  }, [ws, uploadedImage]);
 
   const handleImageUpload = async (file: File) => {
+    // Reset states
+    setUploadError(null);
+    setProcessedPreview(null);
+    setHistogram([]);
+    
+    // Validate file size
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError('File size must be less than 10MB');
+      throw new Error('File too large');
+    }
+
     const formData = new FormData();
     formData.append('image', file);
 
@@ -74,30 +96,47 @@ export default function Index() {
         body: formData,
       });
 
-      if (!response.ok) throw new Error('Upload failed');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Upload failed' }));
+        throw new Error(errorData.error || 'Upload failed');
+      }
 
       const data = await response.json();
       setUploadedImage(data);
-      setProcessedPreview(null);
+      setUploadError(null);
       
-      // Request initial preview
-      requestPreview(data.id);
+      // Request initial preview after a short delay to ensure WebSocket is ready
+      setTimeout(() => {
+        requestPreview(data.id);
+      }, 100);
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Failed to upload image. Please try again.');
+      setUploadError(error.message || 'Failed to upload image. Please try again.');
+      throw error;
     }
   };
 
   const requestPreview = useCallback((imageId: string) => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({
-        type: 'preview.update',
-        payload: {
-          imageId,
-          parameters,
-        },
-      }));
+    // Clear any pending preview request
+    if (previewDebounceRef.current) {
+      clearTimeout(previewDebounceRef.current);
     }
+
+    // Debounce preview requests
+    previewDebounceRef.current = setTimeout(() => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'preview.update',
+          payload: {
+            imageId,
+            parameters,
+          },
+        }));
+      } else {
+        console.warn('WebSocket not ready, retrying preview request...');
+        setTimeout(() => requestPreview(imageId), 500);
+      }
+    }, 150);
   }, [ws, parameters]);
 
   const handleParameterChange = useCallback((newParams: ProcessingParameters) => {
@@ -132,24 +171,52 @@ export default function Index() {
 
       // Poll for job completion
       const pollInterval = setInterval(async () => {
-        const statusResponse = await fetch(`/api/job/${jobId}`);
-        const statusData = await statusResponse.json();
+        try {
+          const statusResponse = await fetch(`/api/job/${jobId}`);
+          const statusData = await statusResponse.json();
 
-        if (statusData.status === 'completed') {
-          clearInterval(pollInterval);
-          setIsProcessing(false);
-          
-          // Download the result
-          if (downloadLinkRef.current) {
-            downloadLinkRef.current.href = `/api/download/${jobId}`;
-            downloadLinkRef.current.click();
+          if (statusData.status === 'completed') {
+            clearInterval(pollInterval);
+            setIsProcessing(false);
+            setProcessingProgress(100);
+            
+            // Download the result
+            const downloadUrl = `/api/download/${jobId}`;
+            if (downloadLinkRef.current) {
+              downloadLinkRef.current.href = downloadUrl;
+              downloadLinkRef.current.click();
+            } else {
+              // Fallback: create temporary link
+              const link = document.createElement('a');
+              link.href = downloadUrl;
+              link.download = 'processed-engraving.png';
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+            }
+          } else if (statusData.status === 'failed') {
+            clearInterval(pollInterval);
+            setIsProcessing(false);
+            alert('Processing failed: ' + (statusData.error || 'Unknown error'));
+          } else if (statusData.progress) {
+            setProcessingProgress(statusData.progress);
           }
-        } else if (statusData.status === 'failed') {
+        } catch (error) {
           clearInterval(pollInterval);
           setIsProcessing(false);
-          alert('Processing failed. Please try again.');
+          console.error('Polling error:', error);
+          alert('Failed to check processing status. Please try again.');
         }
       }, 1000);
+
+      // Set a timeout to prevent infinite polling
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        if (isProcessing) {
+          setIsProcessing(false);
+          alert('Processing timeout. Please try again.');
+        }
+      }, 300000); // 5 minutes timeout
     } catch (error) {
       console.error('Processing error:', error);
       setIsProcessing(false);
@@ -204,6 +271,31 @@ export default function Index() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Connection Status */}
+        {!isConnected && (
+          <div className="mb-6 bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-lg flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <p className="text-sm">{connectionError || 'Connecting to server...'}</p>
+            </div>
+            {connectionError && connectionError.includes('refresh') && (
+              <button
+                onClick={() => window.location.reload()}
+                className="text-sm font-medium hover:text-yellow-800"
+              >
+                Refresh Page
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Error Alert */}
+        {uploadError && (
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            <p className="text-sm">{uploadError}</p>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Panel - Upload and Info */}
           <div className="space-y-6">
@@ -227,6 +319,10 @@ export default function Index() {
                   <div className="flex justify-between">
                     <span className="text-gray-600">Channels:</span>
                     <span>{uploadedImage.metadata.channels}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">File Size:</span>
+                    <span>{(uploadedImage.metadata.size / 1024).toFixed(1)} KB</span>
                   </div>
                 </div>
                 
@@ -286,15 +382,15 @@ export default function Index() {
                 className="btn-secondary flex items-center gap-2"
               >
                 <RefreshCw className="w-4 h-4" />
-                Reset
+                Reset Parameters
               </button>
             </div>
             
             <div className="flex gap-4">
               <button
                 onClick={handleProcess}
-                disabled={isProcessing}
-                className="btn-primary flex items-center gap-2"
+                disabled={isProcessing || !processedPreview}
+                className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isProcessing ? (
                   <>
@@ -315,12 +411,15 @@ export default function Index() {
         {/* Progress Bar */}
         {isProcessing && (
           <div className="mt-4">
-            <ProgressBar progress={processingProgress} />
+            <ProgressBar 
+              progress={processingProgress} 
+              label={processingProgress < 100 ? "Processing image..." : "Processing complete!"} 
+            />
           </div>
         )}
 
         {/* Hidden download link */}
-        <a ref={downloadLinkRef} className="hidden" download="processed-image.png" />
+        <a ref={downloadLinkRef} className="hidden" download="processed-engraving.png" />
       </main>
     </div>
   );
