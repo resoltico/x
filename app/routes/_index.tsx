@@ -111,7 +111,7 @@ export default function Index() {
       }, 100);
     } catch (error) {
       console.error('Upload error:', error);
-      setUploadError(error.message || 'Failed to upload image. Please try again.');
+      setUploadError(error instanceof Error ? error.message : 'Failed to upload image. Please try again.');
       throw error;
     }
   };
@@ -132,19 +132,21 @@ export default function Index() {
             parameters,
           },
         }));
+      } else if (!isConnected) {
+        console.warn('WebSocket not connected, cannot request preview');
       } else {
         console.warn('WebSocket not ready, retrying preview request...');
         setTimeout(() => requestPreview(imageId), 500);
       }
     }, 150);
-  }, [ws, parameters]);
+  }, [ws, parameters, isConnected]);
 
   const handleParameterChange = useCallback((newParams: ProcessingParameters) => {
     setParameters(newParams);
-    if (uploadedImage) {
+    if (uploadedImage && isConnected) {
       requestPreview(uploadedImage.id);
     }
-  }, [uploadedImage, requestPreview]);
+  }, [uploadedImage, requestPreview, isConnected]);
 
   const handleProcess = async () => {
     if (!uploadedImage) return;
@@ -250,7 +252,7 @@ export default function Index() {
       },
     });
     
-    if (uploadedImage) {
+    if (uploadedImage && isConnected) {
       requestPreview(uploadedImage.id);
     }
   };
@@ -272,16 +274,22 @@ export default function Index() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Connection Status */}
-        {!isConnected && (
-          <div className="mb-6 bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-lg flex items-center justify-between">
+        {!isConnected && connectionError && (
+          <div className={`mb-6 px-4 py-3 rounded-lg flex items-center justify-between ${
+            connectionError.includes('Reconnecting') 
+              ? 'bg-yellow-50 border border-yellow-200 text-yellow-700'
+              : 'bg-red-50 border border-red-200 text-red-700'
+          }`}>
             <div className="flex items-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <p className="text-sm">{connectionError || 'Connecting to server...'}</p>
+              {connectionError.includes('Reconnecting') && (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              )}
+              <p className="text-sm">{connectionError}</p>
             </div>
-            {connectionError && connectionError.includes('refresh') && (
+            {(connectionError.includes('refresh') || !connectionError.includes('Reconnecting')) && (
               <button
                 onClick={() => window.location.reload()}
-                className="text-sm font-medium hover:text-yellow-800"
+                className="text-sm font-medium hover:opacity-80 transition-opacity"
               >
                 Refresh Page
               </button>
@@ -389,7 +397,7 @@ export default function Index() {
             <div className="flex gap-4">
               <button
                 onClick={handleProcess}
-                disabled={isProcessing || !processedPreview}
+                disabled={isProcessing || !processedPreview || !isConnected}
                 className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isProcessing ? (

@@ -17,7 +17,11 @@ export default defineConfig({
   ],
   server: {
     port: 3000,
+    hmr: {
+      port: 3001,
+    },
   },
+  publicDir: "public",
   resolve: {
     // Allow importing .js files without extension
     extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json'],
@@ -30,6 +34,18 @@ export default defineConfig({
     // Ensure src files are included in the build
     commonjsOptions: {
       include: [/src/, /app/, /node_modules/],
+    },
+    // Copy public files to build output
+    copyPublicDir: true,
+    // Suppress empty chunk warnings for API routes
+    rollupOptions: {
+      onwarn(warning, warn) {
+        // Suppress "Generated an empty chunk" warnings for API routes
+        if (warning.code === 'EMPTY_BUNDLE' && warning.message.includes('api.')) {
+          return;
+        }
+        warn(warning);
+      },
     },
   },
 });

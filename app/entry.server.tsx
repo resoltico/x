@@ -6,7 +6,9 @@ import { isbot } from "isbot";
 import { renderToPipeableStream } from "react-dom/server";
 
 // Export wsManager so it can be imported by server.js
-export { wsManager } from './services/websocket.server';
+// Using a namespace import to ensure it's not tree-shaken
+import * as websocketServer from './services/websocket.server';
+export const wsManager = websocketServer.wsManager;
 
 const ABORT_DELAY = 5_000;
 

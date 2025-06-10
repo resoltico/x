@@ -7,19 +7,30 @@ export function useWebSocket() {
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttemptsRef = useRef(0);
   const maxReconnectAttempts = 5;
-  const reconnectDelay = 3000;
+  const reconnectDelay = 1000; // Start with 1 second
 
   useEffect(() => {
+    let mounted = true;
+
     function connect() {
+      if (!mounted) return;
+
       try {
+        // Clear any existing connection
+        if (wsRef.current?.readyState === WebSocket.OPEN || wsRef.current?.readyState === WebSocket.CONNECTING) {
+          wsRef.current.close();
+        }
+
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const wsUrl = `${protocol}//${window.location.host}/ws`;
-        console.log('Connecting to WebSocket:', wsUrl);
+        console.log('Attempting WebSocket connection to:', wsUrl);
         
         const ws = new WebSocket(wsUrl);
+        let pingInterval: NodeJS.Timeout | null = null;
 
         ws.onopen = () => {
-          console.log('WebSocket connected');
+          if (!mounted) return;
+          console.log('WebSocket connected successfully');
           setIsConnected(true);
           setConnectionError(null);
           reconnectAttemptsRef.current = 0;
@@ -30,59 +41,67 @@ export function useWebSocket() {
           }
 
           // Send periodic pings to keep connection alive
-          const pingInterval = setInterval(() => {
+          pingInterval = setInterval(() => {
             if (ws.readyState === WebSocket.OPEN) {
               ws.send(JSON.stringify({ type: 'ping' }));
-            } else {
-              clearInterval(pingInterval);
             }
           }, 30000);
-
-          // Store interval ID for cleanup
-          (ws as any).pingInterval = pingInterval;
         };
 
         ws.onclose = (event) => {
+          if (!mounted) return;
           console.log('WebSocket disconnected:', event.code, event.reason);
           setIsConnected(false);
           wsRef.current = null;
 
           // Clear ping interval
-          if ((ws as any).pingInterval) {
-            clearInterval((ws as any).pingInterval);
+          if (pingInterval) {
+            clearInterval(pingInterval);
+            pingInterval = null;
           }
 
           // Attempt to reconnect if not a normal closure
-          if (event.code !== 1000 && reconnectAttemptsRef.current < maxReconnectAttempts) {
+          if (event.code !== 1000 && event.code !== 1001 && reconnectAttemptsRef.current < maxReconnectAttempts) {
             reconnectAttemptsRef.current++;
-            const delay = reconnectDelay * Math.min(reconnectAttemptsRef.current, 3);
+            const delay = Math.min(reconnectDelay * reconnectAttemptsRef.current, 5000);
             
-            console.log(`Attempting to reconnect in ${delay}ms... (attempt ${reconnectAttemptsRef.current})`);
-            setConnectionError(`Connection lost. Reconnecting... (attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts})`);
+            console.log(`Reconnecting in ${delay}ms... (attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts})`);
+            setConnectionError(`Connection lost. Reconnecting... (${reconnectAttemptsRef.current}/${maxReconnectAttempts})`);
             
             reconnectTimeoutRef.current = setTimeout(() => {
-              connect();
+              if (mounted) connect();
             }, delay);
           } else if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
-            setConnectionError('Unable to connect to server. Please refresh the page.');
+            setConnectionError('Unable to connect to server. Please check your connection and refresh the page.');
           }
         };
 
         ws.onerror = (error) => {
           console.error('WebSocket error:', error);
-          setConnectionError('Connection error occurred');
+          if (!mounted) return;
+          
+          // Don't update error message if we're already showing a reconnection message
+          if (!connectionError?.includes('Reconnecting')) {
+            setConnectionError('Connection error. Please check your network.');
+          }
         };
 
         ws.onmessage = (event) => {
+          if (!mounted) return;
+          
           try {
             const data = JSON.parse(event.data);
             
             // Handle system messages
             if (data.type === 'connection.established') {
-              console.log('Connection established:', data.payload.message);
+              console.log('Server acknowledged connection:', data.payload.message);
+            } else if (data.type === 'pong') {
+              // Server ponged our ping
             } else if (data.type === 'error') {
               console.error('Server error:', data.payload.message);
-              setConnectionError(data.payload.message);
+              if (data.payload.message !== 'Invalid message format') {
+                setConnectionError(`Server error: ${data.payload.message}`);
+              }
             }
           } catch (error) {
             console.error('Failed to parse WebSocket message:', error);
@@ -92,29 +111,38 @@ export function useWebSocket() {
         wsRef.current = ws;
       } catch (error) {
         console.error('Failed to create WebSocket:', error);
+        if (!mounted) return;
+        
         setConnectionError('Failed to establish connection');
         
         // Retry connection
         if (reconnectAttemptsRef.current < maxReconnectAttempts) {
           reconnectAttemptsRef.current++;
+          const delay = Math.min(reconnectDelay * reconnectAttemptsRef.current, 5000);
           reconnectTimeoutRef.current = setTimeout(() => {
-            connect();
-          }, reconnectDelay);
+            if (mounted) connect();
+          }, delay);
         }
       }
     }
 
-    connect();
+    // Initial connection with a small delay to ensure server is ready
+    const initialDelay = setTimeout(() => {
+      if (mounted) connect();
+    }, 100);
 
     return () => {
+      mounted = false;
+      
+      if (initialDelay) {
+        clearTimeout(initialDelay);
+      }
+      
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
+      
       if (wsRef.current) {
-        // Clear ping interval
-        if ((wsRef.current as any).pingInterval) {
-          clearInterval((wsRef.current as any).pingInterval);
-        }
         wsRef.current.close(1000, 'Component unmounted');
       }
     };
@@ -132,16 +160,24 @@ export class WebSocketClient {
   private messageHandlers: Map<string, (data: any) => void> = new Map();
   private reconnectTimeout: NodeJS.Timeout | null = null;
   private url: string;
+  private isDestroyed = false;
 
   constructor(url: string) {
     this.url = url;
   }
 
   connect() {
+    if (this.isDestroyed) return;
+
     try {
+      if (this.ws?.readyState === WebSocket.OPEN || this.ws?.readyState === WebSocket.CONNECTING) {
+        return; // Already connected or connecting
+      }
+
       this.ws = new WebSocket(this.url);
 
       this.ws.onopen = () => {
+        if (this.isDestroyed) return;
         console.log('WebSocketClient connected');
         if (this.reconnectTimeout) {
           clearTimeout(this.reconnectTimeout);
@@ -150,6 +186,7 @@ export class WebSocketClient {
       };
 
       this.ws.onmessage = (event) => {
+        if (this.isDestroyed) return;
         try {
           const message = JSON.parse(event.data);
           const handler = this.messageHandlers.get(message.type);
@@ -166,12 +203,13 @@ export class WebSocketClient {
       };
 
       this.ws.onclose = () => {
+        if (this.isDestroyed) return;
         console.log('WebSocketClient disconnected');
         this.ws = null;
         
         // Attempt to reconnect after 3 seconds
         this.reconnectTimeout = setTimeout(() => {
-          this.connect();
+          if (!this.isDestroyed) this.connect();
         }, 3000);
       };
     } catch (error) {
@@ -192,6 +230,7 @@ export class WebSocketClient {
   }
 
   close() {
+    this.isDestroyed = true;
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);
     }

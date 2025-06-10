@@ -4,11 +4,18 @@ import { imageStore } from './imageStore.server';
 import { processPreview } from './processing.server';
 import type { ProcessingParameters } from '~/types';
 
+interface WebSocketWithAlive extends WebSocket {
+  isAlive?: boolean;
+}
+
 class WebSocketManager {
   private wss: WebSocketServer | null = null;
-  private clients: Set<WebSocket> = new Set();
+  private clients: Set<WebSocketWithAlive> = new Set();
+  private heartbeatInterval: NodeJS.Timeout | null = null;
 
   initialize(server: any) {
+    console.log('Initializing WebSocket server...');
+    
     this.wss = new WebSocketServer({ 
       server, 
       path: '/ws',
@@ -29,25 +36,19 @@ class WebSocketManager {
       }
     });
 
-    this.wss.on('connection', (ws: WebSocket) => {
-      console.log('New WebSocket connection established');
+    this.wss.on('connection', (ws: WebSocketWithAlive, request) => {
+      console.log('New WebSocket connection from:', request.socket.remoteAddress);
+      ws.isAlive = true;
       this.clients.add(ws);
 
       // Send welcome message
-      ws.send(JSON.stringify({
+      this.sendMessage(ws, {
         type: 'connection.established',
         payload: { message: 'Connected to Engraving Processor' }
-      }));
-
-      // Setup ping/pong for connection health
-      const pingInterval = setInterval(() => {
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.ping();
-        }
-      }, 30000); // 30 seconds
+      });
 
       ws.on('pong', () => {
-        // Connection is alive
+        ws.isAlive = true;
       });
 
       ws.on('message', async (data: Buffer) => {
@@ -56,22 +57,20 @@ class WebSocketManager {
           await this.handleMessage(ws, message);
         } catch (error) {
           console.error('WebSocket message error:', error);
-          ws.send(JSON.stringify({
+          this.sendMessage(ws, {
             type: 'error',
             payload: { message: 'Invalid message format' }
-          }));
+          });
         }
       });
 
-      ws.on('close', () => {
-        console.log('WebSocket connection closed');
-        clearInterval(pingInterval);
+      ws.on('close', (code, reason) => {
+        console.log('WebSocket connection closed:', code, reason?.toString());
         this.clients.delete(ws);
       });
 
       ws.on('error', (error) => {
-        console.error('WebSocket error:', error);
-        clearInterval(pingInterval);
+        console.error('WebSocket client error:', error);
         this.clients.delete(ws);
       });
     });
@@ -79,6 +78,32 @@ class WebSocketManager {
     this.wss.on('error', (error) => {
       console.error('WebSocket server error:', error);
     });
+
+    // Start heartbeat interval to detect broken connections
+    this.heartbeatInterval = setInterval(() => {
+      this.clients.forEach((ws) => {
+        if (ws.isAlive === false) {
+          console.log('Terminating inactive WebSocket connection');
+          this.clients.delete(ws);
+          return ws.terminate();
+        }
+        
+        ws.isAlive = false;
+        ws.ping();
+      });
+    }, 30000);
+
+    console.log('WebSocket server initialized successfully');
+  }
+
+  private sendMessage(ws: WebSocket, message: any) {
+    if (ws.readyState === WebSocket.OPEN) {
+      try {
+        ws.send(JSON.stringify(message));
+      } catch (error) {
+        console.error('Failed to send WebSocket message:', error);
+      }
+    }
   }
 
   private async handleMessage(ws: WebSocket, message: any) {
@@ -87,14 +112,14 @@ class WebSocketManager {
         await this.handlePreviewUpdate(ws, message.payload);
         break;
       case 'ping':
-        ws.send(JSON.stringify({ type: 'pong' }));
+        this.sendMessage(ws, { type: 'pong' });
         break;
       default:
         console.warn('Unknown message type:', message.type);
-        ws.send(JSON.stringify({
+        this.sendMessage(ws, {
           type: 'error',
           payload: { message: `Unknown message type: ${message.type}` }
-        }));
+        });
     }
   }
 
@@ -102,19 +127,27 @@ class WebSocketManager {
     ws: WebSocket,
     payload: { imageId: string; parameters: ProcessingParameters }
   ) {
+    if (!payload?.imageId || !payload?.parameters) {
+      this.sendMessage(ws, {
+        type: 'error',
+        payload: { message: 'Invalid preview update payload' }
+      });
+      return;
+    }
+
     // Send acknowledgment
-    ws.send(JSON.stringify({
+    this.sendMessage(ws, {
       type: 'preview.processing',
       payload: { imageId: payload.imageId }
-    }));
+    });
 
     try {
       const storedImage = imageStore.get(payload.imageId);
       if (!storedImage) {
-        ws.send(JSON.stringify({
+        this.sendMessage(ws, {
           type: 'error',
           payload: { message: 'Image not found', imageId: payload.imageId }
-        }));
+        });
         return;
       }
 
@@ -125,27 +158,23 @@ class WebSocketManager {
       const result = await processPreview(preview, payload.parameters);
 
       // Send result
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
-          type: 'preview.result',
-          payload: {
-            ...result,
-            imageId: payload.imageId
-          }
-        }));
-      }
+      this.sendMessage(ws, {
+        type: 'preview.result',
+        payload: {
+          ...result,
+          imageId: payload.imageId
+        }
+      });
     } catch (error) {
       console.error('Preview update error:', error);
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
-          type: 'error',
-          payload: { 
-            message: 'Failed to process preview',
-            error: error.message,
-            imageId: payload.imageId
-          }
-        }));
-      }
+      this.sendMessage(ws, {
+        type: 'error',
+        payload: { 
+          message: 'Failed to process preview',
+          error: error instanceof Error ? error.message : 'Unknown error',
+          imageId: payload.imageId
+        }
+      });
     }
   }
 
@@ -165,21 +194,38 @@ class WebSocketManager {
       }
     });
     
-    console.log(`Broadcast sent to ${sent} clients`);
+    if (sent > 0) {
+      console.log(`Broadcast sent to ${sent} clients`);
+    }
   }
 
   close() {
+    console.log('Closing WebSocket server...');
+    
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+
     if (this.wss) {
-      // Close all client connections
+      // Close all client connections gracefully
       this.clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
-          client.close(1000, 'Server shutting down');
+          client.close(1001, 'Server shutting down');
         }
       });
       
-      this.wss.close(() => {
-        console.log('WebSocket server closed');
+      this.clients.clear();
+      
+      this.wss.close((err) => {
+        if (err) {
+          console.error('Error closing WebSocket server:', err);
+        } else {
+          console.log('WebSocket server closed');
+        }
       });
+      
+      this.wss = null;
     }
   }
 }
