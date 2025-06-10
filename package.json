@@ -1,0 +1,54 @@
+{
+  "name": "engraving-processor-pro",
+  "version": "1.0.0",
+  "description": "Advanced image processing for historical engravings and documents",
+  "type": "module",
+  "license": "MIT",
+  "author": "Ervins Strauhmanis",
+  "scripts": {
+    "dev": "remix vite:dev",
+    "build": "remix vite:build",
+    "start": "node server.js",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "lint": "eslint --ext .js,.jsx,.ts,.tsx app src",
+    "typecheck": "tsc"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "dependencies": {
+    "@remix-run/express": "^2.16.8",
+    "@remix-run/node": "^2.16.8",
+    "@remix-run/react": "^2.16.8",
+    "@remix-run/serve": "^2.16.8",
+    "express": "^5.1.0",
+    "isbot": "^5.1.28",
+    "lucide-react": "^0.513.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "sharp": "^0.34.0",
+    "uuid": "^11.1.0",
+    "ws": "^8.18.1"
+  },
+  "devDependencies": {
+    "@remix-run/dev": "^2.16.8",
+    "@tailwindcss/postcss": "^4.1.8",
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.1.7",
+    "@types/react-dom": "^19.1.6",
+    "@types/ws": "^8.18.1",
+    "@typescript-eslint/eslint-plugin": "^8.34.0",
+    "@typescript-eslint/parser": "^8.34.0",
+    "@vitest/ui": "^3.2.3",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^9.28.0",
+    "eslint-plugin-react": "^7.37.5",
+    "postcss": "^8.5.4",
+    "tailwindcss": "^4.1.8",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.2.3"
+  }
+}
