@@ -1,0 +1,125 @@
+Last login: Tue Jun 10 12:56:42 on ttys000
+Using Node v22.16.0
+[12:57:07 PM] % pnpm install
+Lockfile is up to date, resolution step is skipped
+Packages: +804
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 804, reused 803, downloaded 0, added 804, done
+
+dependencies:
++ @remix-run/express 2.16.8
++ @remix-run/node 2.16.8
++ @remix-run/react 2.16.8
++ @remix-run/serve 2.16.8
++ express 5.1.0
++ isbot 5.1.28
++ lucide-react 0.513.0
++ react 19.1.0
++ react-dom 19.1.0
++ sharp 0.34.2
++ uuid 11.1.0
++ ws 8.18.2
+
+devDependencies:
++ @remix-run/dev 2.16.8
++ @tailwindcss/postcss 4.1.8
++ @types/node 22.15.31
++ @types/react 19.1.7
++ @types/react-dom 19.1.6
++ @types/ws 8.18.1
++ @typescript-eslint/eslint-plugin 8.34.0
++ @typescript-eslint/parser 8.34.0
++ @vitest/ui 3.2.3
++ autoprefixer 10.4.21
++ eslint 9.28.0
++ eslint-plugin-react 7.37.5
++ postcss 8.5.4
++ tailwindcss 4.1.8
++ typescript 5.8.3
++ vite 6.3.5
++ vite-tsconfig-paths 5.1.4
++ vitest 3.2.3
+
+Done in 2.6s using pnpm v10.12.1
+[12:57:14 PM] % pnpm build
+
+> engraving-processor-pro@1.0.0 build /Users/erst/Library/CloudStorage/Dropbox/Websites/x
+> remix vite:build
+
+ warn  Route discovery/manifest behavior is changing in React Router v7
+┃ You can use the `v3_lazyRouteDiscovery` future flag to opt-in early.
+┃ -> https://remix.run/docs/en/2.13.1/start/future-flags#v3_lazyRouteDiscovery
+┗
+ warn  Data fetching is changing to a single fetch in React Router v7
+┃ You can use the `v3_singleFetch` future flag to opt-in early.
+┃ -> https://remix.run/docs/en/2.13.1/start/future-flags#v3_singleFetch
+┗
+vite v6.3.5 building for production...
+transforming (43) node_modules/.pnpm/@remix-run+server-runtime@2.16.8_typescript@5.8.3/node_modules/@remix-run/server-runtime/dist/esm/Error: Cannot apply unknown utility class `bg-primary-600`. Are you using CSS modules or similar and missing `@reference`? https://tailwindcss.com/docs/functions-and-directives#reference-directive
+    at onInvalidCandidate (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.8/node_modules/tailwindcss/dist/chunk-FEUCFEMW.mjs:18:1312)
+    at pe (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.8/node_modules/tailwindcss/dist/chunk-FEUCFEMW.mjs:13:29803)
+    at file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.8/node_modules/tailwindcss/dist/chunk-FEUCFEMW.mjs:18:373
+    at F (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.8/node_modules/tailwindcss/dist/chunk-FEUCFEMW.mjs:3:1656)
+    at Oe (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.8/node_modules/tailwindcss/dist/chunk-FEUCFEMW.mjs:18:172)
+    at Qr (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.8/node_modules/tailwindcss/dist/chunk-FEUCFEMW.mjs:35:780)
+    at dn (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.8/node_modules/tailwindcss/dist/chunk-FEUCFEMW.mjs:35:1123)
+    at $a (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@tailwindcss+node@4.1.8/node_modules/@tailwindcss/node/dist/index.mjs:10:3358)
+    at p (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@tailwindcss+postcss@4.1.8/node_modules/@tailwindcss/postcss/dist/index.mjs:10:3847)
+    at Object.Once (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@tailwindcss+postcss@4.1.8/node_modules/@tailwindcss/postcss/dist/index.mjs:10:4078)
+Error: Cannot apply unknown utility class `bg-primary-600`. Are you using CSS modules or similar and missing `@reference`? https://tailwindcss.com/docs/functions-and-directives#reference-directive
+    at onInvalidCandidate (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.8/node_modules/tailwindcss/dist/chunk-FEUCFEMW.mjs:18:1312)
+    at pe (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.8/node_modules/tailwindcss/dist/chunk-FEUCFEMW.mjs:13:29803)
+    at file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.8/node_modules/tailwindcss/dist/chunk-FEUCFEMW.mjs:18:373
+    at F (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.8/node_modules/tailwindcss/dist/chunk-FEUCFEMW.mjs:3:1656)
+    at Oe (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.8/node_modules/tailwindcss/dist/chunk-FEUCFEMW.mjs:18:172)
+    at Qr (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.8/node_modules/tailwindcss/dist/chunk-FEUCFEMW.mjs:35:780)
+    at dn (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.8/node_modules/tailwindcss/dist/chunk-FEUCFEMW.mjs:35:1123)
+    at $a (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@tailwindcss+node@4.1.8/node_modules/@tailwindcss/node/dist/index.mjs:10:3358)
+    at p (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@tailwindcss+postcss@4.1.8/node_modules/@tailwindcss/postcss/dist/index.mjs:10:3847)
+    at Object.Once (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@tailwindcss+postcss@4.1.8/node_modules/@tailwindcss/postcss/dist/index.mjs:10:4078)
+✓ 1707 modules transformed.
+Generated an empty chunk: "api.download._jobId".
+Generated an empty chunk: "api.job._jobId".
+Generated an empty chunk: "api.process".
+Generated an empty chunk: "api.upload".
+build/client/.vite/manifest.json                       2.23 kB │ gzip:  0.47 kB
+build/client/assets/tailwind-tn0RQdqM.css              0.00 kB │ gzip:  0.02 kB
+build/client/assets/api.download._jobId-l0sNRNKZ.js    0.00 kB │ gzip:  0.02 kB
+build/client/assets/api.job._jobId-l0sNRNKZ.js         0.00 kB │ gzip:  0.02 kB
+build/client/assets/api.process-l0sNRNKZ.js            0.00 kB │ gzip:  0.02 kB
+build/client/assets/api.upload-l0sNRNKZ.js             0.00 kB │ gzip:  0.02 kB
+build/client/assets/root-M9yIiUNT.js                   1.61 kB │ gzip:  0.95 kB
+build/client/assets/_index-7inG_VBL.js                23.43 kB │ gzip:  5.72 kB
+build/client/assets/index-BlywehVD.js                 25.67 kB │ gzip:  8.57 kB
+build/client/assets/components-Ck4M39qm.js           128.12 kB │ gzip: 41.60 kB
+build/client/assets/entry.client-OoKrz3vE.js         329.97 kB │ gzip: 99.30 kB
+✓ built in 1.83s
+vite v6.3.5 building SSR bundle for production...
+transforming (1) virtual:remix/server-buildError: Cannot apply unknown utility class `bg-primary-600`. Are you using CSS modules or similar and missing `@reference`? https://tailwindcss.com/docs/functions-and-directives#reference-directive
+    at onInvalidCandidate (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.8/node_modules/tailwindcss/dist/chunk-FEUCFEMW.mjs:18:1312)
+    at pe (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.8/node_modules/tailwindcss/dist/chunk-FEUCFEMW.mjs:13:29803)
+    at file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.8/node_modules/tailwindcss/dist/chunk-FEUCFEMW.mjs:18:373
+    at F (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.8/node_modules/tailwindcss/dist/chunk-FEUCFEMW.mjs:3:1656)
+    at Oe (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.8/node_modules/tailwindcss/dist/chunk-FEUCFEMW.mjs:18:172)
+    at Qr (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.8/node_modules/tailwindcss/dist/chunk-FEUCFEMW.mjs:35:780)
+    at dn (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.8/node_modules/tailwindcss/dist/chunk-FEUCFEMW.mjs:35:1123)
+    at $a (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@tailwindcss+node@4.1.8/node_modules/@tailwindcss/node/dist/index.mjs:10:3358)
+    at p (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@tailwindcss+postcss@4.1.8/node_modules/@tailwindcss/postcss/dist/index.mjs:10:3847)
+    at Object.Once (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@tailwindcss+postcss@4.1.8/node_modules/@tailwindcss/postcss/dist/index.mjs:10:4078)
+Error: Cannot apply unknown utility class `bg-primary-600`. Are you using CSS modules or similar and missing `@reference`? https://tailwindcss.com/docs/functions-and-directives#reference-directive
+    at onInvalidCandidate (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.8/node_modules/tailwindcss/dist/chunk-FEUCFEMW.mjs:18:1312)
+    at pe (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.8/node_modules/tailwindcss/dist/chunk-FEUCFEMW.mjs:13:29803)
+    at file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.8/node_modules/tailwindcss/dist/chunk-FEUCFEMW.mjs:18:373
+    at F (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.8/node_modules/tailwindcss/dist/chunk-FEUCFEMW.mjs:3:1656)
+    at Oe (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.8/node_modules/tailwindcss/dist/chunk-FEUCFEMW.mjs:18:172)
+    at Qr (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.8/node_modules/tailwindcss/dist/chunk-FEUCFEMW.mjs:35:780)
+    at dn (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.8/node_modules/tailwindcss/dist/chunk-FEUCFEMW.mjs:35:1123)
+    at $a (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@tailwindcss+node@4.1.8/node_modules/@tailwindcss/node/dist/index.mjs:10:3358)
+    at p (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@tailwindcss+postcss@4.1.8/node_modules/@tailwindcss/postcss/dist/index.mjs:10:3847)
+    at Object.Once (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@tailwindcss+postcss@4.1.8/node_modules/@tailwindcss/postcss/dist/index.mjs:10:4078)
+✓ 40 modules transformed.
+build/server/.vite/manifest.json            0.42 kB
+build/server/assets/tailwind-tn0RQdqM.css   0.00 kB
+build/server/index.js                      83.14 kB
+✓ built in 98ms
+[12:58:49 PM] % 
