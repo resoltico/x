@@ -37,7 +37,7 @@ export function ParameterControls({ parameters, onChange }: ParameterControlsPro
               onClick={() => setActiveTab(tab.id)}
               className={`py-2 px-6 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab.id
-                  ? 'border-primary-600 text-primary-600'
+                  ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -140,7 +140,7 @@ export function ParameterControls({ parameters, onChange }: ParameterControlsPro
                   type="checkbox"
                   checked={parameters.morphology.enabled}
                   onChange={(e) => handleChange('morphology', 'enabled', e.target.checked)}
-                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <span className="text-sm font-medium text-gray-700">Enable Morphological Operations</span>
               </label>
@@ -219,7 +219,7 @@ export function ParameterControls({ parameters, onChange }: ParameterControlsPro
                   type="checkbox"
                   checked={parameters.noise.enabled}
                   onChange={(e) => handleChange('noise', 'enabled', e.target.checked)}
-                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <span className="text-sm font-medium text-gray-700">Enable Noise Reduction</span>
               </label>

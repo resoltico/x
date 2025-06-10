@@ -212,7 +212,7 @@ export default function Index() {
             {uploadedImage && (
               <div className="bg-white rounded-lg shadow p-6">
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <Info className="w-5 h-5 text-primary-600" />
+                  <Info className="w-5 h-5 text-blue-600" />
                   Image Information
                 </h3>
                 <div className="space-y-2 text-sm">

@@ -54,7 +54,7 @@ export function PreviewCanvas({
           <div className="absolute inset-0 flex items-center justify-center">
             {isProcessing ? (
               <div className="text-center">
-                <Loader2 className="w-8 h-8 text-primary-600 animate-spin mx-auto mb-2" />
+                <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-2" />
                 <p className="text-sm text-gray-600">Processing preview...</p>
               </div>
             ) : (

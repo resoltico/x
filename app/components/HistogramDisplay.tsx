@@ -9,7 +9,7 @@ export function HistogramDisplay({ data }: HistogramDisplayProps) {
     return (
       <div className="bg-white rounded-lg shadow p-4">
         <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
-          <BarChart3 className="w-4 h-4 text-primary-600" />
+          <BarChart3 className="w-4 h-4 text-blue-600" />
           Histogram
         </h3>
         <div className="h-32 flex items-center justify-center text-gray-400 text-sm">
@@ -30,14 +30,14 @@ export function HistogramDisplay({ data }: HistogramDisplayProps) {
   return (
     <div className="bg-white rounded-lg shadow p-4">
       <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
-        <BarChart3 className="w-4 h-4 text-primary-600" />
+        <BarChart3 className="w-4 h-4 text-blue-600" />
         Histogram
       </h3>
       <div className="h-32 flex items-end gap-px">
         {sampledData.map((value, index) => (
           <div
             key={index}
-            className="flex-1 bg-primary-400 hover:bg-primary-500 transition-colors"
+            className="flex-1 bg-blue-400 hover:bg-blue-500 transition-colors"
             style={{ height: `${value}%` }}
             title={`Level ${index * sampleRate}: ${Math.round(data[index * sampleRate])}`}
           />
