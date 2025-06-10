@@ -1,4 +1,4 @@
-[1:32:23 PM] % pnpm start
+[1:52:40 PM] % pnpm start
 
 > engraving-processor-pro@1.0.0 start /Users/erst/Library/CloudStorage/Dropbox/Websites/x
 > node server.js
@@ -14,4 +14,4 @@ SyntaxError: The requested module './build/server/index.js' does not provide an 
 
 Node.js v22.16.0
  ELIFECYCLE  Command failed with exit code 1.
-[1:38:56 PM] % 
+[1:52:51 PM] % 
