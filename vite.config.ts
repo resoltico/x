@@ -13,6 +13,7 @@ export default defineConfig({
         v3_lazyRouteDiscovery: true,
         v3_singleFetch: true,
       },
+      serverBuildFile: "index.js",
     }),
     tsconfigPaths(),
     tailwindcss(),
@@ -29,27 +30,34 @@ export default defineConfig({
     extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json'],
   },
   ssr: {
-    // Include the src directory for server-side builds
-    noExternal: [/^src/, 'ws'],
+    // Include the src directory and websocket modules for server-side builds
+    noExternal: [/^src/, 'ws', /websocket/],
   },
   build: {
-    // Ensure src files are included in the build
+    // Ensure src files and websocket modules are included in the build
     commonjsOptions: {
       include: [/src/, /app/, /node_modules/],
     },
     // Copy public files to build output
     copyPublicDir: true,
-    // Prevent tree-shaking of wsManager export
     rollupOptions: {
       output: {
         // Preserve exports
         exports: 'named',
         preserveModules: false,
       },
-      // Mark wsManager as external to preserve it
+      // Ensure websocket modules are not tree-shaken
       treeshake: {
-        moduleSideEffects: true,
+        moduleSideEffects: (id) => {
+          // Keep websocket modules
+          if (id.includes('websocket')) return true;
+          // Keep entry files
+          if (id.includes('entry.server')) return true;
+          return 'no-external';
+        },
       },
+      // Mark certain modules to ensure they're included
+      external: [],
       onwarn(warning, warn) {
         // Suppress "Generated an empty chunk" warnings for API routes
         if (warning.code === 'EMPTY_BUNDLE' && 
@@ -68,6 +76,11 @@ export default defineConfig({
   },
   // Optimize dependencies
   optimizeDeps: {
-    include: ['react', 'react-dom', '@remix-run/react'],
+    include: ['react', 'react-dom', '@remix-run/react', 'ws'],
+    exclude: ['sharp'], // Sharp should not be bundled
+  },
+  // Define globals for server-side code
+  define: {
+    'global.__wsManager': 'undefined',
   },
 });

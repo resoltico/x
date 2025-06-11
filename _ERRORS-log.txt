@@ -1,42 +1,16 @@
-Last login: Wed Jun 11 11:46:16 on ttys000
-Using Node v22.16.0
-[11:46:54 AM] % pnpm start
+[12:18:13 PM] % pnpm run build
 
-> engraving-processor-pro@1.0.0 start /Users/erst/Library/CloudStorage/Dropbox/Websites/x
-> node script-server.js
+> engraving-processor-pro@1.0.0 build /Users/erst/Library/CloudStorage/Dropbox/Websites/x
+> remix vite:build && node scripts/post-build.js
 
+vite v6.3.5 building for production...
+✓ 1695 modules transformed.
+✗ Build failed in 1.21s
+[commonjs--resolver] Server-only module referenced by client
 
-🔍 Running startup checks...
-✅ Node.js v22.16.0 (minimum: 22.0.0)
-✅ Build found
+    './websocket.server' imported by 'app/services/websocket.singleton.ts'
 
-🚀 Starting Engraving Processor Pro...
-ℹ️ Loading application build...
-❌ WebSocket manager not found in build
-⚠️ This usually means the export in app/entry.server.tsx is not working correctly
-⚠️ The build process might be tree-shaking the wsManager export
-✅ Server initialization complete
-✅ Server listening on http://localhost:3000
-ℹ️ Health endpoint: http://localhost:3000/health
+  See https://remix.run/docs/en/main/guides/vite#splitting-up-client-and-server-code
 
-🔍 Running diagnostics...
-ℹ️ Node.js version: v22.16.0
-ℹ️ Memory usage: RSS 113MB, Heap 25MB
-ℹ️ Environment: development
-✅ HTTP server: Ready
-❌ WebSocket manager: Not found in build
-❌ WebSocket server: Not initialized
-
-⚠️ Server started with issues - some features may not work
-⚠️ Without WebSocket support, real-time preview updates will not work
-
-📊 Starting health monitoring...
-⚠️ Health check issues: WebSocket not initialized, WebSocket manager missing
-⚠️ Health check issues: WebSocket not initialized, WebSocket manager missing
-
-
-
-
-
-
-
+ ELIFECYCLE  Command failed with exit code 1.
+[12:19:35 PM] % 

@@ -115,8 +115,8 @@ app.get("/health", (req, res) => {
     },
     checks: healthStatus.checks,
     issues: !isHealthy ? {
-      wsManager: !healthStatus.wsManager ? "WebSocket manager not found in build - check if app/entry.server.tsx exports wsManager correctly" : null,
-      websocket: !healthStatus.websocket ? "WebSocket server failed to initialize - wsManager might be missing" : null,
+      wsManager: !healthStatus.wsManager ? "WebSocket manager not initialized" : null,
+      websocket: !healthStatus.websocket ? "WebSocket server failed to initialize" : null,
       lastError: healthStatus.lastError
     } : null,
     nodeVersion: process.version,
@@ -135,12 +135,53 @@ async function initializeServices() {
     log.info("Loading application build...");
     const build = await import("./build/server/index.js");
     
-    // Check for wsManager in the build
-    if (build.wsManager) {
-      wsManager = build.wsManager;
+    // Try multiple approaches to get wsManager
+    
+    // Approach 1: Check if it's available globally
+    if (global.__wsManager) {
+      wsManager = global.__wsManager;
       healthStatus.wsManager = true;
-      log.success("WebSocket manager found in build");
-      
+      log.success("WebSocket manager found via global");
+    } 
+    
+    // Approach 2: Try direct import from server.websocket.js
+    if (!wsManager) {
+      try {
+        const wsModule = await import("./server.websocket.js");
+        wsManager = wsModule.default || wsModule.wsManager;
+        healthStatus.wsManager = true;
+        log.success("WebSocket manager found via server.websocket.js");
+      } catch (e) {
+        log.info("server.websocket.js not found, trying other methods...");
+      }
+    }
+    
+    // Approach 3: Try importing from the app directory
+    if (!wsManager) {
+      try {
+        const { wsManager: ws } = await import("./app/services/websocket.server.js");
+        wsManager = ws;
+        healthStatus.wsManager = true;
+        log.success("WebSocket manager found via direct import from app");
+      } catch (e) {
+        log.info("Direct import from app failed, trying singleton...");
+      }
+    }
+    
+    // Approach 4: Try the singleton approach
+    if (!wsManager) {
+      try {
+        const { getWsManager } = await import("./app/services/websocket.singleton.js");
+        wsManager = getWsManager();
+        healthStatus.wsManager = true;
+        log.success("WebSocket manager found via singleton");
+      } catch (e) {
+        log.warn("All WebSocket manager import attempts failed");
+        healthStatus.lastError = "WebSocket manager not available";
+      }
+    }
+    
+    if (wsManager) {
       // Initialize WebSocket
       try {
         wsManager.initialize(httpServer);
@@ -157,11 +198,6 @@ async function initializeServices() {
         log.error(`WebSocket initialization failed: ${wsError.message}`);
         healthStatus.lastError = `WebSocket init: ${wsError.message}`;
       }
-    } else {
-      log.error("WebSocket manager not found in build");
-      log.warn("This usually means the export in app/entry.server.tsx is not working correctly");
-      log.warn("The build process might be tree-shaking the wsManager export");
-      healthStatus.lastError = "WebSocket manager not exported from build";
     }
 
     // Skip Remix handler for WebSocket requests
@@ -239,7 +275,7 @@ function runDiagnostics() {
   if (healthStatus.wsManager) {
     log.success("WebSocket manager: Loaded");
   } else {
-    log.error("WebSocket manager: Not found in build");
+    log.error("WebSocket manager: Not found");
   }
   
   if (healthStatus.websocket) {
@@ -254,7 +290,7 @@ function runDiagnostics() {
     log.header("✨ Server is ready to process images!");
   } else {
     log.header("⚠️ Server started with issues - some features may not work");
-    if (!healthStatus.wsManager) {
+    if (!healthStatus.wsManager || !healthStatus.websocket) {
       log.warn("Without WebSocket support, real-time preview updates will not work");
     }
   }

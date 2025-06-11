@@ -7,8 +7,11 @@
   "author": "Ervins Strauhmanis",
   "scripts": {
     "dev": "remix vite:dev",
-    "build": "remix vite:build",
-    "start": "node script-server.js",
+    "build": "remix vite:build && node scripts/post-build.js",
+    "start": "node scripts/start.js",
+    "start:direct": "node script-server.js",
+    "check": "node scripts/check-websocket.js",
+    "fix:websocket": "node scripts/fix-websocket.js",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "lint": "eslint --ext .js,.jsx,.ts,.tsx app src",
@@ -29,7 +32,7 @@
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "sharp": "^0.34.0",
-    "utf-8-validate": "^6.0.5",
+    "utf-8-validate": "^5.0.2",
     "uuid": "^11.1.0",
     "ws": "^8.18.1"
   },
