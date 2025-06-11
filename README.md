@@ -1,25 +1,17 @@
 # Engraving Processor Pro
 
-Advanced image processing application for historical engravings and documents, built with Remix, React 18+, and Node.js 22+.
-
-## Author
-
-Ervins Strauhmanis
-
-## License
-
-MIT
+Advanced image processing application for historical engravings and documents, featuring real-time preview, adaptive binarization, morphological operations, and pixel art scaling algorithms.
 
 ## Features
 
-- **Advanced Binarization**: Adaptive thresholding algorithms for optimal text extraction
-- **Morphological Operations**: Image enhancement through mathematical morphology
+- **Adaptive Binarization**: Sauvola, Niblack, and Otsu algorithms
+- **Morphological Operations**: Opening, closing, dilation, and erosion
 - **Noise Reduction**: Binary noise removal and median filtering
-- **Pixel Art Scaling**: Scale2x/3x/4x algorithms for clean upscaling
+- **Pixel Art Scaling**: Scale2x/3x/4x algorithms
 - **Real-time Preview**: WebSocket-powered instant feedback
-- **Modular Architecture**: Pluggable processing algorithms
+- **High Performance**: Efficient processing with progress tracking
 
-## System Requirements
+## Requirements
 
 - Node.js 22.0.0 or higher
 - 4GB RAM minimum (8GB recommended for large images)
@@ -28,98 +20,139 @@ MIT
 
 ```bash
 # Install dependencies
-npm install
+pnpm install
 
 # Build the application
-npm run build
+pnpm build
 
-# Start the server (includes all checks and monitoring)
-npm start
+# Start the server (includes all checks)
+pnpm start
 ```
 
 The application will be available at http://localhost:3000
 
-## Image Processing Algorithms
+## Available Commands
 
-### Binarization
-Converts grayscale images to pure black and white. **Sauvola** adapts to local image variations using statistical analysis within sliding windows, ideal for documents with uneven lighting. **Niblack** uses simpler local mean and standard deviation calculations, working well for high-contrast text. **Otsu** automatically finds the optimal global threshold by maximizing between-class variance, best for images with clear bimodal histograms.
+- `pnpm dev` - Development mode with hot reload
+- `pnpm build` - Build for production
+- `pnpm start` - Start production server (runs all checks automatically)
+- `pnpm test` - Run tests
+- `pnpm typecheck` - Check TypeScript types
 
-### Morphology
-Mathematical operations that process images based on shapes. **Closing** (dilation followed by erosion) fills gaps in text and connects broken characters. **Opening** (erosion followed by dilation) removes small noise particles while preserving larger features. **Dilation** expands white regions to thicken text strokes. **Erosion** shrinks white regions to thin features or separate touching elements.
+## Usage Guide
 
-## Usage
+### 1. Upload an Image
+Drag and drop or click to browse. Supports PNG, JPEG, TIFF, and WebP formats (max 10MB).
 
-1. **Upload an Image**: Drag and drop or click to browse (supports PNG, JPEG, TIFF, WebP)
-2. **Adjust Parameters**: Fine-tune binarization, morphology, noise reduction, and scaling
-3. **Preview**: See real-time updates as you adjust settings
-4. **Process**: Click "Process Full Resolution" to download the result
+### 2. Adjust Parameters
 
-## Parameter Guidelines
+**Binarization**
+- **Sauvola**: Best for documents with uneven lighting
+  - Window size: 11-15 for small text, 25-35 for large text
+  - K parameter: 0.2-0.3 for faded text, 0.4-0.5 for high contrast
+- **Niblack**: Good for high-contrast text
+- **Otsu**: Automatic threshold for clear bimodal images
 
-### For Historical Engravings
-- Start with Sauvola binarization
-- Window size: 11-15 for small text, 25-35 for large text
-- K parameter: 0.2-0.3 for faded text, 0.4-0.5 for high contrast
-- Enable morphological closing if text has gaps
+**Morphology**
+- **Closing**: Fills gaps in text
+- **Opening**: Removes noise particles
+- **Dilate**: Thickens features
+- **Erode**: Thins features
 
-### For Documents with Background
-- Use smaller window sizes (11-19)
-- Enable noise reduction for speckled backgrounds
-- Try morphological opening to remove artifacts
+**Noise Reduction**
+- **Binary**: Removes isolated pixels
+- **Median**: Smooths while preserving edges
 
-## Project Structure
+**Scaling**
+- **Scale2x/3x/4x**: Pixel art algorithms
+- **Nearest/Bilinear**: Traditional scaling
+
+### 3. Preview & Process
+- See real-time updates as you adjust settings
+- Click "Process Full Resolution" to download the final result
+
+## Architecture
 
 ```
 engraving-processor-pro/
 ├── app/                    # Remix application
-│   ├── components/         # React components
+│   ├── components/         # React UI components
 │   ├── routes/            # API and page routes
-│   └── services/          # Server-side services
-├── src/engine/            # Core processing engine
-│   └── algorithms/        # Image processing algorithms
-├── public/               # Static assets
-└── script-server.js      # Main server with integrated monitoring
+│   └── services/          # Server services (WebSocket, processing)
+├── src/engine/            # Core image processing engine
+│   ├── algorithms/        # Processing algorithms
+│   ├── core/             # Core data structures
+│   ├── pipeline/         # Processing orchestration
+│   └── utils/            # Image I/O utilities
+├── scripts/              # Server and utility scripts
+└── public/              # Static assets
 ```
+
+## WebSocket Architecture
+
+The application uses WebSockets for real-time preview updates:
+
+1. **Client** uploads image → receives image ID
+2. **Client** adjusts parameters → sends via WebSocket
+3. **Server** processes preview (512px max) → sends result
+4. **Client** displays updated preview instantly
+
+The WebSocket manager is initialized as a singleton on server startup and handles multiple concurrent connections with automatic reconnection.
 
 ## Troubleshooting
 
-### WebSocket Connection Issues
-- Check server logs for initialization errors
-- Verify port 3000 is not blocked
-- Try refreshing the page
-
-### Preview Not Generating
-- Ensure WebSocket shows "Connected" status
-- Check server logs for processing errors
-- Try with a smaller image first
-
 ### Port Already in Use
 ```bash
-# Find and kill process using port 3000
 lsof -i :3000
 kill -9 <PID>
-
 # Or use a different port
-PORT=3001 npm start
+PORT=3001 pnpm start
+```
+
+### Memory Issues
+For large images, increase Node.js memory:
+```bash
+NODE_OPTIONS="--max-old-space-size=4096" pnpm start
+```
+
+### WebSocket Connection Issues
+- Check the health endpoint: http://localhost:3000/health
+- Ensure port 3000 is not blocked by firewall
+- Try refreshing the page
+
+### Build Errors
+If you see module resolution errors:
+```bash
+rm -rf node_modules build
+pnpm install
+pnpm build
 ```
 
 ## Health Monitoring
 
-The server provides comprehensive health monitoring at http://localhost:3000/health including:
+The server provides comprehensive health monitoring at `/health`:
 - Service status (HTTP, WebSocket)
 - Memory usage statistics
-- Active WebSocket connections
-- Detailed error reporting
+- Active connections count
+- System diagnostics
 
 ## Development
 
 ```bash
-# Development mode with hot reload
-npm run dev
+# Run in development mode
+pnpm dev
 
-# Run tests
-npm test
+# Run tests with UI
+pnpm test:ui
 
 # Type checking
-npm run typecheck
+pnpm typecheck
 ```
+
+## License
+
+MIT
+
+## Author
+
+Ervins Strauhmanis

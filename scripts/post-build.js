@@ -11,42 +11,31 @@ console.log('🔧 Running post-build script...');
 const serverBuildDir = path.join(rootDir, 'build/server');
 const serverIndexPath = path.join(serverBuildDir, 'index.js');
 
-if (fs.existsSync(serverIndexPath)) {
-  // Read the server index file
-  const serverIndex = fs.readFileSync(serverIndexPath, 'utf-8');
-  
-  // Check if websocket imports are present
-  if (!serverIndex.includes('websocket')) {
-    console.warn('⚠️ WebSocket modules may not be included in build');
-  } else {
-    console.log('✅ WebSocket modules found in build');
-  }
-  
-  // Create a module map file to help with runtime imports
-  const assetsDir = path.join(serverBuildDir, 'assets');
-  if (fs.existsSync(assetsDir)) {
-    const files = fs.readdirSync(assetsDir);
-    const wsFiles = files.filter(f => f.includes('websocket'));
-    
-    if (wsFiles.length > 0) {
-      console.log(`✅ Found ${wsFiles.length} websocket module(s) in assets:`, wsFiles);
-      
-      // Create a module map
-      const moduleMap = {
-        websocketModules: wsFiles.map(f => `/build/server/assets/${f}`),
-        generated: new Date().toISOString()
-      };
-      
-      fs.writeFileSync(
-        path.join(serverBuildDir, 'module-map.json'),
-        JSON.stringify(moduleMap, null, 2)
-      );
-      console.log('✅ Created module map');
-    }
-  }
-} else {
+if (!fs.existsSync(serverIndexPath)) {
   console.error('❌ Server build not found');
   process.exit(1);
 }
+
+// Read the server index file
+const serverIndex = fs.readFileSync(serverIndexPath, 'utf-8');
+
+// Check if websocket imports are present
+if (!serverIndex.includes('websocket')) {
+  console.warn('⚠️ WebSocket modules may not be included in build');
+  console.log('💡 Tip: Ensure websocket.singleton.server.ts is imported in entry.server.tsx');
+} else {
+  console.log('✅ WebSocket modules found in build');
+}
+
+// Create a simple server-side websocket export if needed
+const wsExportPath = path.join(rootDir, 'build/websocket-export.js');
+const wsExportContent = `// WebSocket manager export helper
+import { getWsManager } from './server/index.js';
+export { getWsManager };
+export default getWsManager;
+`;
+
+fs.writeFileSync(wsExportPath, wsExportContent);
+console.log('✅ Created WebSocket export helper');
 
 console.log('✅ Post-build script completed');

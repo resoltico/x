@@ -5,8 +5,9 @@ import { RemixServer } from "@remix-run/react";
 import { isbot } from "isbot";
 import { renderToPipeableStream } from "react-dom/server";
 
-// Import websocket singleton to ensure it's included in the build
-import './services/websocket.singleton';
+// Import websocket module to ensure it's included in the server build
+// The .server.ts extension ensures this is never bundled for the client
+import './services/websocket.module.server';
 
 const ABORT_DELAY = 5_000;
 

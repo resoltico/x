@@ -14,6 +14,8 @@ export default defineConfig({
         v3_singleFetch: true,
       },
       serverBuildFile: "index.js",
+      // Ignore server-only files in client build
+      ignoredRouteFiles: ["**/*.server.{js,ts,jsx,tsx}"],
     }),
     tsconfigPaths(),
     tailwindcss(),
@@ -26,47 +28,37 @@ export default defineConfig({
   },
   publicDir: "public",
   resolve: {
-    // Allow importing .js files without extension
     extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json'],
   },
   ssr: {
-    // Include the src directory and websocket modules for server-side builds
-    noExternal: [/^src/, 'ws', /websocket/],
+    // Don't bundle these for SSR
+    noExternal: [/^src/],
+    // External dependencies that should not be bundled
+    external: ['sharp'],
   },
   build: {
-    // Ensure src files and websocket modules are included in the build
+    // Ensure proper output
     commonjsOptions: {
       include: [/src/, /app/, /node_modules/],
     },
-    // Copy public files to build output
-    copyPublicDir: true,
     rollupOptions: {
       output: {
-        // Preserve exports
-        exports: 'named',
         preserveModules: false,
+        format: 'es',
       },
-      // Ensure websocket modules are not tree-shaken
-      treeshake: {
-        moduleSideEffects: (id) => {
-          // Keep websocket modules
-          if (id.includes('websocket')) return true;
-          // Keep entry files
-          if (id.includes('entry.server')) return true;
-          return 'no-external';
-        },
-      },
-      // Mark certain modules to ensure they're included
-      external: [],
+      external: [
+        'sharp',
+        'bufferutil',
+        'utf-8-validate'
+      ],
       onwarn(warning, warn) {
-        // Suppress "Generated an empty chunk" warnings for API routes
+        // Suppress certain warnings
         if (warning.code === 'EMPTY_BUNDLE' && 
-            (warning.message.includes('api.') || 
-             warning.message.includes('api/') ||
-             warning.message.includes('_index'))) {
+            (warning.message?.includes('api.') || 
+             warning.message?.includes('api/') ||
+             warning.message?.includes('_index'))) {
           return;
         }
-        // Suppress source map warnings
         if (warning.code === 'SOURCEMAP_ERROR') {
           return;
         }
@@ -74,13 +66,8 @@ export default defineConfig({
       },
     },
   },
-  // Optimize dependencies
   optimizeDeps: {
     include: ['react', 'react-dom', '@remix-run/react', 'ws'],
-    exclude: ['sharp'], // Sharp should not be bundled
-  },
-  // Define globals for server-side code
-  define: {
-    'global.__wsManager': 'undefined',
+    exclude: ['sharp'],
   },
 });

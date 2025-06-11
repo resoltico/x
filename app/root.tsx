@@ -1,5 +1,4 @@
 import "./tailwind.css"; // This ensures Tailwind sees class usage
-import "./server-init"; // Initialize server-side modules
 
 import {
   Links,
