@@ -1,0 +1,62 @@
+Last login: Wed Jun 11 03:08:11 on ttys000
+Using Node v22.16.0
+[3:13:38 AM] % pnpm build
+
+> engraving-processor-pro@1.0.0 build /Users/erst/Library/CloudStorage/Dropbox/Websites/x
+> remix vite:build
+
+ warn  Route discovery/manifest behavior is changing in React Router v7
+┃ You can use the `v3_lazyRouteDiscovery` future flag to opt-in early.
+┃ -> https://remix.run/docs/en/2.13.1/start/future-flags#v3_lazyRouteDiscovery
+┗
+ warn  Data fetching is changing to a single fetch in React Router v7
+┃ You can use the `v3_singleFetch` future flag to opt-in early.
+┃ -> https://remix.run/docs/en/2.13.1/start/future-flags#v3_singleFetch
+┗
+vite v6.3.5 building for production...
+✓ 1705 modules transformed.
+build/client/.vite/manifest.json                       2.29 kB │ gzip:   0.47 kB
+build/client/assets/tailwind-BP8Jahdy.css             19.95 kB │ gzip:   4.72 kB
+build/client/assets/api.download._jobId-l0sNRNKZ.js    0.00 kB │ gzip:   0.02 kB
+build/client/assets/api.job._jobId-l0sNRNKZ.js         0.00 kB │ gzip:   0.02 kB
+build/client/assets/api.process-l0sNRNKZ.js            0.00 kB │ gzip:   0.02 kB
+build/client/assets/api.upload-l0sNRNKZ.js             0.00 kB │ gzip:   0.02 kB
+build/client/assets/root-CNGpaKa6.js                   1.65 kB │ gzip:   0.96 kB
+build/client/assets/entry.client-kqxXSlx6.js           4.19 kB │ gzip:   1.59 kB
+build/client/assets/_index-DmJNLWuO.js                30.68 kB │ gzip:   7.78 kB
+build/client/assets/index-yqQ8kitn.js                 40.18 kB │ gzip:  12.95 kB
+build/client/assets/components-DKuix-jd.js           406.39 kB │ gzip: 127.03 kB
+✓ built in 1.77s
+vite v6.3.5 building SSR bundle for production...
+✓ 40 modules transformed.
+build/server/.vite/manifest.json            0.48 kB
+build/server/assets/tailwind-BP8Jahdy.css  19.95 kB
+build/server/index.js                      99.65 kB
+✓ built in 133ms
+[3:13:48 AM] % pnpm start
+
+> engraving-processor-pro@1.0.0 start /Users/erst/Library/CloudStorage/Dropbox/Websites/x
+> node server.js
+
+Server listening on http://localhost:3000
+
+
+Last login: Wed Jun 11 03:13:32 on ttys000
+Using Node v22.16.0
+[3:17:12 AM] % node test-websocket.js
+
+Attempting to connect to WebSocket server...
+
+❌ Connection timeout - no response from server
+[3:18:42 AM] % 
+
+
+
+
+
+
+
+
+
+
+
