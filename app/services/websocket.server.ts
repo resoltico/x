@@ -341,5 +341,13 @@ class WebSocketManager {
   }
 }
 
-// Singleton instance
-export const wsManager = new WebSocketManager();
+// Create singleton instance
+const wsManager = new WebSocketManager();
+
+// Ensure the export is not tree-shaken by making it explicit
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports.wsManager = wsManager;
+}
+
+// Export for ES modules
+export { wsManager };

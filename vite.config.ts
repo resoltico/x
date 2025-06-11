@@ -30,7 +30,7 @@ export default defineConfig({
   },
   ssr: {
     // Include the src directory for server-side builds
-    noExternal: [/^src/],
+    noExternal: [/^src/, 'ws'],
   },
   build: {
     // Ensure src files are included in the build
@@ -39,8 +39,17 @@ export default defineConfig({
     },
     // Copy public files to build output
     copyPublicDir: true,
-    // Suppress empty chunk warnings for API routes
+    // Prevent tree-shaking of wsManager export
     rollupOptions: {
+      output: {
+        // Preserve exports
+        exports: 'named',
+        preserveModules: false,
+      },
+      // Mark wsManager as external to preserve it
+      treeshake: {
+        moduleSideEffects: true,
+      },
       onwarn(warning, warn) {
         // Suppress "Generated an empty chunk" warnings for API routes
         if (warning.code === 'EMPTY_BUNDLE' && 

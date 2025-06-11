@@ -5,10 +5,11 @@ import { RemixServer } from "@remix-run/react";
 import { isbot } from "isbot";
 import { renderToPipeableStream } from "react-dom/server";
 
-// Export wsManager so it can be imported by server.js
-// Using a namespace import to ensure it's not tree-shaken
-import * as websocketServer from './services/websocket.server';
-export const wsManager = websocketServer.wsManager;
+// Import and re-export wsManager to ensure it's included in the build
+import { wsManager } from './services/websocket.server';
+
+// Explicitly export wsManager to prevent tree-shaking
+export { wsManager };
 
 const ABORT_DELAY = 5_000;
 
