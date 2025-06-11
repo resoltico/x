@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { Upload, Download, Info, RefreshCw, Loader2 } from "lucide-react";
+import { Upload, Download, Info, RefreshCw, Loader2, AlertCircle, WifiOff, Wifi } from "lucide-react";
 import { ImageUploader } from "~/components/ImageUploader";
 import { PreviewCanvas } from "~/components/PreviewCanvas";
 import { ParameterControls } from "~/components/ParameterControls";
@@ -19,6 +19,8 @@ export default function Index() {
   const [processingProgress, setProcessingProgress] = useState(0);
   const [histogram, setHistogram] = useState<number[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
   const [parameters, setParameters] = useState<ProcessingParameters>({
     binarization: {
       method: 'sauvola',
@@ -44,42 +46,69 @@ export default function Index() {
     },
   });
 
-  const { ws, isConnected, connectionError } = useWebSocket();
+  const { ws, isConnected, connectionError, reconnect } = useWebSocket();
   const downloadLinkRef = useRef<HTMLAnchorElement>(null);
   const previewDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const previewRequestQueueRef = useRef<{imageId: string, params: ProcessingParameters} | null>(null);
 
+  // Handle WebSocket messages
   useEffect(() => {
     if (ws) {
       ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        
-        switch (data.type) {
-          case 'preview.result':
-            setProcessedPreview(data.payload.preview);
-            setHistogram(data.payload.histogram || []);
-            break;
-          case 'preview.processing':
-            console.log('Processing preview for image:', data.payload.imageId);
-            break;
-          case 'processing.progress':
-            setProcessingProgress(data.payload.progress);
-            break;
-          case 'error':
-            console.error('WebSocket error:', data.payload.message);
-            if (data.payload.imageId === uploadedImage?.id) {
-              setUploadError(data.payload.message);
-            }
-            break;
+        try {
+          const data = JSON.parse(event.data);
+          
+          switch (data.type) {
+            case 'preview.result':
+              console.log('✅ Received preview result');
+              setProcessedPreview(data.payload.preview);
+              setHistogram(data.payload.histogram || []);
+              setIsGeneratingPreview(false);
+              setPreviewError(null);
+              break;
+              
+            case 'preview.processing':
+              console.log('⚙️ Processing preview for image:', data.payload.imageId);
+              setIsGeneratingPreview(true);
+              setPreviewError(null);
+              break;
+              
+            case 'processing.progress':
+              setProcessingProgress(data.payload.progress);
+              break;
+              
+            case 'error':
+              console.error('❌ WebSocket error:', data.payload);
+              if (data.payload.imageId === uploadedImage?.id) {
+                setPreviewError(data.payload.message || 'Failed to generate preview');
+                setIsGeneratingPreview(false);
+              }
+              break;
+          }
+        } catch (error) {
+          console.error('Failed to parse WebSocket message:', error);
         }
       };
     }
   }, [ws, uploadedImage]);
 
+  // Retry preview generation when connection is restored
+  useEffect(() => {
+    if (isConnected && previewRequestQueueRef.current) {
+      console.log('🔄 Retrying queued preview request...');
+      const { imageId, params } = previewRequestQueueRef.current;
+      previewRequestQueueRef.current = null;
+      requestPreview(imageId, params);
+    }
+  }, [isConnected]);
+
   const handleImageUpload = async (file: File) => {
     // Reset states
     setUploadError(null);
+    setPreviewError(null);
     setProcessedPreview(null);
     setHistogram([]);
+    setIsGeneratingPreview(false);
     
     // Validate file size
     if (file.size > 10 * 1024 * 1024) {
@@ -91,6 +120,7 @@ export default function Index() {
     formData.append('image', file);
 
     try {
+      console.log('📤 Uploading image...');
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
@@ -102,13 +132,18 @@ export default function Index() {
       }
 
       const data = await response.json();
+      console.log('✅ Image uploaded successfully:', data.id);
       setUploadedImage(data);
       setUploadError(null);
       
-      // Request initial preview after a short delay to ensure WebSocket is ready
-      setTimeout(() => {
-        requestPreview(data.id);
-      }, 100);
+      // Request initial preview
+      if (isConnected) {
+        requestPreview(data.id, parameters);
+      } else {
+        console.log('⏳ WebSocket not connected, queuing preview request...');
+        previewRequestQueueRef.current = { imageId: data.id, params: parameters };
+        setPreviewError('Waiting for connection...');
+      }
     } catch (error) {
       console.error('Upload error:', error);
       setUploadError(error instanceof Error ? error.message : 'Failed to upload image. Please try again.');
@@ -116,27 +151,42 @@ export default function Index() {
     }
   };
 
-  const requestPreview = useCallback((imageId: string) => {
+  const requestPreview = useCallback((imageId: string, params?: ProcessingParameters) => {
     // Clear any pending preview request
     if (previewDebounceRef.current) {
       clearTimeout(previewDebounceRef.current);
     }
 
+    const currentParams = params || parameters;
+
     // Debounce preview requests
     previewDebounceRef.current = setTimeout(() => {
       if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
-          type: 'preview.update',
-          payload: {
-            imageId,
-            parameters,
-          },
-        }));
+        console.log('📨 Requesting preview for image:', imageId);
+        setIsGeneratingPreview(true);
+        setPreviewError(null);
+        
+        try {
+          ws.send(JSON.stringify({
+            type: 'preview.update',
+            payload: {
+              imageId,
+              parameters: currentParams,
+            },
+          }));
+        } catch (error) {
+          console.error('Failed to send preview request:', error);
+          setPreviewError('Failed to request preview');
+          setIsGeneratingPreview(false);
+        }
       } else if (!isConnected) {
-        console.warn('WebSocket not connected, cannot request preview');
+        console.warn('⚠️ WebSocket not connected, cannot request preview');
+        previewRequestQueueRef.current = { imageId, params: currentParams };
+        setPreviewError('Connection lost. Waiting to reconnect...');
+        setIsGeneratingPreview(false);
       } else {
-        console.warn('WebSocket not ready, retrying preview request...');
-        setTimeout(() => requestPreview(imageId), 500);
+        console.warn('⏳ WebSocket not ready, retrying preview request...');
+        setTimeout(() => requestPreview(imageId, currentParams), 500);
       }
     }, 150);
   }, [ws, parameters, isConnected]);
@@ -144,12 +194,14 @@ export default function Index() {
   const handleParameterChange = useCallback((newParams: ProcessingParameters) => {
     setParameters(newParams);
     if (uploadedImage && isConnected) {
-      requestPreview(uploadedImage.id);
+      requestPreview(uploadedImage.id, newParams);
+    } else if (uploadedImage && !isConnected) {
+      previewRequestQueueRef.current = { imageId: uploadedImage.id, params: newParams };
     }
   }, [uploadedImage, requestPreview, isConnected]);
 
   const handleProcess = async () => {
-    if (!uploadedImage) return;
+    if (!uploadedImage || !isConnected) return;
 
     setIsProcessing(true);
     setProcessingProgress(0);
@@ -262,12 +314,29 @@ export default function Index() {
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <h1 className="text-2xl font-bold text-gray-900">
-            Engraving Processor Pro
-          </h1>
-          <p className="text-sm text-gray-600 mt-1">
-            Advanced image processing for historical engravings and documents
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Engraving Processor Pro
+              </h1>
+              <p className="text-sm text-gray-600 mt-1">
+                Advanced image processing for historical engravings and documents
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {isConnected ? (
+                <div className="flex items-center gap-1 text-green-600">
+                  <Wifi className="w-4 h-4" />
+                  <span className="text-sm">Connected</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 text-red-600">
+                  <WifiOff className="w-4 h-4" />
+                  <span className="text-sm">Disconnected</span>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </header>
 
@@ -281,26 +350,53 @@ export default function Index() {
               : 'bg-red-50 border border-red-200 text-red-700'
           }`}>
             <div className="flex items-center gap-2">
-              {connectionError.includes('Reconnecting') && (
+              {connectionError.includes('Reconnecting') ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <AlertCircle className="w-4 h-4" />
               )}
               <p className="text-sm">{connectionError}</p>
             </div>
-            {(connectionError.includes('refresh') || !connectionError.includes('Reconnecting')) && (
-              <button
-                onClick={() => window.location.reload()}
-                className="text-sm font-medium hover:opacity-80 transition-opacity"
-              >
-                Refresh Page
-              </button>
-            )}
+            <button
+              onClick={reconnect}
+              className="text-sm font-medium hover:opacity-80 transition-opacity"
+            >
+              Retry Now
+            </button>
           </div>
         )}
 
         {/* Error Alert */}
         {uploadError && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-            <p className="text-sm">{uploadError}</p>
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4" />
+              <p className="text-sm">{uploadError}</p>
+            </div>
+            <button
+              onClick={() => setUploadError(null)}
+              className="text-sm hover:opacity-80"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
+        {/* Preview Error */}
+        {previewError && !isGeneratingPreview && (
+          <div className="mb-6 bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded-lg flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4" />
+              <p className="text-sm">{previewError}</p>
+            </div>
+            {uploadedImage && isConnected && (
+              <button
+                onClick={() => requestPreview(uploadedImage.id)}
+                className="text-sm font-medium hover:opacity-80 transition-opacity"
+              >
+                Retry Preview
+              </button>
+            )}
           </div>
         )}
 
@@ -352,19 +448,35 @@ export default function Index() {
             <PreviewCanvas
               originalImage={uploadedImage?.preview}
               processedImage={processedPreview}
-              isProcessing={isProcessing}
+              isProcessing={isGeneratingPreview}
+              onRetryPreview={uploadedImage ? () => requestPreview(uploadedImage.id) : undefined}
             />
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <HistogramDisplay data={histogram} />
               
-              {/* Zoom Controls - Placeholder */}
+              {/* Status and Controls */}
               <div className="bg-white rounded-lg shadow p-4">
-                <h3 className="text-sm font-semibold mb-2">Zoom Controls</h3>
-                <div className="flex gap-2">
-                  <button className="btn-secondary text-sm">Fit</button>
-                  <button className="btn-secondary text-sm">100%</button>
-                  <button className="btn-secondary text-sm">200%</button>
+                <h3 className="text-sm font-semibold mb-2">Status</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span>Connection:</span>
+                    <span className={isConnected ? 'text-green-600' : 'text-red-600'}>
+                      {isConnected ? 'Connected' : 'Disconnected'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Preview:</span>
+                    <span className={processedPreview ? 'text-green-600' : 'text-gray-400'}>
+                      {isGeneratingPreview ? 'Generating...' : processedPreview ? 'Ready' : 'Not generated'}
+                    </span>
+                  </div>
+                  {uploadedImage && (
+                    <div className="flex items-center justify-between">
+                      <span>Image ID:</span>
+                      <span className="text-xs font-mono">{uploadedImage.id.slice(0, 8)}...</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

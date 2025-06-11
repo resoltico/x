@@ -9,10 +9,16 @@
     "dev": "remix vite:dev",
     "build": "remix vite:build",
     "start": "node server.js",
+    "start:check": "bash start-with-checks.sh",
     "test": "vitest",
     "test:ui": "vitest --ui",
+    "test:health": "node test-server-health.js",
+    "test:ws": "node test-websocket.js",
+    "debug:ws": "node debug-websocket.js",
+    "check:startup": "node startup-checks.js",
     "lint": "eslint --ext .js,.jsx,.ts,.tsx app src",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "check": "npm run build && npm run start & sleep 5 && npm run test:health && kill $!"
   },
   "engines": {
     "node": ">=22.0.0"
@@ -43,6 +49,7 @@
     "@vitest/ui": "^3.2.3",
     "eslint": "^9.28.0",
     "eslint-plugin-react": "^7.37.5",
+    "node-fetch": "^3.3.2",
     "tailwindcss": "^4.1.8",
     "typescript": "^5.8.3",
     "vite": "^6.3.5",

@@ -10,6 +10,8 @@ export default defineConfig({
         v3_fetcherPersist: true,
         v3_relativeSplatPath: true,
         v3_throwAbortReason: true,
+        v3_lazyRouteDiscovery: true,
+        v3_singleFetch: true,
       },
     }),
     tsconfigPaths(),
@@ -41,11 +43,22 @@ export default defineConfig({
     rollupOptions: {
       onwarn(warning, warn) {
         // Suppress "Generated an empty chunk" warnings for API routes
-        if (warning.code === 'EMPTY_BUNDLE' && warning.message.includes('api.')) {
+        if (warning.code === 'EMPTY_BUNDLE' && 
+            (warning.message.includes('api.') || 
+             warning.message.includes('api/') ||
+             warning.message.includes('_index'))) {
+          return;
+        }
+        // Suppress source map warnings
+        if (warning.code === 'SOURCEMAP_ERROR') {
           return;
         }
         warn(warning);
       },
     },
+  },
+  // Optimize dependencies
+  optimizeDeps: {
+    include: ['react', 'react-dom', '@remix-run/react'],
   },
 });

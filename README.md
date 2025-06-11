@@ -18,6 +18,7 @@ MIT
 - **Pixel Art Scaling**: Scale2x algorithm for clean upscaling
 - **Real-time Preview**: Instant feedback with WebSocket-powered updates
 - **Modular Architecture**: Clean separation of concerns with pluggable algorithms
+- **Health Monitoring**: Built-in health checks and diagnostics
 
 ## System Requirements
 
@@ -59,6 +60,103 @@ The application will start on http://localhost:3000
 npm run build
 npm start
 ```
+
+## Health Checks and Diagnostics
+
+### Startup Checks
+
+Before starting the server, run startup validation:
+
+```bash
+node startup-checks.js
+```
+
+This will verify:
+- Node.js version compatibility
+- Required directories exist
+- Critical files are present
+- Port availability
+- Environment configuration
+
+### Server Health Check
+
+After starting the server, verify all systems are operational:
+
+```bash
+npm run test:health
+```
+
+This checks:
+- HTTP server connectivity
+- WebSocket functionality
+- Static asset serving
+- Error handling
+
+### WebSocket Testing
+
+To specifically test WebSocket connectivity:
+
+```bash
+npm run test:ws
+```
+
+### Live Health Monitoring
+
+Access the health endpoint while the server is running:
+
+```bash
+curl http://localhost:3000/health
+```
+
+## Troubleshooting
+
+### WebSocket Connection Issues
+
+**Symptom**: "Connection lost. Reconnecting..." message in the UI
+
+**Solutions**:
+1. Check server logs for WebSocket initialization errors
+2. Verify port 3000 is not blocked by firewall
+3. Run `npm run test:ws` to diagnose connection issues
+4. Check browser console for detailed error messages
+5. Try refreshing the page or clicking "Retry Now"
+
+### Preview Not Generating
+
+**Symptom**: "Generating preview..." spinner runs indefinitely
+
+**Solutions**:
+1. Check WebSocket connection status (green "Connected" indicator)
+2. Verify the image was uploaded successfully
+3. Check server logs for processing errors
+4. Try with a smaller image first
+5. Reset parameters to defaults and retry
+
+### Port Already in Use
+
+**Symptom**: "Error: listen EADDRINUSE: address already in use :::3000"
+
+**Solutions**:
+```bash
+# Find process using port 3000
+lsof -i :3000
+
+# Kill the process
+kill -9 <PID>
+
+# Or use a different port
+PORT=3001 npm start
+```
+
+### Build Errors
+
+**Symptom**: Missing directories or files when starting server
+
+**Solutions**:
+1. Run a fresh build: `npm run build`
+2. Clear build cache: `rm -rf build/`
+3. Verify all source files are present
+4. Check Node.js version: `node --version` (must be 22+)
 
 ## Usage Guide
 
@@ -167,7 +265,10 @@ engraving-processor-pro/
 │       └── utils/        # Engine utilities
 ├── public/               # Static assets
 ├── build/               # Build output (generated)
-└── server.js            # Custom server with WebSocket support
+├── server.js            # Custom server with WebSocket support
+├── startup-checks.js    # Startup validation script
+├── test-server-health.js # Health check script
+└── test-websocket.js    # WebSocket test script
 ```
 
 ## Testing
@@ -182,6 +283,13 @@ Run tests with UI:
 
 ```bash
 npm run test:ui
+```
+
+Health checks:
+
+```bash
+npm run test:health  # Full health check
+npm run test:ws      # WebSocket test only
 ```
 
 ## Development
@@ -216,26 +324,19 @@ export class MyBinarizer extends BaseBinarizer {
 - Use Tailwind CSS for styling
 - Follow existing patterns for parameter controls
 
-## Troubleshooting
-
-### Image Upload Fails
-- Check file size (max 10MB)
-- Ensure valid image format
-- Check console for errors
-
-### Preview Not Updating
-- Check WebSocket connection in browser console
-- Refresh the page
-- Ensure all parameters are valid
-
-### Processing Takes Too Long
-- Large images may take time
-- Consider reducing image size before upload
-- Check if morphology iterations are too high
-
 ## Performance Optimization
 
 - The application uses integral images for efficient local statistics
 - Preview images are limited to 512px for fast updates
 - WebSocket debouncing prevents excessive updates
 - Algorithms are optimized for binary images
+
+## Monitoring
+
+The server provides detailed logging for:
+- WebSocket connections and messages
+- Image processing stages and timing
+- Error conditions with context
+- Health status and metrics
+
+Check server logs for detailed diagnostics when troubleshooting issues.
