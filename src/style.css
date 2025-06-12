@@ -3,16 +3,16 @@
 /* Enhanced theme configuration with Lightning CSS features */
 @theme {
   /* Color system with better organization */
-  --color-primary-50: #eff6ff;
-  --color-primary-100: #dbeafe;
-  --color-primary-200: #bfdbfe;
-  --color-primary-300: #93c5fd;
-  --color-primary-400: #60a5fa;
-  --color-primary-500: #3b82f6;
-  --color-primary-600: #2563eb;
-  --color-primary-700: #1d4ed8;
-  --color-primary-800: #1e40af;
-  --color-primary-900: #1e3a8a;
+  --color-primary-50: lab(96.5% 4.1 -9.2);
+  --color-primary-100: lab(92.4% 9.7 -20.7);
+  --color-primary-200: lab(86.3% 17.8 -35.6);
+  --color-primary-300: lab(76.9% 28.1 -56.4);
+  --color-primary-400: lab(70.2% 31.2 -72.4);
+  --color-primary-500: lab(62.3% 25.9 -84.6);
+  --color-primary-600: lab(54.3% 18.7 -92.1);
+  --color-primary-700: lab(45.2% 13.6 -89.4);
+  --color-primary-800: lab(37.6% 11.1 -79.2);
+  --color-primary-900: lab(30.4% 9.2 -65.8);
   
   --color-neutral-50: #f8fafc;
   --color-neutral-100: #f1f5f9;
@@ -151,9 +151,7 @@
 
 /* Base styles with Lightning CSS optimizations */
 @layer base {
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     box-sizing: border-box;
   }
   
@@ -217,12 +215,12 @@
     user-select: none;
     padding: var(--spacing-2) var(--spacing-4);
     min-height: 2.5rem;
-    
+
     &:disabled {
       pointer-events: none;
       opacity: 0.5;
     }
-    
+
     &:focus-visible {
       outline: 2px solid var(--color-primary-500);
       outline-offset: 2px;
@@ -232,11 +230,11 @@
   .btn-primary {
     background-color: var(--color-primary-600);
     color: var(--color-white);
-    
+
     &:hover:not(:disabled) {
       background-color: var(--color-primary-700);
     }
-    
+
     &:active {
       background-color: var(--color-primary-800);
     }
@@ -245,11 +243,11 @@
   .btn-secondary {
     background-color: var(--color-neutral-200);
     color: var(--color-neutral-800);
-    
+
     &:hover:not(:disabled) {
       background-color: var(--color-neutral-300);
     }
-    
+
     &:active {
       background-color: var(--color-neutral-400);
     }
@@ -258,7 +256,7 @@
   .btn-danger {
     background-color: var(--color-danger-600);
     color: var(--color-white);
-    
+
     &:hover:not(:disabled) {
       background-color: var(--color-danger-700);
     }
@@ -271,7 +269,7 @@
     border: 1px solid var(--color-neutral-200);
     padding: var(--spacing-6);
     position: relative;
-    
+
     &::before {
       content: "";
       position: absolute;
@@ -291,12 +289,12 @@
     background-color: var(--color-white);
     font-size: 0.875rem;
     transition: var(--transition-colors);
-    
+
     &:focus {
       border-color: var(--color-primary-500);
       box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary-500) 20%, transparent);
     }
-    
+
     &:disabled {
       background-color: var(--color-neutral-100);
       color: var(--color-neutral-500);
@@ -322,7 +320,7 @@
     cursor: pointer;
     outline: none;
     transition: var(--transition-colors);
-    
+
     &::-webkit-slider-thumb {
       appearance: none;
       width: var(--spacing-5);
@@ -333,13 +331,13 @@
       border: 2px solid var(--color-white);
       box-shadow: var(--shadow-md);
       transition: var(--transition-all);
-      
+
       &:hover {
         transform: scale(1.1);
         box-shadow: var(--shadow-lg);
       }
     }
-    
+
     &::-moz-range-thumb {
       width: var(--spacing-5);
       height: var(--spacing-5);
@@ -350,11 +348,24 @@
       box-shadow: var(--shadow-md);
       transition: var(--transition-all);
     }
-    
+
     &:focus {
       &::-webkit-slider-thumb {
         box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary-500) 30%, transparent);
       }
+    }
+
+    &::-webkit-slider-track {
+      background: linear-gradient(to right, var(--color-neutral-200), var(--color-primary-200));
+      border-radius: var(--radius-full);
+      height: var(--spacing-2);
+    }
+
+    &::-moz-range-track {
+      background: linear-gradient(to right, var(--color-neutral-200), var(--color-primary-200));
+      border-radius: var(--radius-full);
+      height: var(--spacing-2);
+      border: none;
     }
   }
 }
@@ -375,7 +386,7 @@
     transition: var(--transition-all);
     position: relative;
     overflow: hidden;
-    
+
     &::before {
       content: "";
       position: absolute;
@@ -384,17 +395,17 @@
       opacity: 0;
       transition: var(--transition-opacity);
     }
-    
+
     &:hover::before {
       opacity: 1;
     }
-    
+
     &.drag-over {
       border-color: var(--color-primary-500);
       background-color: color-mix(in srgb, var(--color-primary-50) 80%, transparent);
       transform: scale(1.02);
       box-shadow: var(--shadow-lg);
-      
+
       &::before {
         opacity: 1;
       }
@@ -460,9 +471,7 @@
 
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -471,12 +480,12 @@
 }
 
 /* Modern CSS features with Lightning CSS */
-@supports (color: color(display-p3 1 0 0)) {
+@supports (color: lab(50% 20 -20)) {
   :root {
     /* Wide gamut color support */
-    --color-primary-500: color(display-p3 0.23 0.51 0.96);
-    --color-success-500: color(display-p3 0.13 0.77 0.37);
-    --color-danger-500: color(display-p3 0.94 0.27 0.27);
+    --color-primary-500: lab(62.3% 25.9 -84.6);
+    --color-success-500: lab(60% -40 40);
+    --color-danger-500: lab(55% 60 45);
   }
 }
 
@@ -484,21 +493,5 @@
 @container (min-width: 768px) {
   .card {
     padding: var(--spacing-8);
-  }
-}
-
-/* CSS Nesting with advanced selectors */
-.slider {
-  &::-webkit-slider-track {
-    background: linear-gradient(to right, var(--color-neutral-200), var(--color-primary-200));
-    border-radius: var(--radius-full);
-    height: var(--spacing-2);
-  }
-  
-  &::-moz-range-track {
-    background: linear-gradient(to right, var(--color-neutral-200), var(--color-primary-200));
-    border-radius: var(--radius-full);
-    height: var(--spacing-2);
-    border: none;
   }
 }

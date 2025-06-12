@@ -47,7 +47,7 @@
 
         <div v-if="binarizationParams.method === 'sauvola' || binarizationParams.method === 'niblack'">
           <label class="label">
-            K Factor: {{ binarizationParams.k.toFixed(2) }}
+            K Factor: {{ (binarizationParams.k ?? 0.2).toFixed(2) }}
           </label>
           <input
             v-model.number="binarizationParams.k"

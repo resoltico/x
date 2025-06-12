@@ -1,196 +1,31 @@
-ERRORS WHEN RUnNioNG SCRIPT:
-======
-Last login: Thu Jun 12 06:49:12 on ttys000
-Using Node v22.16.0
-[2:46:10 PM] % cd scripts
-[2:46:14 PM] % ./build.sh
-🚀 Starting build process for Engraving Processor Pro...
-📦 Installing dependencies...
-Packages: +286
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Progress: resolved 358, reused 286, downloaded 0, added 286, done
-
-dependencies:
-+ pinia 3.0.3
-+ vue 3.5.16
-+ wasm-vips 0.0.13
-
-devDependencies:
-+ @tailwindcss/vite 4.1.10
-+ @vitejs/plugin-vue 5.2.4
-+ @vue/eslint-config-typescript 14.5.0
-+ @vue/test-utils 2.4.6
-+ eslint 9.28.0
-+ eslint-config-prettier 10.1.5
-+ eslint-plugin-prettier 5.4.1
-+ eslint-plugin-vue 10.2.0
-+ lightningcss 1.30.1
-+ prettier 3.5.3
-+ tailwindcss 4.1.10
-+ typescript 5.8.3
-+ vite 6.3.5
-+ vite-plugin-top-level-await 1.5.0
-+ vite-plugin-wasm 3.4.1
-+ vitest 3.2.3
-
-Done in 3.9s using pnpm v10.12.1
-🔍 Running type checks...
-
-> engraving-processor-pro@1.0.0 typecheck /Users/erst/Library/CloudStorage/Dropbox/Websites/x
-> tsc --noEmit
-
-src/main.ts:3:17 - error TS2307: Cannot find module './App.vue' or its corresponding type declarations.
-
-3 import App from './App.vue'
-                  ~~~~~~~~~~~
-
-src/test/setup.ts:6:4 - error TS2304: Cannot find name 'global'.
-
-6   (global as any).File = class MockFile {
-     ~~~~~~
-
-src/test/setup.ts:19:4 - error TS2304: Cannot find name 'global'.
-
-19   (global as any).FileReader = class MockFileReader {
-      ~~~~~~
-
-src/test/setup.ts:35:4 - error TS2304: Cannot find name 'global'.
-
-35   (global as any).URL = {
-      ~~~~~~
-
-src/test/setup.ts:41:23 - error TS2349: This expression is not callable.
-  Type '{ clearRect: Mock<Procedure>; drawImage: Mock<Procedure>; getImageData: Mock<() => { data: Uint8ClampedArray<ArrayBuffer>; width: number; height: number; }>; ... 6 more ...; fill: Mock<...>; }' has no call signatures.
-
- 41   const mockContext = {
-                          ~
- 42     clearRect: vi.fn(),
-    ~~~~~~~~~~~~~~~~~~~~~~~
-... 
- 55     fill: vi.fn()
-    ~~~~~~~~~~~~~~~~~
- 56   }
-    ~~~
-
-  src/test/setup.ts:41:23
-     41   const mockContext = {
-                              ~
-     42     clearRect: vi.fn(),
-        ~~~~~~~~~~~~~~~~~~~~~~~
-    ... 
-     55     fill: vi.fn()
-        ~~~~~~~~~~~~~~~~~
-     56   }
-        ~~~
-    Are you missing a semicolon?
-
-src/test/setup.ts:58:4 - error TS2304: Cannot find name 'global'.
-
-58   (global as any).HTMLCanvasElement = class MockCanvas {
-      ~~~~~~
-
-src/test/setup.ts:72:4 - error TS2304: Cannot find name 'global'.
-
-72   (global as any).Image = class MockImage {
-      ~~~~~~
-
-src/test/setup.ts:90:4 - error TS2304: Cannot find name 'global'.
-
-90   (global as any).Worker = class MockWorker {
-      ~~~~~~
-
-src/test/setup.ts:117:9 - error TS2304: Cannot find name 'global'.
-
-117   if (!(global as any).performance) {
-            ~~~~~~
-
-src/test/setup.ts:118:6 - error TS2304: Cannot find name 'global'.
-
-118     (global as any).performance = {} as Performance
-         ~~~~~~
-
-src/test/setup.ts:121:4 - error TS2304: Cannot find name 'global'.
-
-121   (global as any).performance.memory = {
-       ~~~~~~
-
-src/test/setup.ts:128:3 - error TS2349: This expression is not callable.
-  Type 'Navigator' has no call signatures.
-
-128   Object.defineProperty(navigator, 'hardwareConcurrency', {
-      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-129     writable: true,
-    ~~~~~~~~~~~~~~~~~~~
-130     value: 4
-    ~~~~~~~~~~~~
-131   })
-    ~~~~
-
-  src/test/setup.ts:128:3
-    128   Object.defineProperty(navigator, 'hardwareConcurrency', {
-          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    129     writable: true,
-        ~~~~~~~~~~~~~~~~~~~
-    130     value: 4
-        ~~~~~~~~~~~~
-    131   })
-        ~~~~
-    Are you missing a semicolon?
-
-src/test/setup.ts:134:4 - error TS2304: Cannot find name 'global'.
-
-134   (global as any).Blob = class MockBlob {
-       ~~~~~~
-
-src/test/setup.ts:145:4 - error TS2304: Cannot find name 'global'.
-
-145   (global as any).ResizeObserver = class MockResizeObserver {
-       ~~~~~~
-
-src/test/setup.ts:152:4 - error TS2304: Cannot find name 'global'.
-
-152   (global as any).IntersectionObserver = class MockIntersectionObserver {
-       ~~~~~~
-
-
-Found 15 errors in 2 files.
-
-Errors  Files
-     1  src/main.ts:3
-    14  src/test/setup.ts:6
- ELIFECYCLE  Command failed with exit code 2.
-[2:48:19 PM] % 
-
-
-=======
-ERRORS WITHOUT the script:
-
-=====
-
-[2:47:22 PM] % pnpm run build
+[3:32:26 PM] % pnpm build
 
 > engraving-processor-pro@1.0.0 build /Users/erst/Library/CloudStorage/Dropbox/Websites/x
-> vite build
-
-vite v6.3.5 building for production...
-✓ 38 modules transformed.
-Generated an empty chunk: "image-processing".
-rendering chunks (1)...[esbuild css minify]
-▲ [WARNING] Unexpected "{" [css-syntax-error]
-
-    <stdin>:2:6303:
-      2 │ ...e{@supports (color:lab(0% 0 0)){{--color-red-50:lab(96.5005% 4.1...
-        ╵                                    ^
+> npm run typecheck && npm run lint && vite build
 
 
-dist/index.html                                    1.10 kB │ gzip:     0.57 kB
-dist/assets/imageProcessingWorker-DdOfJ0zX.ts      8.44 kB
-dist/assets/vips-es6-DmeHDDA4.js                  96.07 kB
-dist/assets/vips-DNd7RpiG.wasm                 5,767.48 kB │ gzip: 2,041.43 kB
-dist/assets/index-7zqlM1VV.css                    48.72 kB │ gzip:     7.79 kB
-dist/assets/image-processing-l0sNRNKZ.js           0.06 kB │ gzip:     0.08 kB │ map:   0.11 kB
-dist/assets/index-D4XBj0KI.js                     45.92 kB │ gzip:    14.19 kB │ map: 133.58 kB
-dist/assets/vue-vendor-xW1Kpa9x.js                66.19 kB │ gzip:    26.46 kB │ map: 619.85 kB
-✓ built in 1.16s
-[2:49:11 PM] % 
+> engraving-processor-pro@1.0.0 typecheck
+> vue-tsc --noEmit
 
+
+> engraving-processor-pro@1.0.0 lint
+> eslint .
+
+
+Oops! Something went wrong! :(
+
+ESLint: 9.28.0
+
+TypeError: Cannot read properties of undefined (reading 'vue-eslint-parser')
+    at file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/eslint.config.js?mtime=1749731403338:42:26
+    at ModuleJob.run (node:internal/modules/esm/module_job:274:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:644:26)
+    at async dynamicImportConfig (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/eslint@9.28.0_jiti@2.4.2/node_modules/eslint/lib/config/config-loader.js:186:17)
+    at async loadConfigFile (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/eslint@9.28.0_jiti@2.4.2/node_modules/eslint/lib/config/config-loader.js:276:9)
+    at async ConfigLoader.calculateConfigArray (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/eslint@9.28.0_jiti@2.4.2/node_modules/eslint/lib/config/config-loader.js:589:23)
+    at async #calculateConfigArray (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/eslint@9.28.0_jiti@2.4.2/node_modules/eslint/lib/config/config-loader.js:770:23)
+    at async entryFilter (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/eslint@9.28.0_jiti@2.4.2/node_modules/eslint/lib/eslint/eslint-helpers.js:289:5)
+    at async NodeHfs.<anonymous> (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@humanfs+core@0.19.1/node_modules/@humanfs/core/src/hfs.js:574:24)
+    at async NodeHfs.walk (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@humanfs+core@0.19.1/node_modules/@humanfs/core/src/hfs.js:614:3)
+ ELIFECYCLE  Command failed with exit code 2.
+[3:32:45 PM] % 

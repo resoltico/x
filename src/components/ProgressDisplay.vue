@@ -278,10 +278,12 @@
   }
 
   const formatMemory = (): string => {
-    if (!performance.memory) return 'N/A'
+    // Use optional chaining and type assertion for performance.memory
+    const memory = (performance as any).memory
+    if (!memory) return 'N/A'
     
-    const used = Math.round(performance.memory.usedJSHeapSize / 1024 / 1024)
-    const total = Math.round(performance.memory.totalJSHeapSize / 1024 / 1024)
+    const used = Math.round(memory.usedJSHeapSize / 1024 / 1024)
+    const total = Math.round(memory.totalJSHeapSize / 1024 / 1024)
     
     return `${used}/${total} MB`
   }

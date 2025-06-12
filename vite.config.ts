@@ -9,22 +9,20 @@ export default defineConfig({
   css: {
     transformer: 'lightningcss',
     lightningcss: {
-      // Enable all Lightning CSS features
       drafts: {
         customMedia: true,
+        nesting: true,
       },
       nonStandard: {
         deepSelectorCombinator: true,
       },
-      // Enable CSS nesting and other modern features
-      include: 2 << 16, // Include all features
       targets: {
-        // Modern browser support
         chrome: 100,
         firefox: 100,
         safari: 15,
         edge: 100,
       },
+      minify: true,
     },
   },
   plugins: [
@@ -61,18 +59,19 @@ export default defineConfig({
           'image-processing': ['wasm-vips']
         }
       },
-      // Handle eval warnings from wasm-vips
       onwarn(warning, warn) {
-        // Skip eval warnings from wasm-vips as they are intentional and safe in this context
+        // Skip eval warnings from wasm-vips as they are intentional and safe
         if (warning.code === 'EVAL' && warning.id?.includes('wasm-vips')) {
+          return
+        }
+        // Skip css syntax warnings that are handled by Lightning CSS
+        if (warning.code === 'PLUGIN_WARNING' && warning.plugin === 'vite:css') {
           return
         }
         warn(warning)
       }
     },
-    // Increase chunk size warning limit for WASM files
     chunkSizeWarningLimit: 1000,
-    // Enable source maps for debugging
     sourcemap: true
   },
   optimizeDeps: {
@@ -86,6 +85,5 @@ export default defineConfig({
       topLevelAwait()
     ]
   },
-  // Ensure proper WASM support
   assetsInclude: ['**/*.wasm']
 })
