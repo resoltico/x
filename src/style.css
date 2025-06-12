@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
-/* Enhanced theme configuration with Lightning CSS features */
-@theme {
+/* Enhanced theme configuration using standard CSS custom properties */
+:root {
   /* Color system with better organization */
   --color-primary-50: #eff6ff;
   --color-primary-100: #dbeafe;
@@ -119,7 +119,7 @@
   --z-auto: auto;
 }
 
-/* Enhanced keyframes using Lightning CSS features */
+/* Enhanced keyframes using standard CSS */
 @keyframes spin {
   from {
     transform: rotate(0deg);
@@ -149,301 +149,291 @@
   }
 }
 
-/* Base styles with Lightning CSS optimizations */
-@layer base {
-  *, *::before, *::after {
-    box-sizing: border-box;
-  }
-  
-  html {
-    font-family: var(--font-family-sans);
-    line-height: 1.5;
-    -webkit-text-size-adjust: 100%;
-    -moz-tab-size: 4;
-    tab-size: 4;
-    font-feature-settings: normal;
-    font-variation-settings: normal;
-  }
-  
-  body {
-    margin: 0;
-    color: var(--color-neutral-900);
-    background-color: var(--color-neutral-50);
-    font-feature-settings: "rlig" 1, "calt" 1;
-  }
-  
-  /* Enhanced focus styles */
-  :focus-visible {
-    outline: 2px solid var(--color-primary-500);
-    outline-offset: 2px;
-  }
-  
-  /* Improved scrollbar styling */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-  
-  ::-webkit-scrollbar-track {
-    background: var(--color-neutral-100);
-  }
-  
-  ::-webkit-scrollbar-thumb {
-    background: var(--color-neutral-300);
-    border-radius: var(--radius-full);
-  }
-  
-  ::-webkit-scrollbar-thumb:hover {
-    background: var(--color-neutral-400);
-  }
+/* Base styles */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: var(--font-family-sans);
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+  -moz-tab-size: 4;
+  tab-size: 4;
+  font-feature-settings: normal;
+  font-variation-settings: normal;
+}
+
+body {
+  margin: 0;
+  color: var(--color-neutral-900);
+  background-color: var(--color-neutral-50);
+  font-feature-settings: "rlig" 1, "calt" 1;
+}
+
+/* Enhanced focus styles */
+:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+}
+
+/* Improved scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-neutral-100);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-neutral-300);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-neutral-400);
 }
 
 /* Enhanced component styles */
-@layer components {
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    white-space: nowrap;
-    border-radius: var(--radius-lg);
-    font-size: 0.875rem;
-    font-weight: 500;
-    transition: var(--transition-colors);
-    outline: none;
-    border: 1px solid transparent;
-    cursor: pointer;
-    user-select: none;
-    padding: var(--spacing-2) var(--spacing-4);
-    min-height: 2.5rem;
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  border-radius: var(--radius-lg);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: var(--transition-colors);
+  outline: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+  user-select: none;
+  padding: var(--spacing-2) var(--spacing-4);
+  min-height: 2.5rem;
+}
 
-    &:disabled {
-      pointer-events: none;
-      opacity: 0.5;
-    }
+.btn:disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
 
-    &:focus-visible {
-      outline: 2px solid var(--color-primary-500);
-      outline-offset: 2px;
-    }
-  }
-  
-  .btn-primary {
-    background-color: var(--color-primary-600);
-    color: var(--color-white);
+.btn:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+}
 
-    &:hover:not(:disabled) {
-      background-color: var(--color-primary-700);
-    }
+.btn-primary {
+  background-color: var(--color-primary-600);
+  color: var(--color-white);
+}
 
-    &:active {
-      background-color: var(--color-primary-800);
-    }
-  }
-  
-  .btn-secondary {
-    background-color: var(--color-neutral-200);
-    color: var(--color-neutral-800);
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--color-primary-700);
+}
 
-    &:hover:not(:disabled) {
-      background-color: var(--color-neutral-300);
-    }
+.btn-primary:active {
+  background-color: var(--color-primary-800);
+}
 
-    &:active {
-      background-color: var(--color-neutral-400);
-    }
-  }
-  
-  .btn-danger {
-    background-color: var(--color-danger-600);
-    color: var(--color-white);
+.btn-secondary {
+  background-color: var(--color-neutral-200);
+  color: var(--color-neutral-800);
+}
 
-    &:hover:not(:disabled) {
-      background-color: var(--color-danger-700);
-    }
-  }
-  
-  .card {
-    background-color: var(--color-white);
-    border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-sm);
-    border: 1px solid var(--color-neutral-200);
-    padding: var(--spacing-6);
-    position: relative;
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--color-neutral-300);
+}
 
-    &::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
-      border-radius: inherit;
-      pointer-events: none;
-    }
-  }
-  
-  .input {
-    width: 100%;
-    padding: var(--spacing-3);
-    border: 1px solid var(--color-neutral-300);
-    border-radius: var(--radius-lg);
-    outline: none;
-    background-color: var(--color-white);
-    font-size: 0.875rem;
-    transition: var(--transition-colors);
+.btn-secondary:active {
+  background-color: var(--color-neutral-400);
+}
 
-    &:focus {
-      border-color: var(--color-primary-500);
-      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-    }
+.btn-danger {
+  background-color: var(--color-danger-600);
+  color: var(--color-white);
+}
 
-    &:disabled {
-      background-color: var(--color-neutral-100);
-      color: var(--color-neutral-500);
-      cursor: not-allowed;
-    }
-  }
-  
-  .label {
-    display: block;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--color-neutral-700);
-    margin-bottom: var(--spacing-2);
-    line-height: 1.25;
-  }
-  
-  .slider {
-    width: 100%;
-    height: var(--spacing-2);
-    background: linear-gradient(to right, var(--color-neutral-200) 0%, var(--color-primary-200) 100%);
-    border-radius: var(--radius-full);
-    appearance: none;
-    cursor: pointer;
-    outline: none;
-    transition: var(--transition-colors);
+.btn-danger:hover:not(:disabled) {
+  background-color: var(--color-danger-700);
+}
 
-    &::-webkit-slider-thumb {
-      appearance: none;
-      width: var(--spacing-5);
-      height: var(--spacing-5);
-      background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
-      border-radius: var(--radius-full);
-      cursor: pointer;
-      border: 2px solid var(--color-white);
-      box-shadow: var(--shadow-md);
-      transition: var(--transition-all);
+.card {
+  background-color: var(--color-white);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-neutral-200);
+  padding: var(--spacing-6);
+  position: relative;
+}
 
-      &:hover {
-        transform: scale(1.1);
-        box-shadow: var(--shadow-lg);
-      }
-    }
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
+  border-radius: inherit;
+  pointer-events: none;
+}
 
-    &::-moz-range-thumb {
-      width: var(--spacing-5);
-      height: var(--spacing-5);
-      background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
-      border-radius: var(--radius-full);
-      cursor: pointer;
-      border: 2px solid var(--color-white);
-      box-shadow: var(--shadow-md);
-      transition: var(--transition-all);
-    }
+.input {
+  width: 100%;
+  padding: var(--spacing-3);
+  border: 1px solid var(--color-neutral-300);
+  border-radius: var(--radius-lg);
+  outline: none;
+  background-color: var(--color-white);
+  font-size: 0.875rem;
+  transition: var(--transition-colors);
+}
 
-    &:focus {
-      &::-webkit-slider-thumb {
-        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
-      }
-    }
+.input:focus {
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
 
-    &::-webkit-slider-track {
-      background: linear-gradient(to right, var(--color-neutral-200), var(--color-primary-200));
-      border-radius: var(--radius-full);
-      height: var(--spacing-2);
-    }
+.input:disabled {
+  background-color: var(--color-neutral-100);
+  color: var(--color-neutral-500);
+  cursor: not-allowed;
+}
 
-    &::-moz-range-track {
-      background: linear-gradient(to right, var(--color-neutral-200), var(--color-primary-200));
-      border-radius: var(--radius-full);
-      height: var(--spacing-2);
-      border: none;
-    }
-  }
+.label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-neutral-700);
+  margin-bottom: var(--spacing-2);
+  line-height: 1.25;
+}
+
+.slider {
+  width: 100%;
+  height: var(--spacing-2);
+  background: linear-gradient(to right, var(--color-neutral-200) 0%, var(--color-primary-200) 100%);
+  border-radius: var(--radius-full);
+  appearance: none;
+  cursor: pointer;
+  outline: none;
+  transition: var(--transition-colors);
+}
+
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  width: var(--spacing-5);
+  height: var(--spacing-5);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  border: 2px solid var(--color-white);
+  box-shadow: var(--shadow-md);
+  transition: var(--transition-all);
+}
+
+.slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: var(--shadow-lg);
+}
+
+.slider::-moz-range-thumb {
+  width: var(--spacing-5);
+  height: var(--spacing-5);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  border: 2px solid var(--color-white);
+  box-shadow: var(--shadow-md);
+  transition: var(--transition-all);
+}
+
+.slider:focus::-webkit-slider-thumb {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+}
+
+.slider::-webkit-slider-track {
+  background: linear-gradient(to right, var(--color-neutral-200), var(--color-primary-200));
+  border-radius: var(--radius-full);
+  height: var(--spacing-2);
+}
+
+.slider::-moz-range-track {
+  background: linear-gradient(to right, var(--color-neutral-200), var(--color-primary-200));
+  border-radius: var(--radius-full);
+  height: var(--spacing-2);
+  border: none;
 }
 
 /* Enhanced utility classes */
-@layer utilities {
-  .glass {
-    background-color: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(12px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-  }
-  
-  .drop-zone {
-    border: 2px dashed var(--color-neutral-300);
-    border-radius: var(--radius-xl);
-    padding: var(--spacing-8);
-    text-align: center;
-    transition: var(--transition-all);
-    position: relative;
-    overflow: hidden;
+.glass {
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
 
-    &::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, transparent 0%, rgba(59, 130, 246, 0.05) 100%);
-      opacity: 0;
-      transition: var(--transition-opacity);
-    }
+.drop-zone {
+  border: 2px dashed var(--color-neutral-300);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-8);
+  text-align: center;
+  transition: var(--transition-all);
+  position: relative;
+  overflow: hidden;
+}
 
-    &:hover::before {
-      opacity: 1;
-    }
+.drop-zone::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 0%, rgba(59, 130, 246, 0.05) 100%);
+  opacity: 0;
+  transition: var(--transition-opacity);
+}
 
-    &.drag-over {
-      border-color: var(--color-primary-500);
-      background-color: rgba(239, 246, 255, 0.8);
-      transform: scale(1.02);
-      box-shadow: var(--shadow-lg);
+.drop-zone:hover::before {
+  opacity: 1;
+}
 
-      &::before {
-        opacity: 1;
-      }
-    }
-  }
-  
-  .processing-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: var(--z-50);
-    animation: fadeIn var(--duration-300) var(--ease-out);
-  }
-  
-  .fade-in {
-    animation: fadeIn var(--duration-300) var(--ease-out);
-  }
-  
-  /* Enhanced focus ring utilities */
-  .focus-ring {
-    &:focus-visible {
-      outline: 2px solid var(--color-primary-500);
-      outline-offset: 2px;
-    }
-  }
-  
-  /* Enhanced gradient utilities */
-  .gradient-primary {
-    background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
-  }
-  
-  .gradient-surface {
-    background: linear-gradient(135deg, var(--color-white) 0%, var(--color-neutral-50) 100%);
-  }
+.drop-zone.drag-over {
+  border-color: var(--color-primary-500);
+  background-color: rgba(239, 246, 255, 0.8);
+  transform: scale(1.02);
+  box-shadow: var(--shadow-lg);
+}
+
+.drop-zone.drag-over::before {
+  opacity: 1;
+}
+
+.processing-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-50);
+  animation: fadeIn var(--duration-300) var(--ease-out);
+}
+
+.fade-in {
+  animation: fadeIn var(--duration-300) var(--ease-out);
+}
+
+/* Enhanced focus ring utilities */
+.focus-ring:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+}
+
+/* Enhanced gradient utilities */
+.gradient-primary {
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
+}
+
+.gradient-surface {
+  background: linear-gradient(135deg, var(--color-white) 0%, var(--color-neutral-50) 100%);
 }
 
 /* Print styles */

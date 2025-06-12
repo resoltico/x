@@ -6,7 +6,6 @@ import topLevelAwait from 'vite-plugin-top-level-await'
 import { resolve } from 'path'
 
 export default defineConfig({
-  // Remove Lightning CSS entirely to avoid advanced syntax issues
   plugins: [
     vue(),
     tailwindcss(),
@@ -44,10 +43,6 @@ export default defineConfig({
       onwarn(warning, warn) {
         // Skip eval warnings from wasm-vips as they are intentional and safe
         if (warning.code === 'EVAL' && warning.id?.includes('wasm-vips')) {
-          return
-        }
-        // Skip css syntax warnings that are handled by Lightning CSS
-        if (warning.code === 'PLUGIN_WARNING' && warning.plugin === 'vite:css') {
           return
         }
         warn(warning)
