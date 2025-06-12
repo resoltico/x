@@ -1,15 +1,16 @@
 import type { 
   ImageData, 
   ProcessingParameters, 
-  ProcessingType,
-  BinarizationParams,
-  MorphologyParams,
-  NoiseReductionParams,
-  ScalingParams
+  ProcessingType
 } from '@/types'
 
+import { BinarizationProcessor } from './processing/binarization'
+import { MorphologyProcessor } from './processing/morphology'
+import { NoiseReductionProcessor } from './processing/noiseReduction'
+import { ScalingProcessor } from './processing/scaling'
+
 /**
- * ProcessingModule handles image processing operations using wasm-vips and custom algorithms
+ * Main processing module that coordinates different image processing algorithms
  */
 export class ProcessingModule {
   private static instance: ProcessingModule
@@ -30,6 +31,7 @@ export class ProcessingModule {
     if (this.isInitialized) return
 
     try {
+      console.log('Initializing ProcessingModule...')
       // Dynamic import of wasm-vips with proper configuration
       const wasmVips = await import('wasm-vips')
       
@@ -46,9 +48,9 @@ export class ProcessingModule {
       })
       
       this.isInitialized = true
-      console.log('ProcessingModule initialized with wasm-vips')
+      console.log('ProcessingModule initialized with wasm-vips successfully')
     } catch (error) {
-      console.error('Failed to initialize ProcessingModule:', error)
+      console.error('Failed to initialize ProcessingModule with WASM:', error)
       // Fallback to manual processing without WASM
       console.warn('Falling back to JavaScript-based processing')
       this.isInitialized = true
@@ -68,6 +70,8 @@ export class ProcessingModule {
     }
 
     try {
+      console.log(`Processing image with type: ${type}`, parameters)
+      
       if (this.vips) {
         return await this.processWithVips(imageData, type, parameters)
       } else {
@@ -87,6 +91,8 @@ export class ProcessingModule {
     type: ProcessingType,
     parameters: ProcessingParameters
   ): Promise<ArrayBuffer> {
+    console.log('Processing with WASM-VIPS')
+    
     // Load image into vips
     const vipsImage = this.vips.Image.newFromBuffer(new Uint8Array(imageData.data))
 
@@ -94,16 +100,16 @@ export class ProcessingModule {
 
     switch (type) {
       case 'binarization':
-        result = await this.processBinarization(vipsImage, parameters.binarization!)
+        result = await BinarizationProcessor.process(imageData, parameters.binarization!, vipsImage)
         break
       case 'morphology':
-        result = await this.processMorphology(vipsImage, parameters.morphology!)
+        result = await MorphologyProcessor.process(imageData, parameters.morphology!, vipsImage)
         break
       case 'noise-reduction':
-        result = await this.processNoiseReduction(vipsImage, parameters.noise!)
+        result = await NoiseReductionProcessor.process(imageData, parameters.noise!, vipsImage)
         break
       case 'scaling':
-        result = await this.processScaling(vipsImage, parameters.scaling!)
+        result = await ScalingProcessor.process(imageData, parameters.scaling!, vipsImage)
         break
       default:
         throw new Error(`Unsupported processing type: ${type}`)
@@ -125,352 +131,20 @@ export class ProcessingModule {
     type: ProcessingType,
     parameters: ProcessingParameters
   ): Promise<ArrayBuffer> {
-    const canvas = new OffscreenCanvas(imageData.width, imageData.height)
-    const ctx = canvas.getContext('2d')!
+    console.log('Processing with Canvas API fallback')
     
-    // Create ImageData object for canvas
-    const canvasImageData = new ImageData(
-      new Uint8ClampedArray(imageData.data),
-      imageData.width,
-      imageData.height
-    )
-    
-    ctx.putImageData(canvasImageData, 0, 0)
-    
-    // Apply processing based on type
     switch (type) {
       case 'binarization':
-        await this.canvasBinarization(ctx, imageData, parameters.binarization!)
-        break
+        return await BinarizationProcessor.process(imageData, parameters.binarization!)
+      case 'morphology':
+        return await MorphologyProcessor.process(imageData, parameters.morphology!)
+      case 'noise-reduction':
+        return await NoiseReductionProcessor.process(imageData, parameters.noise!)
       case 'scaling':
-        return await this.canvasScaling(canvas, imageData, parameters.scaling!)
+        return await ScalingProcessor.process(imageData, parameters.scaling!)
       default:
-        console.warn(`Canvas fallback not implemented for ${type}, returning original`)
+        throw new Error(`Unsupported processing type: ${type}`)
     }
-    
-    // Convert canvas to blob and then to ArrayBuffer
-    const blob = await canvas.convertToBlob({ type: 'image/png' })
-    return await blob.arrayBuffer()
-  }
-
-  /**
-   * Canvas-based binarization (simple threshold)
-   */
-  private async canvasBinarization(
-    ctx: OffscreenCanvasRenderingContext2D,
-    imageData: ImageData,
-    params: BinarizationParams
-  ) {
-    const data = ctx.getImageData(0, 0, imageData.width, imageData.height)
-    const pixels = data.data
-    const threshold = params.threshold || 128
-    
-    for (let i = 0; i < pixels.length; i += 4) {
-      const gray = pixels[i] * 0.299 + pixels[i + 1] * 0.587 + pixels[i + 2] * 0.114
-      const binary = gray > threshold ? 255 : 0
-      pixels[i] = binary
-      pixels[i + 1] = binary
-      pixels[i + 2] = binary
-    }
-    
-    ctx.putImageData(data, 0, 0)
-  }
-
-  /**
-   * Canvas-based scaling
-   */
-  private async canvasScaling(
-    canvas: OffscreenCanvas,
-    imageData: ImageData,
-    params: ScalingParams
-  ): Promise<ArrayBuffer> {
-    const scaledCanvas = new OffscreenCanvas(
-      imageData.width * params.factor,
-      imageData.height * params.factor
-    )
-    const scaledCtx = scaledCanvas.getContext('2d')!
-    
-    // Set image smoothing based on method
-    scaledCtx.imageSmoothingEnabled = params.method !== 'nearest'
-    
-    scaledCtx.drawImage(
-      canvas,
-      0, 0, imageData.width, imageData.height,
-      0, 0, scaledCanvas.width, scaledCanvas.height
-    )
-    
-    const blob = await scaledCanvas.convertToBlob({ type: 'image/png' })
-    return await blob.arrayBuffer()
-  }
-
-  /**
-   * Process binarization using various algorithms
-   */
-  private async processBinarization(
-    image: any,
-    params: BinarizationParams
-  ): Promise<any> {
-    const { method, windowSize = 15, k = 0.2, threshold = 128 } = params
-
-    switch (method) {
-      case 'otsu': {
-        // Global Otsu thresholding
-        const hist = image.histFind()
-        const otsuThreshold = this.calculateOtsuThreshold(hist)
-        return image.more(otsuThreshold)
-      }
-      case 'sauvola': {
-        // Sauvola adaptive thresholding
-        return this.sauvolaThresholding(image, windowSize, k)
-      }
-      case 'niblack': {
-        // Niblack adaptive thresholding
-        return this.niblackThresholding(image, windowSize, k)
-      }
-      default: {
-        // Simple global thresholding
-        return image.more(threshold)
-      }
-    }
-  }
-
-  /**
-   * Process morphological operations
-   */
-  private async processMorphology(
-    image: any,
-    params: MorphologyParams
-  ): Promise<any> {
-    const { operation, kernelSize, iterations } = params
-
-    // Create morphological kernel
-    const kernel = this.vips.Image.newFromArray(
-      this.createMorphologyKernel(kernelSize)
-    )
-
-    let result = image
-    for (let i = 0; i < iterations; i++) {
-      switch (operation) {
-        case 'erosion':
-          result = result.erode(kernel)
-          break
-        case 'dilation':
-          result = result.dilate(kernel)
-          break
-        case 'opening':
-          result = result.erode(kernel).dilate(kernel)
-          break
-        case 'closing':
-          result = result.dilate(kernel).erode(kernel)
-          break
-      }
-    }
-
-    return result
-  }
-
-  /**
-   * Process noise reduction
-   */
-  private async processNoiseReduction(
-    image: any,
-    params: NoiseReductionParams
-  ): Promise<any> {
-    const { method, kernelSize = 3, threshold = 128 } = params
-
-    switch (method) {
-      case 'median':
-        return image.median(kernelSize)
-
-      case 'binary-noise-removal':
-        // Remove small binary noise components
-        return this.removeBinaryNoise(image, threshold)
-
-      default:
-        return image.median(kernelSize)
-    }
-  }
-
-  /**
-   * Process scaling using various algorithms
-   */
-  private async processScaling(
-    image: any,
-    params: ScalingParams
-  ): Promise<any> {
-    const { method, factor } = params
-
-    switch (method) {
-      case 'nearest':
-        return image.resize(factor, { kernel: 'nearest' })
-
-      case 'bilinear':
-        return image.resize(factor, { kernel: 'linear' })
-
-      case 'scale2x':
-      case 'scale3x':
-      case 'scale4x':
-        // Use custom pixel art scaling algorithms
-        return this.pixelArtScaling(image, method)
-
-      default:
-        return image.resize(factor, { kernel: 'linear' })
-    }
-  }
-
-  /**
-   * Calculate Otsu threshold from histogram
-   */
-  private calculateOtsuThreshold(histogram: any): number {
-    const data = histogram.getpoint(0, 0)
-    const total = data.reduce((sum: number, val: number) => sum + val, 0)
-    
-    let sum = 0
-    for (let i = 0; i < 256; i++) {
-      sum += i * data[i]
-    }
-
-    let sumB = 0
-    let wB = 0
-    let wF = 0
-    let maxVariance = 0
-    let threshold = 0
-
-    for (let i = 0; i < 256; i++) {
-      wB += data[i]
-      if (wB === 0) continue
-
-      wF = total - wB
-      if (wF === 0) break
-
-      sumB += i * data[i]
-      const mB = sumB / wB
-      const mF = (sum - sumB) / wF
-
-      const variance = wB * wF * (mB - mF) * (mB - mF)
-      if (variance > maxVariance) {
-        maxVariance = variance
-        threshold = i
-      }
-    }
-
-    return threshold
-  }
-
-  /**
-   * Sauvola adaptive thresholding
-   */
-  private sauvolaThresholding(image: any, windowSize: number, k: number): any {
-    // Calculate local mean and standard deviation
-    const mean = image.conv(this.createGaussianKernel(windowSize))
-    const variance = image.multiply(image).conv(this.createGaussianKernel(windowSize)).subtract(mean.multiply(mean))
-    const stddev = variance.pow(0.5)
-    
-    // Sauvola threshold: T = mean * (1 + k * (stddev / 128 - 1))
-    const threshold = mean.multiply(
-      stddev.divide(128).subtract(1).multiply(k).add(1)
-    )
-    
-    return image.more(threshold)
-  }
-
-  /**
-   * Niblack adaptive thresholding
-   */
-  private niblackThresholding(image: any, windowSize: number, k: number): any {
-    // Calculate local mean and standard deviation
-    const mean = image.conv(this.createGaussianKernel(windowSize))
-    const variance = image.multiply(image).conv(this.createGaussianKernel(windowSize)).subtract(mean.multiply(mean))
-    const stddev = variance.pow(0.5)
-    
-    // Niblack threshold: T = mean + k * stddev
-    const threshold = mean.add(stddev.multiply(k))
-    
-    return image.more(threshold)
-  }
-
-  /**
-   * Remove small binary noise components
-   */
-  private removeBinaryNoise(image: any, minSize: number): any {
-    // Use connected component analysis to remove small components
-    try {
-      const labels = image.labelregions()
-      const stats = labels.regionShrink('mean')
-      
-      // Filter out small regions
-      let result = image
-      for (let i = 1; i < stats.height; i++) {
-        const area = stats.getpoint(3, i)[0] // Area is in column 3
-        if (area < minSize) {
-          const mask = labels.equal(i)
-          result = result.ifthenelse(0, result, mask)
-        }
-      }
-      
-      return result
-    } catch (error) {
-      console.warn('Binary noise removal failed, returning original:', error)
-      return image
-    }
-  }
-
-  /**
-   * Pixel art scaling algorithms (Scale2x, Scale3x, Scale4x)
-   */
-  private pixelArtScaling(image: any, method: string): any {
-    // For now, use simple nearest neighbor scaling
-    // In a full implementation, these would use the actual Scale2x/3x/4x algorithms
-    const factor = parseInt(method.replace('scale', '').replace('x', ''))
-    return image.resize(factor, { kernel: 'nearest' })
-  }
-
-  /**
-   * Create morphology kernel
-   */
-  private createMorphologyKernel(size: number): number[][] {
-    const kernel: number[][] = []
-    const center = Math.floor(size / 2)
-    
-    for (let y = 0; y < size; y++) {
-      kernel[y] = []
-      for (let x = 0; x < size; x++) {
-        // Create circular kernel
-        const distance = Math.sqrt((x - center) ** 2 + (y - center) ** 2)
-        kernel[y][x] = distance <= center ? 1 : 0
-      }
-    }
-    
-    return kernel
-  }
-
-  /**
-   * Create Gaussian kernel for smoothing
-   */
-  private createGaussianKernel(size: number): number[][] {
-    const kernel: number[][] = []
-    const sigma = size / 3
-    const center = Math.floor(size / 2)
-    let sum = 0
-    
-    for (let y = 0; y < size; y++) {
-      kernel[y] = []
-      for (let x = 0; x < size; x++) {
-        const distance = (x - center) ** 2 + (y - center) ** 2
-        const value = Math.exp(-distance / (2 * sigma ** 2))
-        kernel[y][x] = value
-        sum += value
-      }
-    }
-    
-    // Normalize kernel
-    for (let y = 0; y < size; y++) {
-      for (let x = 0; x < size; x++) {
-        kernel[y][x] /= sum
-      }
-    }
-    
-    return kernel
   }
 
   /**
@@ -487,56 +161,49 @@ export class ProcessingModule {
     }
 
     try {
-      if (this.vips) {
-        // Load and resize image for preview
-        const vipsImage = this.vips.Image.newFromBuffer(new Uint8Array(imageData.data))
-        const scale = Math.min(maxDimension / vipsImage.width, maxDimension / vipsImage.height, 1)
-        const previewImage = scale < 1 ? vipsImage.resize(scale) : vipsImage
-
-        // Process the preview
-        const result = await this.processImageInternal(previewImage, type, parameters)
+      console.log(`Processing preview with type: ${type}, max dimension: ${maxDimension}`)
+      
+      // Calculate preview scale
+      const scale = Math.min(maxDimension / imageData.width, maxDimension / imageData.height, 1)
+      
+      let previewData = imageData
+      
+      // If we need to scale down for preview
+      if (scale < 1) {
+        const previewWidth = Math.round(imageData.width * scale)
+        const previewHeight = Math.round(imageData.height * scale)
         
-        // Convert result back to ArrayBuffer
-        const outputBuffer = result.writeToBuffer('.png')
-        return outputBuffer.buffer.slice(
-          outputBuffer.byteOffset,
-          outputBuffer.byteOffset + outputBuffer.byteLength
+        // Create preview using canvas scaling
+        const canvas = new OffscreenCanvas(imageData.width, imageData.height)
+        const ctx = canvas.getContext('2d')!
+        
+        const canvasImageData = new ImageData(
+          new Uint8ClampedArray(imageData.data),
+          imageData.width,
+          imageData.height
         )
-      } else {
-        // Use canvas fallback for preview
-        const scale = Math.min(maxDimension / imageData.width, maxDimension / imageData.height, 1)
-        const previewData: ImageData = {
+        ctx.putImageData(canvasImageData, 0, 0)
+        
+        const previewCanvas = new OffscreenCanvas(previewWidth, previewHeight)
+        const previewCtx = previewCanvas.getContext('2d')!
+        previewCtx.drawImage(canvas, 0, 0, previewWidth, previewHeight)
+        
+        const previewBlob = await previewCanvas.convertToBlob()
+        const previewArrayBuffer = await previewBlob.arrayBuffer()
+        
+        previewData = {
           ...imageData,
-          width: Math.round(imageData.width * scale),
-          height: Math.round(imageData.height * scale)
+          data: previewArrayBuffer,
+          width: previewWidth,
+          height: previewHeight
         }
-        return await this.processWithCanvas(previewData, type, parameters)
       }
+
+      // Process the preview data
+      return await this.processImage(previewData, type, parameters)
     } catch (error) {
       console.error('Preview processing error:', error)
       throw error
-    }
-  }
-
-  /**
-   * Internal processing method (without initialization check)
-   */
-  private async processImageInternal(
-    vipsImage: any,
-    type: ProcessingType,
-    parameters: ProcessingParameters
-  ): Promise<any> {
-    switch (type) {
-      case 'binarization':
-        return this.processBinarization(vipsImage, parameters.binarization!)
-      case 'morphology':
-        return this.processMorphology(vipsImage, parameters.morphology!)
-      case 'noise-reduction':
-        return this.processNoiseReduction(vipsImage, parameters.noise!)
-      case 'scaling':
-        return this.processScaling(vipsImage, parameters.scaling!)
-      default:
-        throw new Error(`Unsupported processing type: ${type}`)
     }
   }
 
@@ -547,9 +214,112 @@ export class ProcessingModule {
     return {
       'binarization': ['otsu', 'sauvola', 'niblack'],
       'morphology': ['opening', 'closing', 'dilation', 'erosion'],
-      'noise-reduction': ['median', 'binary-noise-removal'],
-      'scaling': ['scale2x', 'scale3x', 'scale4x', 'nearest', 'bilinear']
+      'noise-reduction': ['median', 'binary-noise-removal', 'gaussian', 'bilateral'],
+      'scaling': ['scale2x', 'scale3x', 'scale4x', 'nearest', 'bilinear', 'bicubic', 'lanczos']
     }
+  }
+
+  /**
+   * Validate processing parameters
+   */
+  validateParameters(type: ProcessingType, parameters: ProcessingParameters): { isValid: boolean; errors: string[] } {
+    switch (type) {
+      case 'binarization':
+        return parameters.binarization 
+          ? { isValid: true, errors: [] }
+          : { isValid: false, errors: ['Binarization parameters required'] }
+      
+      case 'morphology':
+        return parameters.morphology 
+          ? MorphologyProcessor.validateParameters(parameters.morphology)
+          : { isValid: false, errors: ['Morphology parameters required'] }
+      
+      case 'noise-reduction':
+        return parameters.noise 
+          ? NoiseReductionProcessor.validateParameters(parameters.noise)
+          : { isValid: false, errors: ['Noise reduction parameters required'] }
+      
+      case 'scaling':
+        return parameters.scaling 
+          ? ScalingProcessor.validateParameters(parameters.scaling)
+          : { isValid: false, errors: ['Scaling parameters required'] }
+      
+      default:
+        return { isValid: false, errors: [`Unknown processing type: ${type}`] }
+    }
+  }
+
+  /**
+   * Get parameter constraints for a processing type
+   */
+  getParameterConstraints(type: ProcessingType) {
+    switch (type) {
+      case 'binarization':
+        return BinarizationProcessor.getParameterConstraints()
+      case 'morphology':
+        return MorphologyProcessor.getParameterConstraints()
+      case 'noise-reduction':
+        return NoiseReductionProcessor.getParameterConstraints()
+      case 'scaling':
+        return ScalingProcessor.getParameterConstraints()
+      default:
+        return {}
+    }
+  }
+
+  /**
+   * Get recommended parameters for specific use cases
+   */
+  getRecommendedParameters(type: ProcessingType, useCase: string) {
+    switch (type) {
+      case 'binarization':
+        return BinarizationProcessor.getRecommendedParameters(useCase)
+      case 'morphology':
+        return MorphologyProcessor.getRecommendedParameters(useCase)
+      case 'noise-reduction':
+        return NoiseReductionProcessor.getRecommendedParameters(useCase)
+      case 'scaling':
+        return ScalingProcessor.getRecommendedParameters(useCase)
+      default:
+        return {}
+    }
+  }
+
+  /**
+   * Auto-detect best processing parameters for image
+   */
+  autoDetectParameters(imageData: ImageData, type: ProcessingType): any {
+    switch (type) {
+      case 'noise-reduction':
+        const noiseType = NoiseReductionProcessor.detectNoiseType(imageData)
+        return NoiseReductionProcessor.getRecommendedParameters(noiseType)
+      
+      case 'scaling':
+        // For scaling, we need a target factor - default to 2x
+        return ScalingProcessor.autoDetectBestMethod(imageData, 2)
+      
+      default:
+        return this.getRecommendedParameters(type, 'default')
+    }
+  }
+
+  /**
+   * Estimate processing time (rough heuristic)
+   */
+  estimateProcessingTime(imageData: ImageData, type: ProcessingType): number {
+    const pixelCount = imageData.width * imageData.height
+    const baseTime = pixelCount / 1000000 // Base time in seconds per megapixel
+    
+    const complexityMultipliers = {
+      'binarization': 1,
+      'morphology': 2,
+      'noise-reduction': 3,
+      'scaling': 1.5
+    }
+    
+    const wasmSpeedup = this.vips ? 0.3 : 1 // WASM is ~3x faster
+    
+    return baseTime * complexityMultipliers[type] * wasmSpeedup
   }
 
   /**
@@ -564,5 +334,28 @@ export class ProcessingModule {
    */
   hasWasmSupport(): boolean {
     return this.vips !== null
+  }
+
+  /**
+   * Get module status information
+   */
+  getStatus() {
+    return {
+      initialized: this.isInitialized,
+      hasWasm: this.hasWasmSupport(),
+      availableAlgorithms: this.getAvailableAlgorithms(),
+      version: '1.0.0'
+    }
+  }
+
+  /**
+   * Cleanup resources
+   */
+  destroy() {
+    if (this.vips) {
+      // VIPS cleanup if needed
+      this.vips = null
+    }
+    this.isInitialized = false
   }
 }

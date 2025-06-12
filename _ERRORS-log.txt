@@ -1,0 +1,36 @@
+[2:19:18 AM] % pnpm build
+
+> engraving-processor-pro@1.0.0 build /Users/erst/Library/CloudStorage/Dropbox/Websites/x
+> npm run typecheck && npm run lint && vite build
+
+
+> engraving-processor-pro@1.0.0 typecheck
+> vue-tsc --noEmit
+
+src/workers/imageProcessingWorker.ts:191:47 - error TS2339: Property 'message' does not exist on type 'string | Event'.
+  Property 'message' does not exist on type 'string'.
+
+191   console.error('Worker script error:', event.message, event.filename, event.lineno)
+                                                  ~~~~~~~
+
+src/workers/imageProcessingWorker.ts:191:62 - error TS2339: Property 'filename' does not exist on type 'string | Event'.
+  Property 'filename' does not exist on type 'string'.
+
+191   console.error('Worker script error:', event.message, event.filename, event.lineno)
+                                                                 ~~~~~~~~
+
+src/workers/imageProcessingWorker.ts:191:78 - error TS2339: Property 'lineno' does not exist on type 'string | Event'.
+  Property 'lineno' does not exist on type 'string'.
+
+191   console.error('Worker script error:', event.message, event.filename, event.lineno)
+                                                                                 ~~~~~~
+
+
+Found 3 errors in the same file, starting at: src/workers/imageProcessingWorker.ts:191
+
+ ELIFECYCLE  Command failed with exit code 2.
+[2:19:35 AM] % 
+
+
+
+

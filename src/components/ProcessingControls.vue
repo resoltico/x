@@ -253,6 +253,8 @@
   import { ref, computed, watch, onMounted } from 'vue'
   import { useAppStore } from '@/stores/app'
   import { WorkerOrchestratorModule } from '@/modules/WorkerOrchestratorModule'
+  import { ProcessingModule } from '@/modules/ProcessingModule'
+  import { PROCESSING_PRESETS } from '@/modules/processing/presets'
   import type { 
     ProcessingType, 
     BinarizationParams, 
@@ -265,8 +267,9 @@
   // Store
   const appStore = useAppStore()
 
-  // Worker orchestrator
+  // Worker orchestrator and processing module
   let workerOrchestrator: WorkerOrchestratorModule | null = null
+  let processingModule: ProcessingModule | null = null
 
   // Refs
   const selectedType = ref<ProcessingType | ''>('')
@@ -329,75 +332,89 @@
   }
 
   const processPreview = async () => {
-    if (!canProcess.value || !appStore.currentImage || !workerOrchestrator) return
+    if (!canProcess.value || !appStore.currentImage || !workerOrchestrator) {
+      console.warn('Cannot process: missing requirements')
+      return
+    }
 
     try {
+      console.log('Starting preview processing...')
       const parameters = buildProcessingParameters()
+      console.log('Parameters:', parameters)
+      
       const taskId = await workerOrchestrator.submitTask(
         appStore.currentImage,
         selectedType.value as ProcessingType,
         parameters
       )
       
-      console.log('Preview processing started:', taskId)
+      console.log('Preview processing task submitted:', taskId)
+      
+      // Add task to store
+      const task = appStore.addTask(selectedType.value as ProcessingType, parameters)
+      console.log('Task added to store:', task.id)
+      
     } catch (error) {
       console.error('Failed to start preview processing:', error)
     }
   }
 
   const processFullSize = async () => {
-    if (!canProcess.value || !appStore.currentImage || !workerOrchestrator) return
+    if (!canProcess.value || !appStore.currentImage || !workerOrchestrator) {
+      console.warn('Cannot process: missing requirements')
+      return
+    }
 
     try {
+      console.log('Starting full-size processing...')
       const parameters = buildProcessingParameters()
+      console.log('Parameters:', parameters)
+      
       const taskId = await workerOrchestrator.submitTask(
         appStore.currentImage,
         selectedType.value as ProcessingType,
         parameters
       )
       
-      console.log('Full-size processing started:', taskId)
+      console.log('Full-size processing task submitted:', taskId)
+      
+      // Add task to store
+      const task = appStore.addTask(selectedType.value as ProcessingType, parameters)
+      console.log('Task added to store:', task.id)
+      
     } catch (error) {
       console.error('Failed to start full-size processing:', error)
     }
   }
 
   const applyPreset = (presetName: string) => {
-    switch (presetName) {
-      case 'document':
-        selectedType.value = 'binarization'
-        binarizationParams.value = {
-          method: 'sauvola',
-          windowSize: 15,
-          k: 0.2,
-          threshold: 128
+    const preset = PROCESSING_PRESETS[presetName]
+    if (!preset) {
+      console.warn('Unknown preset:', presetName)
+      return
+    }
+
+    selectedType.value = preset.type
+    
+    switch (preset.type) {
+      case 'binarization':
+        if (preset.parameters.binarization) {
+          binarizationParams.value = { ...preset.parameters.binarization }
         }
         break
-
-      case 'engraving':
-        selectedType.value = 'binarization'
-        binarizationParams.value = {
-          method: 'otsu',
-          windowSize: 15,
-          k: 0.2,
-          threshold: 128
+      case 'morphology':
+        if (preset.parameters.morphology) {
+          morphologyParams.value = { ...preset.parameters.morphology }
         }
         break
-
-      case 'pixel-art':
-        selectedType.value = 'scaling'
-        scalingParams.value = {
-          method: 'scale2x',
-          factor: 2
+      case 'noise-reduction':
+        if (preset.parameters.noise) {
+          noiseParams.value = { ...preset.parameters.noise }
         }
         break
-
-      case 'noise-clean':
-        selectedType.value = 'noise-reduction'
-        noiseParams.value = {
-          method: 'median',
-          kernelSize: 3,
-          threshold: 50
+      case 'scaling':
+        if (preset.parameters.scaling) {
+          scalingParams.value = { ...preset.parameters.scaling }
         }
         break
     }
@@ -425,15 +442,24 @@
   // Initialize worker orchestrator and set up callbacks
   const initializeWorkers = async () => {
     try {
+      console.log('Initializing workers...')
       workerOrchestrator = WorkerOrchestratorModule.getInstance()
       await workerOrchestrator.initialize()
+      console.log('Workers initialized successfully')
+      
+      // Initialize processing module
+      processingModule = ProcessingModule.getInstance()
+      await processingModule.initialize()
+      console.log('Processing module initialized')
       
       // Set up task update callback
       workerOrchestrator.setTaskUpdateCallback((task) => {
+        console.log('Task update received:', task)
         appStore.updateTask(task.id, task)
         
         // If task completed successfully, update processed image
         if (task.status === 'completed' && task.result) {
+          console.log('Task completed, updating processed image')
           // Convert ArrayBuffer back to ImageData format
           const processedImageData = {
             data: task.result,
@@ -462,6 +488,7 @@
 
   // Initialize on component mount
   onMounted(() => {
+    console.log('ProcessingControls component mounted, initializing...')
     initializeWorkers()
   })
 </script>

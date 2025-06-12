@@ -18,6 +18,7 @@ export class WorkerOrchestratorModule {
   private activeTasksMap = new Map<string, { worker: Worker; task: ProcessingTask }>()
   private workerCount: number
   private onTaskUpdate?: (task: ProcessingTask) => void
+  private isInitialized = false
 
   constructor(workerCount: number = navigator.hardwareConcurrency || 4) {
     this.workerCount = Math.min(workerCount, 8) // Cap at 8 workers
@@ -34,27 +35,39 @@ export class WorkerOrchestratorModule {
    * Initialize workers
    */
   async initialize(): Promise<void> {
-    if (this.workers.length > 0) return
+    if (this.isInitialized) return
 
     try {
+      console.log(`Initializing ${this.workerCount} workers...`)
+      
       for (let i = 0; i < this.workerCount; i++) {
-        // Use dynamic import to ensure proper module resolution
-        const workerUrl = new URL('@/workers/imageProcessingWorker.ts', import.meta.url)
-        const worker = new Worker(workerUrl, { 
-          type: 'module',
-          name: `image-worker-${i}`
-        })
-        
-        worker.onmessage = this.handleWorkerMessage.bind(this)
-        worker.onerror = this.handleWorkerError.bind(this)
-        
-        this.workers.push(worker)
-        this.availableWorkers.push(worker)
+        try {
+          // Create worker using the worker file path
+          const worker = new Worker('/src/workers/imageProcessingWorker.ts', { 
+            type: 'module',
+            name: `image-worker-${i}`
+          })
+          
+          worker.onmessage = this.handleWorkerMessage.bind(this)
+          worker.onerror = this.handleWorkerError.bind(this)
+          
+          this.workers.push(worker)
+          this.availableWorkers.push(worker)
+          
+          console.log(`Worker ${i} initialized successfully`)
+        } catch (workerError) {
+          console.error(`Failed to create worker ${i}:`, workerError)
+        }
       }
       
-      console.log(`Initialized ${this.workerCount} image processing workers`)
+      if (this.workers.length === 0) {
+        throw new Error('No workers could be initialized')
+      }
+      
+      this.isInitialized = true
+      console.log(`Successfully initialized ${this.workers.length} out of ${this.workerCount} requested workers`)
     } catch (error) {
-      console.error('Failed to initialize workers:', error)
+      console.error('Failed to initialize worker pool:', error)
       throw new Error('Failed to initialize worker pool')
     }
   }
@@ -74,6 +87,10 @@ export class WorkerOrchestratorModule {
     type: ProcessingType,
     parameters: ProcessingParameters
   ): Promise<string> {
+    if (!this.isInitialized) {
+      throw new Error('Worker orchestrator not initialized')
+    }
+
     const task: ProcessingTask = {
       id: this.generateTaskId(),
       type,
@@ -83,9 +100,12 @@ export class WorkerOrchestratorModule {
       createdAt: new Date()
     }
 
+    console.log('Submitting task:', task.id, 'Type:', type)
     this.taskQueue.push(task)
     this.notifyTaskUpdate(task)
-    this.processQueue(imageData)
+    
+    // Process the queue with the image data
+    await this.processQueue(imageData)
     
     return task.id
   }
@@ -94,6 +114,8 @@ export class WorkerOrchestratorModule {
    * Cancel a task
    */
   cancelTask(taskId: string): boolean {
+    console.log('Cancelling task:', taskId)
+    
     // Remove from queue if pending
     const queueIndex = this.taskQueue.findIndex(task => task.id === taskId)
     if (queueIndex !== -1) {
@@ -150,12 +172,15 @@ export class WorkerOrchestratorModule {
   /**
    * Process the task queue
    */
-  private processQueue(imageData?: ImageData) {
+  private async processQueue(imageData?: ImageData) {
+    console.log(`Processing queue: ${this.taskQueue.length} queued, ${this.availableWorkers.length} available workers`)
+    
     while (this.taskQueue.length > 0 && this.availableWorkers.length > 0) {
       const task = this.taskQueue.shift()!
       const worker = this.availableWorkers.shift()!
       
-      this.executeTask(worker, task, imageData)
+      console.log(`Assigning task ${task.id} to worker`)
+      await this.executeTask(worker, task, imageData)
     }
   }
 
@@ -164,6 +189,8 @@ export class WorkerOrchestratorModule {
    */
   private async executeTask(worker: Worker, task: ProcessingTask, imageData?: ImageData) {
     try {
+      console.log(`Executing task ${task.id} of type ${task.type}`)
+      
       task.status = 'processing'
       this.activeTasksMap.set(task.id, { worker, task })
       this.notifyTaskUpdate(task)
@@ -179,11 +206,13 @@ export class WorkerOrchestratorModule {
         }
       }
 
+      console.log('Sending message to worker:', message)
       worker.postMessage(message)
     } catch (error) {
       console.error('Failed to execute task:', error)
       task.status = 'failed'
       task.error = error instanceof Error ? error.message : 'Unknown error'
+      task.completedAt = new Date()
       this.activeTasksMap.delete(task.id)
       this.availableWorkers.push(worker)
       this.notifyTaskUpdate(task)
@@ -196,6 +225,8 @@ export class WorkerOrchestratorModule {
    */
   private handleWorkerMessage(event: MessageEvent<WorkerResponse>) {
     const { id, type, payload } = event.data
+    console.log('Received worker message:', { id, type, payload: payload ? 'present' : 'empty' })
+    
     const activeTask = this.activeTasksMap.get(id)
     
     if (!activeTask) {
@@ -207,11 +238,13 @@ export class WorkerOrchestratorModule {
 
     switch (type) {
       case 'progress':
+        console.log(`Task ${id} progress: ${payload.progress}%`)
         task.progress = payload.progress
         this.notifyTaskUpdate(task)
         break
 
       case 'result':
+        console.log(`Task ${id} completed successfully`)
         task.status = 'completed'
         task.progress = 100
         task.result = payload.result
@@ -223,6 +256,7 @@ export class WorkerOrchestratorModule {
         break
 
       case 'error':
+        console.error(`Task ${id} failed:`, payload.error)
         task.status = 'failed'
         task.error = payload.error
         task.completedAt = new Date()
@@ -238,11 +272,12 @@ export class WorkerOrchestratorModule {
    * Handle worker errors
    */
   private handleWorkerError(event: ErrorEvent) {
-    console.error('Worker error:', event.message)
+    console.error('Worker error:', event.message, event.filename, event.lineno)
     
     // Find and handle any tasks using the failed worker
     for (const [taskId, { worker, task }] of this.activeTasksMap.entries()) {
       if (worker === event.target) {
+        console.log(`Failing task ${taskId} due to worker error`)
         task.status = 'failed'
         task.error = 'Worker error: ' + (event.message || 'Unknown worker error')
         task.completedAt = new Date()
@@ -261,6 +296,8 @@ export class WorkerOrchestratorModule {
    */
   private replaceFailedWorker(failedWorker: Worker) {
     try {
+      console.log('Replacing failed worker')
+      
       // Remove from available workers
       const availableIndex = this.availableWorkers.indexOf(failedWorker)
       if (availableIndex !== -1) {
@@ -273,23 +310,30 @@ export class WorkerOrchestratorModule {
         this.workers.splice(workerIndex, 1)
         
         // Create replacement worker
-        const workerUrl = new URL('@/workers/imageProcessingWorker.ts', import.meta.url)
-        const newWorker = new Worker(workerUrl, { 
-          type: 'module',
-          name: `image-worker-replacement-${Date.now()}`
-        })
-        
-        newWorker.onmessage = this.handleWorkerMessage.bind(this)
-        newWorker.onerror = this.handleWorkerError.bind(this)
-        
-        this.workers.push(newWorker)
-        this.availableWorkers.push(newWorker)
-        
-        console.log('Replaced failed worker')
+        try {
+          const newWorker = new Worker('/src/workers/imageProcessingWorker.ts', { 
+            type: 'module',
+            name: `image-worker-replacement-${Date.now()}`
+          })
+          
+          newWorker.onmessage = this.handleWorkerMessage.bind(this)
+          newWorker.onerror = this.handleWorkerError.bind(this)
+          
+          this.workers.push(newWorker)
+          this.availableWorkers.push(newWorker)
+          
+          console.log('Successfully replaced failed worker')
+        } catch (createError) {
+          console.error('Failed to create replacement worker:', createError)
+        }
       }
       
       // Terminate the failed worker
-      failedWorker.terminate()
+      try {
+        failedWorker.terminate()
+      } catch (terminateError) {
+        console.warn('Error terminating failed worker:', terminateError)
+      }
     } catch (error) {
       console.error('Failed to replace worker:', error)
     }
@@ -320,7 +364,8 @@ export class WorkerOrchestratorModule {
       availableWorkers: this.availableWorkers.length,
       activeWorkers: this.workers.length - this.availableWorkers.length,
       queuedTasks: this.taskQueue.length,
-      activeTasks: this.activeTasksMap.size
+      activeTasks: this.activeTasksMap.size,
+      initialized: this.isInitialized
     }
   }
 
@@ -333,22 +378,100 @@ export class WorkerOrchestratorModule {
   }
 
   /**
+   * Get performance metrics
+   */
+  getPerformanceMetrics() {
+    const completedTasks = Array.from(this.activeTasksMap.values())
+      .map(({ task }) => task)
+      .filter(task => task.status === 'completed' && task.completedAt)
+
+    if (completedTasks.length === 0) {
+      return {
+        averageProcessingTime: 0,
+        totalTasksCompleted: 0,
+        successRate: 0
+      }
+    }
+
+    const totalTime = completedTasks.reduce((sum, task) => {
+      const processingTime = task.completedAt!.getTime() - task.createdAt.getTime()
+      return sum + processingTime
+    }, 0)
+
+    return {
+      averageProcessingTime: totalTime / completedTasks.length,
+      totalTasksCompleted: completedTasks.length,
+      successRate: 100 // All completed tasks are successful by definition
+    }
+  }
+
+  /**
+   * Check if orchestrator is ready
+   */
+  isReady(): boolean {
+    return this.isInitialized && this.workers.length > 0
+  }
+
+  /**
+   * Wait for orchestrator to be ready
+   */
+  async waitForReady(timeout: number = 5000): Promise<boolean> {
+    const startTime = Date.now()
+    
+    while (!this.isReady() && (Date.now() - startTime) < timeout) {
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
+    
+    return this.isReady()
+  }
+
+  /**
+   * Pause processing (don't assign new tasks to workers)
+   */
+  pause() {
+    // Move all available workers to a paused state
+    // This prevents new tasks from being assigned
+    this.availableWorkers = []
+  }
+
+  /**
+   * Resume processing
+   */
+  resume() {
+    // Restore available workers and process queue
+    this.availableWorkers = this.workers.filter(worker => 
+      !Array.from(this.activeTasksMap.values()).some(({ worker: activeWorker }) => activeWorker === worker)
+    )
+    this.processQueue()
+  }
+
+  /**
    * Destroy all workers and clean up
    */
   destroy() {
+    console.log('Destroying worker orchestrator')
+    
     // Cancel all active tasks
     for (const [taskId] of this.activeTasksMap) {
       this.cancelTask(taskId)
     }
 
     // Terminate all workers
-    this.workers.forEach(worker => worker.terminate())
+    this.workers.forEach((worker, index) => {
+      try {
+        worker.terminate()
+        console.log(`Terminated worker ${index}`)
+      } catch (error) {
+        console.warn(`Error terminating worker ${index}:`, error)
+      }
+    })
     
-    // Clear arrays
+    // Clear arrays and maps
     this.workers = []
     this.availableWorkers = []
     this.taskQueue = []
     this.activeTasksMap.clear()
+    this.isInitialized = false
     
     console.log('Worker orchestrator destroyed')
   }
