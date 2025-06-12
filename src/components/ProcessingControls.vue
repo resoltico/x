@@ -1,6 +1,6 @@
 <template>
   <div class="card">
-    <h2 class="text-xl font-semibold text-gray-800 mb-4">Processing Controls</h2>
+    <h2 class="text-xl font-semibold text-slate-800 mb-4">Processing Controls</h2>
 
     <!-- Algorithm Selection -->
     <div class="space-y-6">
@@ -183,7 +183,7 @@
       </div>
 
       <!-- Action Buttons -->
-      <div class="flex space-x-3 pt-4 border-t border-gray-200">
+      <div class="flex space-x-3 pt-4 border-t border-slate-200">
         <button
           @click="processPreview"
           :disabled="!canProcess || isProcessing"
@@ -206,8 +206,8 @@
       </div>
 
       <!-- Quick Presets -->
-      <div class="pt-4 border-t border-gray-200">
-        <h3 class="text-sm font-medium text-gray-700 mb-3">Quick Presets</h3>
+      <div class="pt-4 border-t border-slate-200">
+        <h3 class="text-sm font-medium text-slate-700 mb-3">Quick Presets</h3>
         <div class="grid grid-cols-2 gap-2">
           <button
             @click="applyPreset('document')"

@@ -1,7 +1,7 @@
 {
   "name": "engraving-processor-pro",
   "version": "1.0.0",
-  "description": "AI-driven web application for processing historical engravings and document scans",
+  "description": "Application for processing historical engravings and document scans",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -21,10 +21,7 @@
   "devDependencies": {
     "vite": "^6.3.0",
     "@vitejs/plugin-vue": "^5.2.0",
-    "@tailwindcss/postcss": "^4.1.0",
     "tailwindcss": "^4.1.0",
-    "postcss": "^8.5.0",
-    "autoprefixer": "^10.4.20",
     "vite-plugin-wasm": "^3.4.0",
     "vite-plugin-top-level-await": "^1.5.0",
     "typescript": "^5.8.0",

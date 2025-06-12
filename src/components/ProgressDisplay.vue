@@ -1,7 +1,7 @@
 <template>
   <div class="card">
     <div class="flex items-center justify-between mb-4">
-      <h2 class="text-xl font-semibold text-gray-800">Processing Status</h2>
+      <h2 class="text-xl font-semibold text-slate-800">Processing Status</h2>
       
       <button
         v-if="completedTasks.length > 0"
@@ -45,26 +45,26 @@
 
     <!-- Task Queue -->
     <div v-if="queuedTasks.length > 0" class="mb-6">
-      <h3 class="text-sm font-medium text-gray-700 mb-3">Queued Tasks ({{ queuedTasks.length }})</h3>
+      <h3 class="text-sm font-medium text-slate-700 mb-3">Queued Tasks ({{ queuedTasks.length }})</h3>
       <div class="space-y-2">
         <div
           v-for="task in queuedTasks"
           :key="task.id"
-          class="bg-gray-50 border border-gray-200 rounded-lg p-3"
+          class="bg-slate-50 border border-slate-200 rounded-lg p-3"
         >
           <div class="flex items-center justify-between">
             <div class="flex items-center">
-              <div class="w-2 h-2 bg-gray-400 rounded-full mr-2"></div>
-              <span class="text-sm font-medium text-gray-700">{{ formatTaskType(task.type) }}</span>
+              <div class="w-2 h-2 bg-slate-400 rounded-full mr-2"></div>
+              <span class="text-sm font-medium text-slate-700">{{ formatTaskType(task.type) }}</span>
             </div>
             <button
               @click="cancelTask(task.id)"
-              class="text-gray-500 hover:text-gray-700 text-sm"
+              class="text-slate-500 hover:text-slate-700 text-sm"
             >
               Cancel
             </button>
           </div>
-          <div class="text-xs text-gray-500 mt-1">
+          <div class="text-xs text-slate-500 mt-1">
             Queued {{ formatDuration(Date.now() - task.createdAt.getTime()) }} ago
           </div>
         </div>
@@ -73,7 +73,7 @@
 
     <!-- Completed Tasks -->
     <div v-if="completedTasks.length > 0" class="mb-6">
-      <h3 class="text-sm font-medium text-gray-700 mb-3">Recent Completed ({{ completedTasks.length }})</h3>
+      <h3 class="text-sm font-medium text-slate-700 mb-3">Recent Completed ({{ completedTasks.length }})</h3>
       <div class="space-y-2 max-h-64 overflow-y-auto">
         <div
           v-for="task in completedTasks.slice(-5)"
@@ -90,7 +90,7 @@
               <span class="text-sm font-medium">{{ formatTaskType(task.type) }}</span>
             </div>
             <div class="flex items-center space-x-2">
-              <span class="text-xs text-gray-500">
+              <span class="text-xs text-slate-500">
                 {{ formatDuration(task.completedAt!.getTime() - task.createdAt.getTime()) }}
               </span>
               <button
@@ -105,20 +105,20 @@
           </div>
           
           <!-- Task Details -->
-          <div class="mt-2 text-xs text-gray-600">
+          <div class="mt-2 text-xs text-slate-600">
             <div v-if="task.status === 'completed'" class="text-green-700">
               ✅ Completed successfully
             </div>
             <div v-else-if="task.status === 'failed'" class="text-red-700">
               ❌ {{ task.error || 'Processing failed' }}
             </div>
-            <div v-else-if="task.status === 'cancelled'" class="text-gray-600">
+            <div v-else-if="task.status === 'cancelled'" class="text-slate-600">
               🚫 Cancelled by user
             </div>
           </div>
           
           <!-- Parameters Summary -->
-          <div class="mt-1 text-xs text-gray-500">
+          <div class="mt-1 text-xs text-slate-500">
             {{ getParametersSummary(task) }}
           </div>
         </div>
@@ -126,23 +126,23 @@
     </div>
 
     <!-- Worker Status -->
-    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
-      <h3 class="text-sm font-medium text-gray-700 mb-3">System Status</h3>
+    <div class="bg-slate-50 border border-slate-200 rounded-lg p-4">
+      <h3 class="text-sm font-medium text-slate-700 mb-3">System Status</h3>
       <div class="grid grid-cols-2 gap-4 text-sm">
         <div>
-          <span class="text-gray-500">Active Workers:</span>
+          <span class="text-slate-500">Active Workers:</span>
           <span class="ml-2 font-medium">{{ workerStatus.activeWorkers }}</span>
         </div>
         <div>
-          <span class="text-gray-500">Available:</span>
+          <span class="text-slate-500">Available:</span>
           <span class="ml-2 font-medium">{{ workerStatus.availableWorkers }}</span>
         </div>
         <div>
-          <span class="text-gray-500">Queue:</span>
+          <span class="text-slate-500">Queue:</span>
           <span class="ml-2 font-medium">{{ workerStatus.queuedTasks }}</span>
         </div>
         <div>
-          <span class="text-gray-500">Memory:</span>
+          <span class="text-slate-500">Memory:</span>
           <span class="ml-2 font-medium">{{ formatMemory() }}</span>
         </div>
       </div>
@@ -150,11 +150,11 @@
 
     <!-- Empty State -->
     <div v-if="!hasAnyTasks" class="text-center py-8">
-      <svg class="mx-auto h-12 w-12 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg class="mx-auto h-12 w-12 text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
       </svg>
-      <p class="text-gray-500">No processing tasks</p>
-      <p class="text-gray-400 text-sm mt-1">Upload an image and start processing to see progress here</p>
+      <p class="text-slate-500">No processing tasks</p>
+      <p class="text-slate-400 text-sm mt-1">Upload an image and start processing to see progress here</p>
     </div>
   </div>
 </template>
@@ -236,7 +236,7 @@
       case 'failed':
         return 'bg-red-50 border-red-200'
       case 'cancelled':
-        return 'bg-gray-50 border-gray-200'
+        return 'bg-slate-50 border-slate-200'
       default:
         return 'bg-blue-50 border-blue-200'
     }
@@ -249,7 +249,7 @@
       case 'failed':
         return 'bg-red-500'
       case 'cancelled':
-        return 'bg-gray-500'
+        return 'bg-slate-500'
       default:
         return 'bg-blue-500'
     }

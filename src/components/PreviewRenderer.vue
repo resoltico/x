@@ -1,7 +1,7 @@
 <template>
   <div class="card">
     <div class="flex items-center justify-between mb-4">
-      <h2 class="text-xl font-semibold text-gray-800">Preview</h2>
+      <h2 class="text-xl font-semibold text-slate-800">Preview</h2>
       
       <!-- View Controls -->
       <div class="flex items-center space-x-2">
@@ -13,10 +13,10 @@
           Show {{ canvasState.showOriginal ? 'Processed' : 'Original' }}
         </button>
         
-        <div class="flex items-center space-x-1 border border-gray-300 rounded-lg p-1">
+        <div class="flex items-center space-x-1 border border-slate-300 rounded-lg p-1">
           <button
             @click="fitToCanvas"
-            class="p-1 hover:bg-gray-100 rounded"
+            class="p-1 hover:bg-slate-100 rounded"
             title="Fit to view"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -26,7 +26,7 @@
           
           <button
             @click="zoomToActualSize"
-            class="p-1 hover:bg-gray-100 rounded"
+            class="p-1 hover:bg-slate-100 rounded"
             title="Actual size (100%)"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -36,7 +36,7 @@
           
           <button
             @click="resetView"
-            class="p-1 hover:bg-gray-100 rounded"
+            class="p-1 hover:bg-slate-100 rounded"
             title="Reset view"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -48,7 +48,7 @@
     </div>
 
     <!-- Canvas Container -->
-    <div class="relative bg-gray-100 rounded-lg overflow-hidden" style="height: 500px;">
+    <div class="relative bg-slate-100 rounded-lg overflow-hidden" style="height: 500px;">
       <canvas
         ref="canvas"
         class="w-full h-full cursor-grab active:cursor-grabbing"
@@ -68,11 +68,11 @@
         class="absolute inset-0 flex items-center justify-center"
       >
         <div class="text-center">
-          <svg class="mx-auto h-16 w-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="mx-auto h-16 w-16 text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-          <p class="text-gray-500 text-lg">No image loaded</p>
-          <p class="text-gray-400 text-sm mt-1">Upload an image to see preview</p>
+          <p class="text-slate-500 text-lg">No image loaded</p>
+          <p class="text-slate-400 text-sm mt-1">Upload an image to see preview</p>
         </div>
       </div>
 
@@ -90,7 +90,7 @@
     </div>
 
     <!-- Zoom Info -->
-    <div v-if="hasImage" class="mt-4 flex items-center justify-between text-sm text-gray-600">
+    <div v-if="hasImage" class="mt-4 flex items-center justify-between text-sm text-slate-600">
       <div class="flex items-center space-x-4">
         <span>Zoom: {{ Math.round(canvasState.zoom * 100) }}%</span>
         <span>{{ currentImage?.width }}×{{ currentImage?.height }}px</span>
@@ -107,9 +107,9 @@
     </div>
 
     <!-- Export Options -->
-    <div v-if="hasProcessedImage" class="mt-4 pt-4 border-t border-gray-200">
+    <div v-if="hasProcessedImage" class="mt-4 pt-4 border-t border-slate-200">
       <div class="flex items-center justify-between">
-        <span class="text-sm font-medium text-gray-700">Export Options</span>
+        <span class="text-sm font-medium text-slate-700">Export Options</span>
         <div class="flex space-x-2">
           <button
             @click="downloadProcessed"

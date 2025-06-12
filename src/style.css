@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 @layer base {
   html {
@@ -8,7 +6,7 @@
   }
   
   body {
-    @apply text-gray-900 bg-gray-50;
+    @apply text-slate-900 bg-slate-50;
   }
 }
 
@@ -18,11 +16,11 @@
   }
   
   .btn-primary {
-    @apply bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
+    @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500;
   }
   
   .btn-secondary {
-    @apply bg-secondary-200 text-secondary-800 hover:bg-secondary-300 focus:ring-secondary-500;
+    @apply bg-slate-200 text-slate-800 hover:bg-slate-300 focus:ring-slate-500;
   }
   
   .btn-danger {
@@ -30,27 +28,27 @@
   }
   
   .card {
-    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6;
+    @apply bg-white rounded-lg shadow-sm border border-slate-200 p-6;
   }
   
   .input {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+    @apply w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
   }
   
   .label {
-    @apply block text-sm font-medium text-gray-700 mb-2;
+    @apply block text-sm font-medium text-slate-700 mb-2;
   }
   
   .slider {
-    @apply w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer;
+    @apply w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer;
   }
   
   .slider::-webkit-slider-thumb {
-    @apply appearance-none w-4 h-4 bg-primary-600 rounded-full cursor-pointer;
+    @apply appearance-none w-4 h-4 bg-blue-600 rounded-full cursor-pointer;
   }
   
   .slider::-moz-range-thumb {
-    @apply w-4 h-4 bg-primary-600 rounded-full cursor-pointer border-0;
+    @apply w-4 h-4 bg-blue-600 rounded-full cursor-pointer border-0;
   }
 }
 
@@ -60,11 +58,11 @@
   }
   
   .drop-zone {
-    @apply border-2 border-dashed border-gray-300 rounded-lg p-8 text-center transition-colors;
+    @apply border-2 border-dashed border-slate-300 rounded-lg p-8 text-center transition-colors;
   }
   
   .drop-zone.drag-over {
-    @apply border-primary-500 bg-primary-50;
+    @apply border-blue-500 bg-blue-50;
   }
   
   .processing-overlay {

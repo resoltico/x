@@ -1,6 +1,6 @@
 <template>
   <div class="card">
-    <h2 class="text-xl font-semibold text-gray-800 mb-4">Image Input</h2>
+    <h2 class="text-xl font-semibold text-slate-800 mb-4">Image Input</h2>
     
     <!-- Drop Zone -->
     <div
@@ -15,7 +15,7 @@
     >
       <div class="text-center">
         <svg
-          class="mx-auto h-12 w-12 text-gray-400 mb-4"
+          class="mx-auto h-12 w-12 text-slate-400 mb-4"
           stroke="currentColor"
           fill="none"
           viewBox="0 0 48 48"
@@ -29,20 +29,20 @@
         </svg>
         
         <div v-if="!isLoading">
-          <p class="text-lg text-gray-600 mb-2">
+          <p class="text-lg text-slate-600 mb-2">
             Drop your image here, or 
-            <span class="text-primary-600 font-medium cursor-pointer hover:text-primary-700">
+            <span class="text-blue-600 font-medium cursor-pointer hover:text-blue-700">
               click to browse
             </span>
           </p>
-          <p class="text-sm text-gray-500">
+          <p class="text-sm text-slate-500">
             Supports: {{ supportedFormats.join(', ') }} (max {{ maxFileSize }})
           </p>
         </div>
         
         <div v-else class="flex items-center justify-center">
-          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-          <span class="ml-3 text-gray-600">Processing image...</span>
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span class="ml-3 text-slate-600">Processing image...</span>
         </div>
       </div>
     </div>
@@ -57,23 +57,23 @@
     />
 
     <!-- Current Image Info -->
-    <div v-if="currentImage" class="mt-6 p-4 bg-gray-50 rounded-lg">
-      <h3 class="text-sm font-medium text-gray-800 mb-2">Current Image</h3>
+    <div v-if="currentImage" class="mt-6 p-4 bg-slate-50 rounded-lg">
+      <h3 class="text-sm font-medium text-slate-800 mb-2">Current Image</h3>
       <div class="grid grid-cols-2 gap-4 text-sm">
         <div>
-          <span class="text-gray-500">Filename:</span>
+          <span class="text-slate-500">Filename:</span>
           <span class="ml-2 font-medium">{{ currentImage.filename || 'Unknown' }}</span>
         </div>
         <div>
-          <span class="text-gray-500">Size:</span>
+          <span class="text-slate-500">Size:</span>
           <span class="ml-2 font-medium">{{ formatFileSize(currentImage.size) }}</span>
         </div>
         <div>
-          <span class="text-gray-500">Dimensions:</span>
+          <span class="text-slate-500">Dimensions:</span>
           <span class="ml-2 font-medium">{{ currentImage.width }}×{{ currentImage.height }}</span>
         </div>
         <div>
-          <span class="text-gray-500">Format:</span>
+          <span class="text-slate-500">Format:</span>
           <span class="ml-2 font-medium">{{ currentImage.format }}</span>
         </div>
       </div>
@@ -269,12 +269,11 @@
   }
 
   .drop-zone:hover {
-    @apply border-primary-400 bg-primary-25;
+    @apply border-blue-400 bg-blue-25;
   }
 
   .drop-zone.drag-over {
-    @apply border-primary-500 bg-primary-50;
+    @apply border-blue-500 bg-blue-50;
     transform: scale(1.02);
   }
 </style>
-            
