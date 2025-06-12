@@ -1,5 +1,5 @@
-Last login: Thu Jun 12 06:23:58 on ttys000
-[6:33:07 AM] % pnpm install
+Last login: Thu Jun 12 06:33:01 on ttys000
+[6:38:11 AM] % pnpm install
 Packages: +286
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 Progress: resolved 358, reused 286, downloaded 0, added 286, done
@@ -26,18 +26,18 @@ devDependencies:
 + vite-plugin-wasm 3.4.1
 + vitest 3.2.3
 
-Done in 7.1s using pnpm v10.12.1
-[6:33:25 AM] % pnpm run build
+Done in 6.5s using pnpm v10.12.1
+[6:38:24 AM] % pnpm run build
 
 > engraving-processor-pro@1.0.0 build /Users/erst/Library/CloudStorage/Dropbox/Websites/x
 > vite build
 
 vite v6.3.5 building for production...
 ✓ 20 modules transformed.
-✗ Build failed in 225ms
+✗ Build failed in 253ms
 error during build:
-[@tailwindcss/vite:generate:build] Cannot apply unknown utility class `border-blue-400`. Are you using CSS modules or similar and missing `@reference`? https://tailwindcss.com/docs/functions-and-directives#reference-directive
-file: /Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/components/ImageInput.vue?vue&type=style&index=0&scoped=602a97bc&lang.css
+[@tailwindcss/vite:generate:build] Cannot apply unknown utility class `border-blue-300`. Are you using CSS modules or similar and missing `@reference`? https://tailwindcss.com/docs/functions-and-directives#reference-directive
+file: /Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/components/ImageInput.vue?vue&type=style&index=0&scoped=3b8439e4&lang.css
     at onInvalidCandidate (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.10/node_modules/tailwindcss/dist/chunk-E562WLSY.mjs:18:1312)
     at pe (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.10/node_modules/tailwindcss/dist/chunk-E562WLSY.mjs:13:29803)
     at file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.10/node_modules/tailwindcss/dist/chunk-E562WLSY.mjs:18:373
@@ -49,7 +49,7 @@ file: /Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/components/ImageIn
     at async $a (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@tailwindcss+node@4.1.10/node_modules/@tailwindcss/node/dist/index.mjs:10:3433)
     at async C.generate (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@tailwindcss+vite@4.1.10_vite@6.3.5_jiti@2.4.2_lightningcss@1.30.1_/node_modules/@tailwindcss/vite/dist/index.mjs:1:3571)
  ELIFECYCLE  Command failed with exit code 1.
-[6:34:07 AM] % 
+[6:38:42 AM] % 
 
 
 
