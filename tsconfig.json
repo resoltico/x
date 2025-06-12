@@ -30,7 +30,8 @@
       "@/modules/*": ["src/modules/*"],
       "@/stores/*": ["src/stores/*"],
       "@/utils/*": ["src/utils/*"],
-      "@/types/*": ["src/types/*"]
+      "@/types/*": ["src/types/*"],
+      "@/workers/*": ["src/workers/*"]
     },
 
     /* Additional */

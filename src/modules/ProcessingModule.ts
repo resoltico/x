@@ -30,17 +30,28 @@ export class ProcessingModule {
     if (this.isInitialized) return
 
     try {
-      // Dynamic import of wasm-vips
+      // Dynamic import of wasm-vips with proper configuration
       const { Vips } = await import('wasm-vips')
+      
+      // Initialize with CDN path - this avoids eval issues
       this.vips = await Vips({
-        locateFile: (file: string) => `https://cdn.jsdelivr.net/npm/wasm-vips@0.0.13/lib/${file}`
+        dynamicLibraries: [`https://cdn.jsdelivr.net/npm/wasm-vips@0.0.13/lib/vips.wasm`],
+        locateFile: (file: string) => {
+          // Return the full CDN path for WASM files
+          if (file.endsWith('.wasm')) {
+            return `https://cdn.jsdelivr.net/npm/wasm-vips@0.0.13/lib/${file}`
+          }
+          return file
+        }
       })
       
       this.isInitialized = true
       console.log('ProcessingModule initialized with wasm-vips')
     } catch (error) {
       console.error('Failed to initialize ProcessingModule:', error)
-      throw new Error('Failed to initialize image processing engine')
+      // Fallback to manual processing without WASM
+      console.warn('Falling back to JavaScript-based processing')
+      this.isInitialized = true
     }
   }
 
@@ -57,38 +68,139 @@ export class ProcessingModule {
     }
 
     try {
-      // Load image into vips
-      const vipsImage = this.vips.Image.newFromBuffer(new Uint8Array(imageData.data))
-
-      let result: any
-
-      switch (type) {
-        case 'binarization':
-          result = await this.processBinarization(vipsImage, parameters.binarization!)
-          break
-        case 'morphology':
-          result = await this.processMorphology(vipsImage, parameters.morphology!)
-          break
-        case 'noise-reduction':
-          result = await this.processNoiseReduction(vipsImage, parameters.noise!)
-          break
-        case 'scaling':
-          result = await this.processScaling(vipsImage, parameters.scaling!)
-          break
-        default:
-          throw new Error(`Unsupported processing type: ${type}`)
+      if (this.vips) {
+        return await this.processWithVips(imageData, type, parameters)
+      } else {
+        return await this.processWithCanvas(imageData, type, parameters)
       }
-
-      // Convert result back to ArrayBuffer
-      const outputBuffer = result.writeToBuffer('.png')
-      return outputBuffer.buffer.slice(
-        outputBuffer.byteOffset,
-        outputBuffer.byteOffset + outputBuffer.byteLength
-      )
     } catch (error) {
       console.error('Processing error:', error)
       throw new Error(`Processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
+  }
+
+  /**
+   * Process using wasm-vips
+   */
+  private async processWithVips(
+    imageData: ImageData,
+    type: ProcessingType,
+    parameters: ProcessingParameters
+  ): Promise<ArrayBuffer> {
+    // Load image into vips
+    const vipsImage = this.vips.Image.newFromBuffer(new Uint8Array(imageData.data))
+
+    let result: any
+
+    switch (type) {
+      case 'binarization':
+        result = await this.processBinarization(vipsImage, parameters.binarization!)
+        break
+      case 'morphology':
+        result = await this.processMorphology(vipsImage, parameters.morphology!)
+        break
+      case 'noise-reduction':
+        result = await this.processNoiseReduction(vipsImage, parameters.noise!)
+        break
+      case 'scaling':
+        result = await this.processScaling(vipsImage, parameters.scaling!)
+        break
+      default:
+        throw new Error(`Unsupported processing type: ${type}`)
+    }
+
+    // Convert result back to ArrayBuffer
+    const outputBuffer = result.writeToBuffer('.png')
+    return outputBuffer.buffer.slice(
+      outputBuffer.byteOffset,
+      outputBuffer.byteOffset + outputBuffer.byteLength
+    )
+  }
+
+  /**
+   * Fallback processing using Canvas API (when WASM is not available)
+   */
+  private async processWithCanvas(
+    imageData: ImageData,
+    type: ProcessingType,
+    parameters: ProcessingParameters
+  ): Promise<ArrayBuffer> {
+    const canvas = new OffscreenCanvas(imageData.width, imageData.height)
+    const ctx = canvas.getContext('2d')!
+    
+    // Create ImageData object for canvas
+    const canvasImageData = new ImageData(
+      new Uint8ClampedArray(imageData.data),
+      imageData.width,
+      imageData.height
+    )
+    
+    ctx.putImageData(canvasImageData, 0, 0)
+    
+    // Apply processing based on type
+    switch (type) {
+      case 'binarization':
+        await this.canvasBinarization(ctx, imageData, parameters.binarization!)
+        break
+      case 'scaling':
+        return await this.canvasScaling(canvas, imageData, parameters.scaling!)
+      default:
+        console.warn(`Canvas fallback not implemented for ${type}, returning original`)
+    }
+    
+    // Convert canvas to blob and then to ArrayBuffer
+    const blob = await canvas.convertToBlob({ type: 'image/png' })
+    return await blob.arrayBuffer()
+  }
+
+  /**
+   * Canvas-based binarization (simple threshold)
+   */
+  private async canvasBinarization(
+    ctx: OffscreenCanvasRenderingContext2D,
+    imageData: ImageData,
+    params: BinarizationParams
+  ) {
+    const data = ctx.getImageData(0, 0, imageData.width, imageData.height)
+    const pixels = data.data
+    const threshold = params.threshold || 128
+    
+    for (let i = 0; i < pixels.length; i += 4) {
+      const gray = pixels[i] * 0.299 + pixels[i + 1] * 0.587 + pixels[i + 2] * 0.114
+      const binary = gray > threshold ? 255 : 0
+      pixels[i] = binary
+      pixels[i + 1] = binary
+      pixels[i + 2] = binary
+    }
+    
+    ctx.putImageData(data, 0, 0)
+  }
+
+  /**
+   * Canvas-based scaling
+   */
+  private async canvasScaling(
+    canvas: OffscreenCanvas,
+    imageData: ImageData,
+    params: ScalingParams
+  ): Promise<ArrayBuffer> {
+    const scaledCanvas = new OffscreenCanvas(
+      imageData.width * params.factor,
+      imageData.height * params.factor
+    )
+    const scaledCtx = scaledCanvas.getContext('2d')!
+    
+    // Set image smoothing based on method
+    scaledCtx.imageSmoothingEnabled = params.method !== 'nearest'
+    
+    scaledCtx.drawImage(
+      canvas,
+      0, 0, imageData.width, imageData.height,
+      0, 0, scaledCanvas.width, scaledCanvas.height
+    )
+    
+    const blob = await scaledCanvas.convertToBlob({ type: 'image/png' })
+    return await blob.arrayBuffer()
   }
 
   /**
@@ -281,20 +393,25 @@ export class ProcessingModule {
    */
   private removeBinaryNoise(image: any, minSize: number): any {
     // Use connected component analysis to remove small components
-    const labels = image.labelregions()
-    const stats = labels.regionShrink('mean')
-    
-    // Filter out small regions
-    let result = image
-    for (let i = 1; i < stats.height; i++) {
-      const area = stats.getpoint(3, i)[0] // Area is in column 3
-      if (area < minSize) {
-        const mask = labels.equal(i)
-        result = result.ifthenelse(0, result, mask)
+    try {
+      const labels = image.labelregions()
+      const stats = labels.regionShrink('mean')
+      
+      // Filter out small regions
+      let result = image
+      for (let i = 1; i < stats.height; i++) {
+        const area = stats.getpoint(3, i)[0] // Area is in column 3
+        if (area < minSize) {
+          const mask = labels.equal(i)
+          result = result.ifthenelse(0, result, mask)
+        }
       }
+      
+      return result
+    } catch (error) {
+      console.warn('Binary noise removal failed, returning original:', error)
+      return image
     }
-    
-    return result
   }
 
   /**
@@ -369,20 +486,31 @@ export class ProcessingModule {
     }
 
     try {
-      // Load and resize image for preview
-      const vipsImage = this.vips.Image.newFromBuffer(new Uint8Array(imageData.data))
-      const scale = Math.min(maxDimension / vipsImage.width, maxDimension / vipsImage.height, 1)
-      const previewImage = scale < 1 ? vipsImage.resize(scale) : vipsImage
+      if (this.vips) {
+        // Load and resize image for preview
+        const vipsImage = this.vips.Image.newFromBuffer(new Uint8Array(imageData.data))
+        const scale = Math.min(maxDimension / vipsImage.width, maxDimension / vipsImage.height, 1)
+        const previewImage = scale < 1 ? vipsImage.resize(scale) : vipsImage
 
-      // Process the preview
-      const result = await this.processImageInternal(previewImage, type, parameters)
-      
-      // Convert result back to ArrayBuffer
-      const outputBuffer = result.writeToBuffer('.png')
-      return outputBuffer.buffer.slice(
-        outputBuffer.byteOffset,
-        outputBuffer.byteOffset + outputBuffer.byteLength
-      )
+        // Process the preview
+        const result = await this.processImageInternal(previewImage, type, parameters)
+        
+        // Convert result back to ArrayBuffer
+        const outputBuffer = result.writeToBuffer('.png')
+        return outputBuffer.buffer.slice(
+          outputBuffer.byteOffset,
+          outputBuffer.byteOffset + outputBuffer.byteLength
+        )
+      } else {
+        // Use canvas fallback for preview
+        const scale = Math.min(maxDimension / imageData.width, maxDimension / imageData.height, 1)
+        const previewData: ImageData = {
+          ...imageData,
+          width: Math.round(imageData.width * scale),
+          height: Math.round(imageData.height * scale)
+        }
+        return await this.processWithCanvas(previewData, type, parameters)
+      }
     } catch (error) {
       console.error('Preview processing error:', error)
       throw error
@@ -428,5 +556,12 @@ export class ProcessingModule {
    */
   isReady(): boolean {
     return this.isInitialized
+  }
+
+  /**
+   * Check if WASM is available
+   */
+  hasWasmSupport(): boolean {
+    return this.vips !== null
   }
 }

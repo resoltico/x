@@ -1,7 +1,8 @@
-Last login: Thu Jun 12 06:38:04 on ttys000
-[6:49:17 AM] % pnpm install
+[7:08:21 AM] % ./build.sh
+🚀 Starting build process for Engraving Processor Pro...
+📦 Installing dependencies...
 Packages: +286
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 Progress: resolved 358, reused 286, downloaded 0, added 286, done
 
 dependencies:
@@ -27,30 +28,153 @@ devDependencies:
 + vite-plugin-wasm 3.4.1
 + vitest 3.2.3
 
-Done in 3.5s using pnpm v10.12.1
-[6:49:25 AM] % pnpm build
+Done in 5.3s using pnpm v10.12.1
+🔍 Running type checks...
 
-> engraving-processor-pro@1.0.0 build /Users/erst/Library/CloudStorage/Dropbox/Websites/x
-> vite build
+> engraving-processor-pro@1.0.0 typecheck /Users/erst/Library/CloudStorage/Dropbox/Websites/x
+> tsc --noEmit
 
-vite v6.3.5 building for production...
-node_modules/.pnpm/wasm-vips@0.0.13/node_modules/wasm-vips/lib/vips-es6.js (45:109): Use of eval in "node_modules/.pnpm/wasm-vips@0.0.13/node_modules/wasm-vips/lib/vips-es6.js" is strongly discouraged as it poses security risks and may cause issues with minification.
-node_modules/.pnpm/wasm-vips@0.0.13/node_modules/wasm-vips/lib/vips-es6.js (45:304): Use of eval in "node_modules/.pnpm/wasm-vips@0.0.13/node_modules/wasm-vips/lib/vips-es6.js" is strongly discouraged as it poses security risks and may cause issues with minification.
-node_modules/.pnpm/wasm-vips@0.0.13/node_modules/wasm-vips/lib/vips-es6.js (45:109): Use of eval in "node_modules/.pnpm/wasm-vips@0.0.13/node_modules/wasm-vips/lib/vips-es6.js" is strongly discouraged as it poses security risks and may cause issues with minification.
-node_modules/.pnpm/wasm-vips@0.0.13/node_modules/wasm-vips/lib/vips-es6.js (45:304): Use of eval in "node_modules/.pnpm/wasm-vips@0.0.13/node_modules/wasm-vips/lib/vips-es6.js" is strongly discouraged as it poses security risks and may cause issues with minification.
-✓ 38 modules transformed.
-Generated an empty chunk: "wasm-vendor".
-dist/index.html                                    1.10 kB │ gzip:     0.57 kB
-dist/assets/imageProcessingWorker-Bi3ChN_1.js      5.98 kB
-dist/assets/vips-es6-DmeHDDA4.js                  96.03 kB
-dist/assets/vips-es6-B2_Osf5k.js                  96.09 kB
-dist/assets/vips-DNd7RpiG.wasm                 5,767.48 kB │ gzip: 2,041.43 kB
-dist/assets/index-CeOJiymn.css                    28.43 kB │ gzip:     5.70 kB
-dist/assets/wasm-vendor-l0sNRNKZ.js                0.00 kB │ gzip:     0.02 kB
-dist/assets/index-C0LGh40W.js                     45.76 kB │ gzip:    14.10 kB
-dist/assets/vue-vendor-xW1Kpa9x.js                66.14 kB │ gzip:    26.42 kB
-✓ built in 1.18s
-[6:49:57 AM] % 
+src/main.ts:3:17 - error TS2307: Cannot find module './App.vue' or its corresponding type declarations.
+
+3 import App from './App.vue'
+                  ~~~~~~~~~~~
+
+src/modules/PreviewRendererModule.ts:2:10 - error TS6133: 'renderImageToCanvas' is declared but its value is never read.
+
+2 import { renderImageToCanvas, calculateFitZoom, getImageCenter } from '@/utils/imageHelpers'
+           ~~~~~~~~~~~~~~~~~~~
+
+src/modules/ProcessingModule.ts:34:15 - error TS2339: Property 'Vips' does not exist on type '{ default: typeof Vips; version(flag?: number | undefined): string | number; emscriptenVersion(): string; config(): string; concurrency(concurrency?: number | undefined): number | void; ... 61 more ...; ImageAutoGen: typeof ImageAutoGen; }'.
+
+34       const { Vips } = await import('wasm-vips')
+                 ~~~~
+
+src/modules/WorkerOrchestratorModule.ts:73:5 - error TS6133: 'imageData' is declared but its value is never read.
+
+73     imageData: ImageData,
+       ~~~~~~~~~
+
+src/test/setup.ts:6:3 - error TS2304: Cannot find name 'global'.
+
+6   global.File = class MockFile {
+    ~~~~~~
+
+src/test/setup.ts:19:3 - error TS2304: Cannot find name 'global'.
+
+19   global.FileReader = class MockFileReader {
+     ~~~~~~
+
+src/test/setup.ts:24:23 - error TS6133: 'file' is declared but its value is never read.
+
+24     readAsArrayBuffer(file: File) {
+                         ~~~~
+
+src/test/setup.ts:35:3 - error TS2304: Cannot find name 'global'.
+
+35   global.URL = {
+     ~~~~~~
+
+src/test/setup.ts:58:3 - error TS2304: Cannot find name 'global'.
+
+58   global.HTMLCanvasElement = class MockCanvas {
+     ~~~~~~
+
+src/test/setup.ts:72:3 - error TS2304: Cannot find name 'global'.
+
+72   global.Image = class MockImage {
+     ~~~~~~
+
+src/test/setup.ts:75:5 - error TS2300: Duplicate identifier 'src'.
+
+75     src = ''
+       ~~~
+
+src/test/setup.ts:79:9 - error TS2300: Duplicate identifier 'src'.
+
+79     set src(value: string) {
+           ~~~
+
+src/test/setup.ts:79:13 - error TS6133: 'value' is declared but its value is never read.
+
+79     set src(value: string) {
+               ~~~~~
+
+src/test/setup.ts:87:3 - error TS2304: Cannot find name 'global'.
+
+87   global.Worker = class MockWorker {
+     ~~~~~~
+
+src/test/setup.ts:91:17 - error TS6133: 'url' is declared but its value is never read.
+
+91     constructor(url: string | URL, options?: WorkerOptions) {
+                   ~~~
+
+src/test/setup.ts:91:36 - error TS6133: 'options' is declared but its value is never read.
+
+91     constructor(url: string | URL, options?: WorkerOptions) {
+                                      ~~~~~~~
+
+src/test/setup.ts:95:31 - error TS6133: 'transfer' is declared but its value is never read.
+
+95     postMessage(message: any, transfer?: Transferable[]) {
+                                 ~~~~~~~~
+
+src/test/setup.ts:114:8 - error TS2304: Cannot find name 'global'.
+
+114   if (!global.performance) {
+           ~~~~~~
+
+src/test/setup.ts:115:5 - error TS2304: Cannot find name 'global'.
+
+115     global.performance = {} as Performance
+        ~~~~~~
+
+src/test/setup.ts:118:3 - error TS2304: Cannot find name 'global'.
+
+118   global.performance.memory = {
+      ~~~~~~
+
+src/test/setup.ts:131:3 - error TS2304: Cannot find name 'global'.
+
+131   global.Blob = class MockBlob {
+      ~~~~~~
+
+src/test/setup.ts:142:3 - error TS2304: Cannot find name 'global'.
+
+142   global.ResizeObserver = class MockResizeObserver {
+      ~~~~~~
+
+src/test/setup.ts:149:3 - error TS2304: Cannot find name 'global'.
+
+149   global.IntersectionObserver = class MockIntersectionObserver {
+      ~~~~~~
+
+src/utils/imageHelpers.ts:25:17 - error TS6133: 'imageDataFromCanvas' is declared but its value is never read.
+
+25           const imageDataFromCanvas = ctx.getImageData(0, 0, canvas.width, canvas.height)
+                   ~~~~~~~~~~~~~~~~~~~
+
+src/utils/imageHelpers.ts:129:32 - error TS6133: 'imageData' is declared but its value is never read.
+
+129 export const getImageCenter = (imageData: ImageData, canvas: HTMLCanvasElement) => {
+                                   ~~~~~~~~~
+
+src/workers/imageProcessingWorker.ts:303:40 - error TS2339: Property 'error' does not exist on type 'string | Event'.
+  Property 'error' does not exist on type 'string'.
+
+303   console.error('Worker error:', event.error)
+                                           ~~~~~
 
 
+Found 26 errors in 7 files.
 
+Errors  Files
+     1  src/main.ts:3
+     1  src/modules/PreviewRendererModule.ts:2
+     1  src/modules/ProcessingModule.ts:34
+     1  src/modules/WorkerOrchestratorModule.ts:73
+    19  src/test/setup.ts:6
+     2  src/utils/imageHelpers.ts:25
+     1  src/workers/imageProcessingWorker.ts:303
+ ELIFECYCLE  Command failed with exit code 2.
+[7:08:54 AM] % 

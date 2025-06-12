@@ -36,6 +36,10 @@
     "eslint-config-prettier": "^10.1.0",
     "eslint-plugin-prettier": "^5.4.1"
   },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
   "keywords": [
     "image-processing",
     "engraving",

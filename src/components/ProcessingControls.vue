@@ -250,7 +250,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, watch } from 'vue'
+  import { ref, computed, watch, onMounted } from 'vue'
   import { useAppStore } from '@/stores/app'
   import { WorkerOrchestratorModule } from '@/modules/WorkerOrchestratorModule'
   import type { 
@@ -266,7 +266,7 @@
   const appStore = useAppStore()
 
   // Worker orchestrator
-  const workerOrchestrator = WorkerOrchestratorModule.getInstance()
+  let workerOrchestrator: WorkerOrchestratorModule | null = null
 
   // Refs
   const selectedType = ref<ProcessingType | ''>('')
@@ -329,7 +329,7 @@
   }
 
   const processPreview = async () => {
-    if (!canProcess.value || !appStore.currentImage) return
+    if (!canProcess.value || !appStore.currentImage || !workerOrchestrator) return
 
     try {
       const parameters = buildProcessingParameters()
@@ -341,12 +341,61 @@
       
       console.log('Preview processing started:', taskId)
     } catch (error) {
+      console.error('Failed to initialize workers:', error)
+    }
+  }
+
+  // Watch for scaling method changes to update factor
+  watch(() => scalingParams.value.method, (newMethod) => {
+    if (newMethod.startsWith('scale')) {
+      const factor = parseInt(newMethod.replace('scale', '').replace('x', ''))
+      scalingParams.value.factor = factor
+    }
+  })
+
+  // Initialize on component mount
+  onMounted(() => {
+    initializeWorkers()
+  })
+</script>
+
+<style scoped>
+  .slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #3b82f6;
+    cursor: pointer;
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+  }
+
+  .slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #3b82f6;
+    cursor: pointer;
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+  }
+
+  .slider:focus {
+    outline: none;
+  }
+
+  .slider:focus::-webkit-slider-thumb {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+  }
+</style>
       console.error('Failed to start preview processing:', error)
     }
   }
 
   const processFullSize = async () => {
-    if (!canProcess.value || !appStore.currentImage) return
+    if (!canProcess.value || !appStore.currentImage || !workerOrchestrator) return
 
     try {
       const parameters = buildProcessingParameters()
@@ -425,6 +474,7 @@
   // Initialize worker orchestrator and set up callbacks
   const initializeWorkers = async () => {
     try {
+      workerOrchestrator = WorkerOrchestratorModule.getInstance()
       await workerOrchestrator.initialize()
       
       // Set up task update callback
@@ -447,50 +497,3 @@
         }
       })
     } catch (error) {
-      console.error('Failed to initialize workers:', error)
-    }
-  }
-
-  // Watch for scaling method changes to update factor
-  watch(() => scalingParams.value.method, (newMethod) => {
-    if (newMethod.startsWith('scale')) {
-      const factor = parseInt(newMethod.replace('scale', '').replace('x', ''))
-      scalingParams.value.factor = factor
-    }
-  })
-
-  // Initialize on component mount
-  initializeWorkers()
-</script>
-
-<style scoped>
-  .slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: #3b82f6;
-    cursor: pointer;
-    border: 2px solid #ffffff;
-    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
-  }
-
-  .slider::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: #3b82f6;
-    cursor: pointer;
-    border: 2px solid #ffffff;
-    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
-  }
-
-  .slider:focus {
-    outline: none;
-  }
-
-  .slider:focus::-webkit-slider-thumb {
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
-  }
-</style>

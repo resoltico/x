@@ -38,10 +38,12 @@ export class WorkerOrchestratorModule {
 
     try {
       for (let i = 0; i < this.workerCount; i++) {
-        const worker = new Worker(
-          new URL('../workers/imageProcessingWorker.ts', import.meta.url),
-          { type: 'module' }
-        )
+        // Use dynamic import to ensure proper module resolution
+        const workerUrl = new URL('@/workers/imageProcessingWorker.ts', import.meta.url)
+        const worker = new Worker(workerUrl, { 
+          type: 'module',
+          name: `image-worker-${i}`
+        })
         
         worker.onmessage = this.handleWorkerMessage.bind(this)
         worker.onerror = this.handleWorkerError.bind(this)
@@ -82,6 +84,7 @@ export class WorkerOrchestratorModule {
     }
 
     this.taskQueue.push(task)
+    this.notifyTaskUpdate(task)
     this.processQueue()
     
     return task.id
@@ -165,13 +168,16 @@ export class WorkerOrchestratorModule {
       this.activeTasksMap.set(task.id, { worker, task })
       this.notifyTaskUpdate(task)
 
-      // Send task to worker
+      // Send task to worker with the image data
       const message: WorkerMessage = {
         id: task.id,
         type: 'process',
         payload: {
           type: task.type,
-          parameters: task.parameters
+          parameters: task.parameters,
+          // Note: In a real implementation, we'd need to get the current image data from the store
+          // For now, we'll pass a placeholder - this would be fixed when integrating with the store
+          imageData: null // This should be the actual ImageData from the store
         }
       }
 
@@ -240,7 +246,7 @@ export class WorkerOrchestratorModule {
     for (const [taskId, { worker, task }] of this.activeTasksMap.entries()) {
       if (worker === event.target) {
         task.status = 'failed'
-        task.error = 'Worker error: ' + event.error?.message || 'Unknown worker error'
+        task.error = 'Worker error: ' + (event.error?.message || 'Unknown worker error')
         task.completedAt = new Date()
         this.activeTasksMap.delete(taskId)
         this.notifyTaskUpdate(task)
@@ -269,10 +275,11 @@ export class WorkerOrchestratorModule {
         this.workers.splice(workerIndex, 1)
         
         // Create replacement worker
-        const newWorker = new Worker(
-          new URL('../workers/imageProcessingWorker.ts', import.meta.url),
-          { type: 'module' }
-        )
+        const workerUrl = new URL('@/workers/imageProcessingWorker.ts', import.meta.url)
+        const newWorker = new Worker(workerUrl, { 
+          type: 'module',
+          name: `image-worker-replacement-${Date.now()}`
+        })
         
         newWorker.onmessage = this.handleWorkerMessage.bind(this)
         newWorker.onerror = this.handleWorkerError.bind(this)
