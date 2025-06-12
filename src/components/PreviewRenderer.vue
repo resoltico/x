@@ -7,17 +7,17 @@
       <div class="flex items-center space-x-2">
         <button
           v-if="hasProcessedImage"
-          @click="toggleView"
           class="btn btn-secondary text-sm"
+          @click="toggleView"
         >
           Show {{ canvasState.showOriginal ? 'Processed' : 'Original' }}
         </button>
         
         <div class="flex items-center space-x-1 border border-slate-300 rounded-lg p-1">
           <button
-            @click="fitToCanvas"
             class="p-1 hover:bg-slate-100 rounded"
             title="Fit to view"
+            @click="fitToCanvas"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
@@ -25,9 +25,9 @@
           </button>
           
           <button
-            @click="zoomToActualSize"
             class="p-1 hover:bg-slate-100 rounded"
             title="Actual size (100%)"
+            @click="zoomToActualSize"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -35,9 +35,9 @@
           </button>
           
           <button
-            @click="resetView"
             class="p-1 hover:bg-slate-100 rounded"
             title="Reset view"
+            @click="resetView"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -112,14 +112,14 @@
         <span class="text-sm font-medium text-slate-700">Export Options</span>
         <div class="flex space-x-2">
           <button
-            @click="downloadProcessed"
             class="btn btn-primary text-sm"
+            @click="downloadProcessed"
           >
             Download Processed
           </button>
           <button
-            @click="exportView"
             class="btn btn-secondary text-sm"
+            @click="exportView"
           >
             Export View
           </button>
@@ -217,31 +217,31 @@
   }
 
   // Event handlers (delegated to renderer)
-  const handleWheel = (event: WheelEvent) => {
+  const handleWheel = (_event: WheelEvent) => {
     // Renderer handles wheel events internally
   }
 
-  const handleMouseDown = (event: MouseEvent) => {
+  const handleMouseDown = (_event: MouseEvent) => {
     // Renderer handles mouse events internally
   }
 
-  const handleMouseMove = (event: MouseEvent) => {
+  const handleMouseMove = (_event: MouseEvent) => {
     // Renderer handles mouse events internally
   }
 
-  const handleMouseUp = (event: MouseEvent) => {
+  const handleMouseUp = (_event: MouseEvent) => {
     // Renderer handles mouse events internally
   }
 
-  const handleTouchStart = (event: TouchEvent) => {
+  const handleTouchStart = (_event: TouchEvent) => {
     // Renderer handles touch events internally
   }
 
-  const handleTouchMove = (event: TouchEvent) => {
+  const handleTouchMove = (_event: TouchEvent) => {
     // Renderer handles touch events internally
   }
 
-  const handleTouchEnd = (event: TouchEvent) => {
+  const handleTouchEnd = (_event: TouchEvent) => {
     // Renderer handles touch events internally
   }
 

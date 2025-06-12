@@ -9,8 +9,8 @@
         <label class="label">Processing Type</label>
         <select
           v-model="selectedType"
-          :disabled="!hasImage || isProcessing"
           class="input"
+          :disabled="!hasImage || isProcessing"
         >
           <option value="">Select algorithm...</option>
           <option value="binarization">Binarization</option>
@@ -185,9 +185,9 @@
       <!-- Action Buttons -->
       <div class="flex space-x-3 pt-4 border-t border-slate-200">
         <button
-          @click="processPreview"
-          :disabled="!canProcess || isProcessing"
           class="btn btn-secondary flex-1"
+          :disabled="!canProcess || isProcessing"
+          @click="processPreview"
         >
           <svg v-if="isProcessing" class="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -197,9 +197,9 @@
         </button>
         
         <button
-          @click="processFullSize"
-          :disabled="!canProcess || isProcessing"
           class="btn btn-primary flex-1"
+          :disabled="!canProcess || isProcessing"
+          @click="processFullSize"
         >
           Process Full Size
         </button>
@@ -210,30 +210,30 @@
         <h3 class="text-sm font-medium text-slate-700 mb-3">Quick Presets</h3>
         <div class="grid grid-cols-2 gap-2">
           <button
-            @click="applyPreset('document')"
-            :disabled="!hasImage"
             class="btn btn-secondary text-sm"
+            :disabled="!hasImage"
+            @click="applyPreset('document')"
           >
             📄 Document
           </button>
           <button
-            @click="applyPreset('engraving')"
-            :disabled="!hasImage"
             class="btn btn-secondary text-sm"
+            :disabled="!hasImage"
+            @click="applyPreset('engraving')"
           >
             🖼️ Engraving
           </button>
           <button
-            @click="applyPreset('pixel-art')"
-            :disabled="!hasImage"
             class="btn btn-secondary text-sm"
+            :disabled="!hasImage"
+            @click="applyPreset('pixel-art')"
           >
             🎮 Pixel Art
           </button>
           <button
-            @click="applyPreset('noise-clean')"
-            :disabled="!hasImage"
             class="btn btn-secondary text-sm"
+            :disabled="!hasImage"
+            @click="applyPreset('noise-clean')"
           >
             ✨ Noise Clean
           </button>

@@ -7,11 +7,11 @@
       ref="dropZone"
       class="drop-zone cursor-pointer transition-all duration-200 hover:border-blue-400 hover:bg-blue-50"
       :class="{ 'drag-over': isDragOver }"
+      @click="triggerFileInput"
       @drop="handleDrop"
       @dragover="handleDragOver"
       @dragenter="handleDragEnter"
       @dragleave="handleDragLeave"
-      @click="triggerFileInput"
     >
       <div class="text-center">
         <svg
@@ -51,9 +51,9 @@
     <input
       ref="fileInput"
       type="file"
+      class="hidden"
       :accept="acceptedTypes"
       @change="handleFileSelect"
-      class="hidden"
     />
 
     <!-- Current Image Info -->
@@ -79,8 +79,8 @@
       </div>
       
       <button
-        @click="clearImage"
         class="mt-3 btn btn-secondary text-sm"
+        @click="clearImage"
       >
         Clear Image
       </button>

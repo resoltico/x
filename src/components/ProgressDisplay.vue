@@ -5,8 +5,8 @@
       
       <button
         v-if="completedTasks.length > 0"
-        @click="clearCompleted"
         class="btn btn-secondary text-sm"
+        @click="clearCompleted"
       >
         Clear Completed
       </button>
@@ -21,8 +21,8 @@
             <span class="font-medium text-blue-800">{{ formatTaskType(currentTask.type) }}</span>
           </div>
           <button
-            @click="cancelTask(currentTask.id)"
             class="text-blue-600 hover:text-blue-800 text-sm"
+            @click="cancelTask(currentTask.id)"
           >
             Cancel
           </button>
@@ -58,8 +58,8 @@
               <span class="text-sm font-medium text-slate-700">{{ formatTaskType(task.type) }}</span>
             </div>
             <button
-              @click="cancelTask(task.id)"
               class="text-slate-500 hover:text-slate-700 text-sm"
+              @click="cancelTask(task.id)"
             >
               Cancel
             </button>
@@ -95,9 +95,9 @@
               </span>
               <button
                 v-if="task.status === 'completed'"
-                @click="downloadResult(task)"
                 class="text-green-600 hover:text-green-800 text-sm"
                 title="Download result"
+                @click="downloadResult(task)"
               >
                 ⬇️
               </button>

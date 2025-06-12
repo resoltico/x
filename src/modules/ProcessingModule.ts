@@ -213,23 +213,24 @@ export class ProcessingModule {
     const { method, windowSize = 15, k = 0.2, threshold = 128 } = params
 
     switch (method) {
-      case 'otsu':
+      case 'otsu': {
         // Global Otsu thresholding
         const hist = image.histFind()
         const otsuThreshold = this.calculateOtsuThreshold(hist)
         return image.more(otsuThreshold)
-
-      case 'sauvola':
+      }
+      case 'sauvola': {
         // Sauvola adaptive thresholding
         return this.sauvolaThresholding(image, windowSize, k)
-
-      case 'niblack':
+      }
+      case 'niblack': {
         // Niblack adaptive thresholding
         return this.niblackThresholding(image, windowSize, k)
-
-      default:
+      }
+      default: {
         // Simple global thresholding
         return image.more(threshold)
+      }
     }
   }
 

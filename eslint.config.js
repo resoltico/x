@@ -16,6 +16,46 @@ export default [
       parserOptions: {
         ecmaVersion: 'latest',
         sourceType: 'module'
+      },
+      globals: {
+        // Browser globals
+        window: 'readonly',
+        document: 'readonly',
+        navigator: 'readonly',
+        performance: 'readonly',
+        console: 'readonly',
+        setTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearTimeout: 'readonly',
+        clearInterval: 'readonly',
+        URL: 'readonly',
+        Blob: 'readonly',
+        File: 'readonly',
+        FileReader: 'readonly',
+        FileList: 'readonly',
+        Image: 'readonly',
+        HTMLElement: 'readonly',
+        HTMLCanvasElement: 'readonly',
+        HTMLInputElement: 'readonly',
+        CanvasRenderingContext2D: 'readonly',
+        OffscreenCanvas: 'readonly',
+        OffscreenCanvasRenderingContext2D: 'readonly',
+        ImageData: 'readonly',
+        Worker: 'readonly',
+        MessageEvent: 'readonly',
+        ErrorEvent: 'readonly',
+        Event: 'readonly',
+        DragEvent: 'readonly',
+        WheelEvent: 'readonly',
+        MouseEvent: 'readonly',
+        TouchEvent: 'readonly',
+        KeyboardEvent: 'readonly',
+        Node: 'readonly',
+        WorkerOptions: 'readonly',
+        Transferable: 'readonly',
+        // Node.js globals for config files
+        __dirname: 'readonly',
+        process: 'readonly'
       }
     },
     plugins: {
@@ -28,7 +68,8 @@ export default [
         varsIgnorePattern: '^_' 
       }],
       '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-non-null-assertion': 'off'
+      '@typescript-eslint/no-non-null-assertion': 'off',
+      'no-case-declarations': 'off'
     }
   },
   
@@ -42,6 +83,43 @@ export default [
         ecmaVersion: 'latest',
         sourceType: 'module',
         extraFileExtensions: ['.vue']
+      },
+      globals: {
+        // Browser globals
+        window: 'readonly',
+        document: 'readonly',
+        navigator: 'readonly',
+        performance: 'readonly',
+        console: 'readonly',
+        setTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearTimeout: 'readonly',
+        clearInterval: 'readonly',
+        URL: 'readonly',
+        Blob: 'readonly',
+        File: 'readonly',
+        FileReader: 'readonly',
+        FileList: 'readonly',
+        Image: 'readonly',
+        HTMLElement: 'readonly',
+        HTMLCanvasElement: 'readonly',
+        HTMLInputElement: 'readonly',
+        CanvasRenderingContext2D: 'readonly',
+        OffscreenCanvas: 'readonly',
+        OffscreenCanvasRenderingContext2D: 'readonly',
+        ImageData: 'readonly',
+        Worker: 'readonly',
+        MessageEvent: 'readonly',
+        ErrorEvent: 'readonly',
+        Event: 'readonly',
+        DragEvent: 'readonly',
+        WheelEvent: 'readonly',
+        MouseEvent: 'readonly',
+        TouchEvent: 'readonly',
+        KeyboardEvent: 'readonly',
+        Node: 'readonly',
+        WorkerOptions: 'readonly',
+        Transferable: 'readonly'
       }
     },
     plugins: {
@@ -53,12 +131,66 @@ export default [
       ...tseslint.configs.recommended.rules,
       'vue/multi-word-component-names': 'off',
       'vue/no-unused-vars': 'error',
+      'vue/attributes-order': ['error', {
+        'order': [
+          'DEFINITION',
+          'LIST_RENDERING',
+          'CONDITIONALS',
+          'RENDER_MODIFIERS',
+          'GLOBAL',
+          ['UNIQUE', 'SLOT'],
+          'TWO_WAY_BINDING',
+          'OTHER_DIRECTIVES',
+          'OTHER_ATTR',
+          'EVENTS',
+          'CONTENT'
+        ],
+        'alphabetical': false
+      }],
       '@typescript-eslint/no-unused-vars': ['error', { 
         argsIgnorePattern: '^_',
         varsIgnorePattern: '^_' 
       }],
       '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-non-null-assertion': 'off'
+      '@typescript-eslint/no-non-null-assertion': 'off',
+      'no-case-declarations': 'off'
+    }
+  },
+
+  // Worker files
+  {
+    files: ['src/workers/**/*.ts'],
+    languageOptions: {
+      parser: tsparser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module'
+      },
+      globals: {
+        // Worker globals
+        self: 'readonly',
+        importScripts: 'readonly',
+        WorkerGlobalScope: 'readonly',
+        DedicatedWorkerGlobalScope: 'readonly',
+        MessageEvent: 'readonly',
+        ErrorEvent: 'readonly',
+        OffscreenCanvas: 'readonly',
+        OffscreenCanvasRenderingContext2D: 'readonly',
+        ImageData: 'readonly',
+        console: 'readonly'
+      }
+    },
+    plugins: {
+      '@typescript-eslint': tseslint
+    },
+    rules: {
+      ...tseslint.configs.recommended.rules,
+      '@typescript-eslint/no-unused-vars': ['error', { 
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_' 
+      }],
+      '@typescript-eslint/no-explicit-any': 'off',
+      'no-case-declarations': 'off'
     }
   },
   
@@ -75,7 +207,56 @@ export default [
         beforeAll: 'readonly',
         afterAll: 'readonly',
         beforeEach: 'readonly',
-        afterEach: 'readonly'
+        afterEach: 'readonly',
+        // Browser globals for tests
+        window: 'readonly',
+        document: 'readonly',
+        navigator: 'readonly',
+        performance: 'readonly',
+        Performance: 'readonly',
+        console: 'readonly',
+        setTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearTimeout: 'readonly',
+        clearInterval: 'readonly',
+        URL: 'readonly',
+        Blob: 'readonly',
+        File: 'readonly',
+        FileReader: 'readonly',
+        FileList: 'readonly',
+        Image: 'readonly',
+        HTMLElement: 'readonly',
+        HTMLCanvasElement: 'readonly',
+        HTMLInputElement: 'readonly',
+        CanvasRenderingContext2D: 'readonly',
+        OffscreenCanvas: 'readonly',
+        OffscreenCanvasRenderingContext2D: 'readonly',
+        ImageData: 'readonly',
+        Worker: 'readonly',
+        MessageEvent: 'readonly',
+        ErrorEvent: 'readonly',
+        Event: 'readonly',
+        DragEvent: 'readonly',
+        WheelEvent: 'readonly',
+        MouseEvent: 'readonly',
+        TouchEvent: 'readonly',
+        KeyboardEvent: 'readonly',
+        Node: 'readonly',
+        WorkerOptions: 'readonly',
+        Transferable: 'readonly',
+        globalThis: 'writable'
+      }
+    }
+  },
+
+  // Config files (Node.js environment)
+  {
+    files: ['*.config.*', 'eslint.config.js'],
+    languageOptions: {
+      globals: {
+        __dirname: 'readonly',
+        process: 'readonly',
+        console: 'readonly'
       }
     }
   },
@@ -83,16 +264,13 @@ export default [
   // Global settings
   {
     languageOptions: {
-      globals: {
-        console: 'readonly',
-        process: 'readonly'
-      },
       ecmaVersion: 'latest',
       sourceType: 'module'
     },
     rules: {
       'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
-      'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off'
+      'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
+      'no-undef': 'error'
     }
   },
   

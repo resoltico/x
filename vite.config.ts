@@ -6,25 +6,7 @@ import topLevelAwait from 'vite-plugin-top-level-await'
 import { resolve } from 'path'
 
 export default defineConfig({
-  css: {
-    transformer: 'lightningcss',
-    lightningcss: {
-      drafts: {
-        customMedia: true,
-        nesting: true,
-      },
-      nonStandard: {
-        deepSelectorCombinator: true,
-      },
-      targets: {
-        chrome: 100,
-        firefox: 100,
-        safari: 15,
-        edge: 100,
-      },
-      minify: true,
-    },
-  },
+  // Remove Lightning CSS entirely to avoid advanced syntax issues
   plugins: [
     vue(),
     tailwindcss(),

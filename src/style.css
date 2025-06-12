@@ -3,16 +3,16 @@
 /* Enhanced theme configuration with Lightning CSS features */
 @theme {
   /* Color system with better organization */
-  --color-primary-50: lab(96.5% 4.1 -9.2);
-  --color-primary-100: lab(92.4% 9.7 -20.7);
-  --color-primary-200: lab(86.3% 17.8 -35.6);
-  --color-primary-300: lab(76.9% 28.1 -56.4);
-  --color-primary-400: lab(70.2% 31.2 -72.4);
-  --color-primary-500: lab(62.3% 25.9 -84.6);
-  --color-primary-600: lab(54.3% 18.7 -92.1);
-  --color-primary-700: lab(45.2% 13.6 -89.4);
-  --color-primary-800: lab(37.6% 11.1 -79.2);
-  --color-primary-900: lab(30.4% 9.2 -65.8);
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
   
   --color-neutral-50: #f8fafc;
   --color-neutral-100: #f1f5f9;
@@ -292,7 +292,7 @@
 
     &:focus {
       border-color: var(--color-primary-500);
-      box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
     }
 
     &:disabled {
@@ -351,7 +351,7 @@
 
     &:focus {
       &::-webkit-slider-thumb {
-        box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary-500) 30%, transparent);
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
       }
     }
 
@@ -373,9 +373,9 @@
 /* Enhanced utility classes */
 @layer utilities {
   .glass {
-    background-color: color-mix(in srgb, var(--color-white) 80%, transparent);
+    background-color: rgba(255, 255, 255, 0.8);
     backdrop-filter: blur(12px) saturate(180%);
-    border: 1px solid color-mix(in srgb, var(--color-white) 20%, transparent);
+    border: 1px solid rgba(255, 255, 255, 0.2);
   }
   
   .drop-zone {
@@ -391,7 +391,7 @@
       content: "";
       position: absolute;
       inset: 0;
-      background: linear-gradient(135deg, transparent 0%, color-mix(in srgb, var(--color-primary-500) 5%, transparent) 100%);
+      background: linear-gradient(135deg, transparent 0%, rgba(59, 130, 246, 0.05) 100%);
       opacity: 0;
       transition: var(--transition-opacity);
     }
@@ -402,7 +402,7 @@
 
     &.drag-over {
       border-color: var(--color-primary-500);
-      background-color: color-mix(in srgb, var(--color-primary-50) 80%, transparent);
+      background-color: rgba(239, 246, 255, 0.8);
       transform: scale(1.02);
       box-shadow: var(--shadow-lg);
 
@@ -415,7 +415,7 @@
   .processing-overlay {
     position: absolute;
     inset: 0;
-    background: color-mix(in srgb, var(--color-black) 50%, transparent);
+    background: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(4px);
     display: flex;
     align-items: center;
@@ -476,16 +476,6 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
-  }
-}
-
-/* Modern CSS features with Lightning CSS */
-@supports (color: lab(50% 20 -20)) {
-  :root {
-    /* Wide gamut color support */
-    --color-primary-500: lab(62.3% 25.9 -84.6);
-    --color-success-500: lab(60% -40 40);
-    --color-danger-500: lab(55% 60 45);
   }
 }
 
