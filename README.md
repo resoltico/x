@@ -38,6 +38,37 @@ npm run build
 npm test
 ```
 
+## 🔧 Build Scripts
+
+```bash
+# Development
+npm run dev              # Start dev server
+npm run preview          # Preview production build
+
+# Type Checking
+npm run typecheck        # Check main app types
+npm run typecheck:worker # Check worker types
+npm run typecheck:all    # Check all TypeScript files
+
+# Linting
+npm run lint            # Run ESLint
+npm run lint:fix        # Fix ESLint issues
+npm run lint:quiet      # Run ESLint quietly
+
+# Testing
+npm run test            # Run tests
+npm run test:watch      # Run tests in watch mode
+npm run test:coverage   # Run tests with coverage
+
+# Building
+npm run build           # Full build with checks
+npm run build:fast      # Fast build without checks
+
+# Utilities
+npm run clean           # Clean build artifacts
+npm run check           # Run all checks (types, lint, tests)
+```
+
 ## 🏗️ Project Structure
 
 ```
@@ -55,7 +86,10 @@ src/
 ├── stores/               # Pinia state management
 │   └── app.ts                   # Main application store
 ├── types/                # TypeScript type definitions
-│   └── index.ts                 # Core types and interfaces
+│   ├── index.ts                 # Core types and interfaces
+│   ├── globals.d.ts             # Global type extensions
+│   ├── worker.d.ts              # Worker-specific types
+│   └── worker-globals.d.ts      # Worker global scope types
 ├── utils/                # Utility functions
 │   ├── fileValidation.ts        # File validation helpers
 │   └── imageHelpers.ts          # Image manipulation utilities
@@ -115,7 +149,7 @@ npm run test:watch
 npm run test:coverage
 
 # Type checking
-npm run typecheck
+npm run typecheck:all
 
 # Linting
 npm run lint

@@ -10,7 +10,15 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     transformMode: {
       web: [/\.[jt]sx?$/, /\.vue$/]
-    }
+    },
+    // Exclude worker files from main test suite as they need special handling
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/cypress/**',
+      '**/.{idea,git,cache,output,temp}/**',
+      '**/workers/**/*.ts'
+    ]
   },
   resolve: {
     alias: {

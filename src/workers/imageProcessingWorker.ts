@@ -1,3 +1,6 @@
+/// <reference lib="webworker" />
+/// <reference path="../types/worker-globals.d.ts" />
+
 import type { WorkerMessage, WorkerResponse, ProcessingType, ProcessingParameters } from '../types'
 
 // Import processing modules
@@ -13,6 +16,9 @@ import { ScalingProcessor } from '../modules/processing/scaling'
 
 // Processing task tracker
 const activeTasks = new Map<string, boolean>()
+
+// Ensure we're in worker context
+declare const self: DedicatedWorkerGlobalScope & typeof globalThis
 
 // Message handler
 self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
@@ -186,7 +192,7 @@ function sendError(taskId: string, error: string) {
   self.postMessage(response)
 }
 
-// Handle worker errors - Fixed typing issue
+// Handle worker errors
 self.onerror = (event: ErrorEvent) => {
   console.error('Worker script error:', event.message, event.filename, event.lineno)
 }

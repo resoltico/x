@@ -37,7 +37,12 @@ export default defineConfig({
   },
   build: {
     target: 'esnext',
+    chunkSizeWarningLimit: 1000,
+    sourcemap: true,
     rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html')
+      },
       output: {
         manualChunks: {
           'vue-vendor': ['vue', 'pinia'],
@@ -54,20 +59,6 @@ export default defineConfig({
           return
         }
         warn(warning)
-      }
-    },
-    chunkSizeWarningLimit: 1000,
-    sourcemap: true,
-    // Ensure proper handling of worker files
-    rollupOptions: {
-      input: {
-        main: resolve(__dirname, 'index.html')
-      },
-      output: {
-        manualChunks: {
-          'vue-vendor': ['vue', 'pinia'],
-          'image-processing': ['wasm-vips']
-        }
       }
     }
   },
@@ -92,13 +83,7 @@ export default defineConfig({
   assetsInclude: ['**/*.wasm'],
   esbuild: {
     // Enhanced TypeScript compilation options
-    target: 'esnext',
-    tsconfigRaw: {
-      compilerOptions: {
-        // Ensure proper worker support
-        lib: ['ES2020', 'DOM', 'DOM.Iterable', 'WebWorker']
-      }
-    }
+    target: 'esnext'
   },
   define: {
     // Define global constants for better error handling

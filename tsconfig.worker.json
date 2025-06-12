@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2020", "WebWorker"],
+    "types": ["vite/client"],
+    "noEmit": false,
+    "outDir": "dist"
+  },
+  "include": [
+    "src/workers/**/*.ts",
+    "src/types/worker*.d.ts"
+  ],
+  "exclude": [
+    "src/**/*.vue",
+    "src/components/**/*",
+    "src/stores/**/*",
+    "node_modules"
+  ]
+}

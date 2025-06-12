@@ -14,6 +14,8 @@
     "test:coverage": "vitest --coverage",
     "test:ui": "vitest --ui",
     "typecheck": "vue-tsc --noEmit",
+    "typecheck:worker": "tsc --project tsconfig.worker.json --noEmit",
+    "typecheck:all": "npm run typecheck && npm run typecheck:worker",
     "typecheck:watch": "vue-tsc --noEmit --watch",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -22,7 +24,7 @@
     "clean:all": "rm -rf dist node_modules/.vite node_modules",
     "stats": "npm run build && du -sh dist && find dist -type f | wc -l",
     "preview": "vite preview --port 4173",
-    "check": "npm run typecheck && npm run lint:quiet && npm run test -- --run",
+    "check": "npm run typecheck:all && npm run lint:quiet && npm run test -- --run",
     "prepare": "npm run check"
   },
   "dependencies": {

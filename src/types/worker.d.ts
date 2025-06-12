@@ -1,41 +1,5 @@
 // Worker-specific type definitions
 
-declare global {
-  // Enhanced ErrorEvent interface for workers
-  interface ErrorEvent extends Event {
-    message: string
-    filename?: string
-    lineno?: number
-    colno?: number
-    error?: any
-  }
-
-  // Enhanced PromiseRejectionEvent interface
-  interface PromiseRejectionEvent extends Event {
-    promise: Promise<any>
-    reason: any
-  }
-
-  // Worker global scope enhancements
-  interface WorkerGlobalScope {
-    onerror: ((this: WorkerGlobalScope, ev: ErrorEvent) => any) | null
-    onunhandledrejection: ((this: WorkerGlobalScope, ev: PromiseRejectionEvent) => any) | null
-  }
-
-  // Dedicated worker global scope
-  interface DedicatedWorkerGlobalScope extends WorkerGlobalScope {
-    onmessage: ((this: DedicatedWorkerGlobalScope, ev: MessageEvent) => any) | null
-    postMessage(message: any, transfer?: Transferable[]): void
-  }
-
-  // Service worker registration (for future use)
-  interface ServiceWorkerRegistration {
-    active: ServiceWorker | null
-    installing: ServiceWorker | null
-    waiting: ServiceWorker | null
-  }
-}
-
 // Worker message types
 export interface WorkerMessage {
   id: string

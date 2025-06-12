@@ -52,7 +52,6 @@ export default [
         TouchEvent: 'readonly',
         KeyboardEvent: 'readonly',
         Node: 'readonly',
-        WorkerOptions: 'readonly',
         Transferable: 'readonly',
         // Node.js globals for config files
         __dirname: 'readonly',
@@ -120,7 +119,6 @@ export default [
         TouchEvent: 'readonly',
         KeyboardEvent: 'readonly',
         Node: 'readonly',
-        WorkerOptions: 'readonly',
         Transferable: 'readonly'
       }
     },
@@ -159,7 +157,7 @@ export default [
     }
   },
 
-  // Worker files - Enhanced configuration
+  // Worker files - Enhanced configuration with correct globals
   {
     files: ['src/workers/**/*.ts'],
     languageOptions: {
@@ -197,7 +195,9 @@ export default [
         Math: 'readonly',
         Number: 'readonly',
         String: 'readonly',
-        Date: 'readonly'
+        Date: 'readonly',
+        Uint8ClampedArray: 'readonly',
+        ArrayBuffer: 'readonly'
       }
     },
     plugins: {
@@ -263,7 +263,6 @@ export default [
         TouchEvent: 'readonly',
         KeyboardEvent: 'readonly',
         Node: 'readonly',
-        WorkerOptions: 'readonly',
         Transferable: 'readonly',
         globalThis: 'writable'
       }

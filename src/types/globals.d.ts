@@ -37,10 +37,10 @@ declare global {
 
   // Enhanced File API types
   interface FileReader {
-    EMPTY: number
-    LOADING: number
-    DONE: number
-    readyState: number
+    readonly EMPTY: number
+    readonly LOADING: number
+    readonly DONE: number
+    readonly readyState: number
   }
 
   // Enhanced Blob types
