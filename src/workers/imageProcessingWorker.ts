@@ -300,7 +300,7 @@ function sendError(taskId: string, error: string) {
 
 // Handle worker errors
 self.onerror = (event) => {
-  console.error('Worker error:', event.error)
+  console.error('Worker error:', (event as ErrorEvent).message)
 }
 
 self.onunhandledrejection = (event) => {

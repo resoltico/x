@@ -31,10 +31,10 @@ export class ProcessingModule {
 
     try {
       // Dynamic import of wasm-vips with proper configuration
-      const { Vips } = await import('wasm-vips')
+      const wasmVips = await import('wasm-vips')
       
       // Initialize with CDN path - this avoids eval issues
-      this.vips = await Vips({
+      this.vips = await wasmVips.default({
         dynamicLibraries: [`https://cdn.jsdelivr.net/npm/wasm-vips@0.0.13/lib/vips.wasm`],
         locateFile: (file: string) => {
           // Return the full CDN path for WASM files

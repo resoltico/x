@@ -1,9 +1,9 @@
-import { beforeAll } from 'vitest'
+import { beforeAll, vi } from 'vitest'
 
 // Mock Web APIs that might not be available in test environment
 beforeAll(() => {
   // Mock File API
-  global.File = class MockFile {
+  (global as any).File = class MockFile {
     name: string
     size: number
     type: string
@@ -16,12 +16,12 @@ beforeAll(() => {
   } as any
 
   // Mock FileReader
-  global.FileReader = class MockFileReader {
+  (global as any).FileReader = class MockFileReader {
     result: any = null
     onload: ((event: any) => void) | null = null
     onerror: ((event: any) => void) | null = null
     
-    readAsArrayBuffer(file: File) {
+    readAsArrayBuffer(_file: File) {
       setTimeout(() => {
         this.result = new ArrayBuffer(8)
         if (this.onload) {
@@ -32,7 +32,7 @@ beforeAll(() => {
   } as any
 
   // Mock URL API
-  global.URL = {
+  (global as any).URL = {
     createObjectURL: () => 'mock-url',
     revokeObjectURL: () => {}
   } as any
@@ -55,7 +55,7 @@ beforeAll(() => {
     fill: vi.fn()
   }
 
-  global.HTMLCanvasElement = class MockCanvas {
+  (global as any).HTMLCanvasElement = class MockCanvas {
     width = 300
     height = 150
     
@@ -69,30 +69,33 @@ beforeAll(() => {
   } as any
 
   // Mock Image
-  global.Image = class MockImage {
+  (global as any).Image = class MockImage {
     onload: (() => void) | null = null
     onerror: (() => void) | null = null
-    src = ''
     width = 100
     height = 100
     
-    set src(value: string) {
+    set src(_value: string) {
       setTimeout(() => {
         if (this.onload) this.onload()
       }, 0)
     }
+    
+    get src() {
+      return ''
+    }
   } as any
 
   // Mock Worker
-  global.Worker = class MockWorker {
+  (global as any).Worker = class MockWorker {
     onmessage: ((event: MessageEvent) => void) | null = null
     onerror: ((event: ErrorEvent) => void) | null = null
     
-    constructor(url: string | URL, options?: WorkerOptions) {
+    constructor(_url: string | URL, _options?: WorkerOptions) {
       // Mock worker constructor
     }
     
-    postMessage(message: any, transfer?: Transferable[]) {
+    postMessage(message: any, _transfer?: Transferable[]) {
       // Mock postMessage
       setTimeout(() => {
         if (this.onmessage) {
@@ -111,11 +114,11 @@ beforeAll(() => {
   } as any
 
   // Mock performance.memory
-  if (!global.performance) {
-    global.performance = {} as Performance
+  if (!(global as any).performance) {
+    (global as any).performance = {} as Performance
   }
   
-  global.performance.memory = {
+  (global as any).performance.memory = {
     usedJSHeapSize: 10 * 1024 * 1024,
     totalJSHeapSize: 50 * 1024 * 1024,
     jsHeapSizeLimit: 100 * 1024 * 1024
@@ -128,7 +131,7 @@ beforeAll(() => {
   })
 
   // Mock Blob
-  global.Blob = class MockBlob {
+  (global as any).Blob = class MockBlob {
     size: number
     type: string
     
@@ -139,14 +142,14 @@ beforeAll(() => {
   } as any
 
   // Mock ResizeObserver
-  global.ResizeObserver = class MockResizeObserver {
+  (global as any).ResizeObserver = class MockResizeObserver {
     observe() {}
     unobserve() {}
     disconnect() {}
   } as any
 
   // Mock IntersectionObserver
-  global.IntersectionObserver = class MockIntersectionObserver {
+  (global as any).IntersectionObserver = class MockIntersectionObserver {
     observe() {}
     unobserve() {}
     disconnect() {}

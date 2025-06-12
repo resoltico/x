@@ -1,5 +1,5 @@
 import type { ImageData, CanvasState } from '@/types'
-import { renderImageToCanvas, calculateFitZoom, getImageCenter } from '@/utils/imageHelpers'
+import { calculateFitZoom, getImageCenter } from '@/utils/imageHelpers'
 
 /**
  * PreviewRendererModule handles canvas rendering and interaction

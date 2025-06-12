@@ -16,6 +16,15 @@ export default defineConfig({
       nonStandard: {
         deepSelectorCombinator: true,
       },
+      // Enable CSS nesting and other modern features
+      include: 2 << 16, // Include all features
+      targets: {
+        // Modern browser support
+        chrome: 100,
+        firefox: 100,
+        safari: 15,
+        edge: 100,
+      },
     },
   },
   plugins: [

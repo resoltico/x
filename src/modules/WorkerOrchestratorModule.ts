@@ -85,7 +85,7 @@ export class WorkerOrchestratorModule {
 
     this.taskQueue.push(task)
     this.notifyTaskUpdate(task)
-    this.processQueue()
+    this.processQueue(imageData)
     
     return task.id
   }
@@ -150,19 +150,19 @@ export class WorkerOrchestratorModule {
   /**
    * Process the task queue
    */
-  private processQueue() {
+  private processQueue(imageData?: ImageData) {
     while (this.taskQueue.length > 0 && this.availableWorkers.length > 0) {
       const task = this.taskQueue.shift()!
       const worker = this.availableWorkers.shift()!
       
-      this.executeTask(worker, task)
+      this.executeTask(worker, task, imageData)
     }
   }
 
   /**
    * Execute a task on a worker
    */
-  private async executeTask(worker: Worker, task: ProcessingTask) {
+  private async executeTask(worker: Worker, task: ProcessingTask, imageData?: ImageData) {
     try {
       task.status = 'processing'
       this.activeTasksMap.set(task.id, { worker, task })
@@ -175,9 +175,7 @@ export class WorkerOrchestratorModule {
         payload: {
           type: task.type,
           parameters: task.parameters,
-          // Note: In a real implementation, we'd need to get the current image data from the store
-          // For now, we'll pass a placeholder - this would be fixed when integrating with the store
-          imageData: null // This should be the actual ImageData from the store
+          imageData: imageData || null
         }
       }
 
@@ -240,13 +238,13 @@ export class WorkerOrchestratorModule {
    * Handle worker errors
    */
   private handleWorkerError(event: ErrorEvent) {
-    console.error('Worker error:', event.error)
+    console.error('Worker error:', event.message)
     
     // Find and handle any tasks using the failed worker
     for (const [taskId, { worker, task }] of this.activeTasksMap.entries()) {
       if (worker === event.target) {
         task.status = 'failed'
-        task.error = 'Worker error: ' + (event.error?.message || 'Unknown worker error')
+        task.error = 'Worker error: ' + (event.message || 'Unknown worker error')
         task.completedAt = new Date()
         this.activeTasksMap.delete(taskId)
         this.notifyTaskUpdate(task)

@@ -21,9 +21,6 @@ export const fileToImageData = async (file: File): Promise<ImageData> => {
           
           ctx.drawImage(imageElement, 0, 0)
           
-          // Get image data from canvas
-          const imageDataFromCanvas = ctx.getImageData(0, 0, canvas.width, canvas.height)
-          
           resolve({
             data: arrayBuffer,
             width: imageElement.width,
@@ -126,7 +123,7 @@ export const renderImageToCanvas = (
 /**
  * Gets the center point of an image for zoom operations
  */
-export const getImageCenter = (imageData: ImageData, canvas: HTMLCanvasElement) => {
+export const getImageCenter = (_imageData: ImageData, canvas: HTMLCanvasElement) => {
   return {
     x: canvas.width / 2,
     y: canvas.height / 2
