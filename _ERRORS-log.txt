@@ -1,18 +1,84 @@
-[4:04:01 AM] % pnpm run build
+[4:17:56 AM] % pnpm install
+Packages: +297
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 369, reused 297, downloaded 0, added 297, done
+node_modules/.pnpm/@tailwindcss+oxide@4.1.10/node_modules/@tailwindcss/oxide: Running postinstall script, done in 78ms
 
-> engraving-processor-pro@1.0.0 build /Users/erst/Downloads/____zz
+dependencies:
++ pinia 3.0.3
++ vue 3.5.16
++ wasm-vips 0.0.13
+
+devDependencies:
++ @tailwindcss/postcss 4.1.10
++ @vitejs/plugin-vue 5.2.4
++ @vue/eslint-config-typescript 14.5.0
++ @vue/test-utils 2.4.6
++ autoprefixer 10.4.21
++ eslint 9.28.0
++ eslint-config-prettier 10.1.5
++ eslint-plugin-prettier 5.4.1
++ eslint-plugin-vue 10.2.0
++ postcss 8.5.5
++ prettier 3.5.3
++ tailwindcss 4.1.10
++ typescript 5.8.3
++ vite 6.3.5
++ vite-plugin-top-level-await 1.5.0
++ vite-plugin-wasm 3.4.1
++ vitest 3.2.3
+
+Done in 7.5s using pnpm v10.12.1
+[4:18:08 AM] % pnpm run build
+
+> engraving-processor-pro@1.0.0 build /Users/erst/Library/CloudStorage/Dropbox/Websites/x
 > vite build
 
 vite v6.3.5 building for production...
-✓ 4 modules transformed.
-✗ Build failed in 188ms
+transforming (1) src/main.tsError: Cannot apply unknown utility class `text-gray-900`. Are you using CSS modules or similar and missing `@reference`? https://tailwindcss.com/docs/functions-and-directives#reference-directive
+    at onInvalidCandidate (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.10/node_modules/tailwindcss/dist/lib.js:18:1312)
+    at ge (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.10/node_modules/tailwindcss/dist/lib.js:13:29803)
+    at /Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.10/node_modules/tailwindcss/dist/lib.js:18:373
+    at I (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.10/node_modules/tailwindcss/dist/lib.js:3:1656)
+    at je (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.10/node_modules/tailwindcss/dist/lib.js:18:172)
+    at bi (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.10/node_modules/tailwindcss/dist/lib.js:35:780)
+    at async yi (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.10/node_modules/tailwindcss/dist/lib.js:35:1123)
+    at async _r (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@tailwindcss+node@4.1.10/node_modules/@tailwindcss/node/dist/index.js:10:3384)
+    at async p (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@tailwindcss+postcss@4.1.10/node_modules/@tailwindcss/postcss/dist/index.js:10:4019)
+    at async Object.Once (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@tailwindcss+postcss@4.1.10/node_modules/@tailwindcss/postcss/dist/index.js:10:4290)
+transforming (13) node_modules/.pnpm/@vue+devtools-kit@7.7.6/node_modules/@vue/devtools-kit/dist/index.jsError: Cannot apply unknown utility class `border-primary-400`. Are you using CSS modules or similar and missing `@reference`? https://tailwindcss.com/docs/functions-and-directives#reference-directive
+    at onInvalidCandidate (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.10/node_modules/tailwindcss/dist/lib.js:18:1312)
+    at ge (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.10/node_modules/tailwindcss/dist/lib.js:13:29803)
+    at /Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.10/node_modules/tailwindcss/dist/lib.js:18:373
+    at I (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.10/node_modules/tailwindcss/dist/lib.js:3:1656)
+    at je (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.10/node_modules/tailwindcss/dist/lib.js:18:172)
+    at bi (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.10/node_modules/tailwindcss/dist/lib.js:35:780)
+    at async yi (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.10/node_modules/tailwindcss/dist/lib.js:35:1123)
+    at async _r (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@tailwindcss+node@4.1.10/node_modules/@tailwindcss/node/dist/index.js:10:3384)
+    at async p (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@tailwindcss+postcss@4.1.10/node_modules/@tailwindcss/postcss/dist/index.js:10:4019)
+    at async Object.Once (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@tailwindcss+postcss@4.1.10/node_modules/@tailwindcss/postcss/dist/index.js:10:4290)
+✓ 31 modules transformed.
+✗ Build failed in 933ms
 error during build:
-[vite:css] [postcss] It looks like you're trying to use `tailwindcss` directly as a PostCSS plugin. The PostCSS plugin has moved to a separate package, so to continue using Tailwind CSS with PostCSS you'll need to install `@tailwindcss/postcss` and update your PostCSS configuration.
-file: /Users/erst/Downloads/____zz/src/style.css:undefined:NaN
-    at We (/Users/erst/Downloads/____zz/node_modules/.pnpm/tailwindcss@4.1.10/node_modules/tailwindcss/dist/lib.js:35:2121)
-    at LazyResult.runOnRoot (/Users/erst/Downloads/____zz/node_modules/.pnpm/postcss@8.5.5/node_modules/postcss/lib/lazy-result.js:361:16)
-    at LazyResult.runAsync (/Users/erst/Downloads/____zz/node_modules/.pnpm/postcss@8.5.5/node_modules/postcss/lib/lazy-result.js:290:26)
-    at LazyResult.async (/Users/erst/Downloads/____zz/node_modules/.pnpm/postcss@8.5.5/node_modules/postcss/lib/lazy-result.js:192:30)
-    at LazyResult.then (/Users/erst/Downloads/____zz/node_modules/.pnpm/postcss@8.5.5/node_modules/postcss/lib/lazy-result.js:436:17)
+[vite:esbuild] Transform failed with 1 error:
+/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/stores/app.ts:199:3: ERROR: Unexpected end of file
+file: /Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/stores/app.ts:199:3
+
+Unexpected end of file
+197|      initialize,
+198|      reset
+199|    }
+   |     ^
+
+    at failureErrorWithLog (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/esbuild@0.25.5/node_modules/esbuild/lib/main.js:1463:15)
+    at /Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/esbuild@0.25.5/node_modules/esbuild/lib/main.js:734:50
+    at responseCallbacks.<computed> (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/esbuild@0.25.5/node_modules/esbuild/lib/main.js:601:9)
+    at handleIncomingPacket (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/esbuild@0.25.5/node_modules/esbuild/lib/main.js:656:12)
+    at Socket.readFromStdout (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/esbuild@0.25.5/node_modules/esbuild/lib/main.js:579:7)
+    at Socket.emit (node:events:518:28)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+    at Readable.push (node:internal/streams/readable:392:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
  ELIFECYCLE  Command failed with exit code 1.
-[4:05:41 AM] % 
+[4:19:56 AM] % 
