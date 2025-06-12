@@ -269,7 +269,7 @@
   }
 
   .drop-zone:hover {
-    @apply border-blue-400 bg-blue-25;
+    @apply border-blue-400 bg-blue-50;
   }
 
   .drop-zone.drag-over {
