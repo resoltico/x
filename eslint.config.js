@@ -44,6 +44,7 @@ export default [
         Worker: 'readonly',
         MessageEvent: 'readonly',
         ErrorEvent: 'readonly',
+        PromiseRejectionEvent: 'readonly',
         Event: 'readonly',
         DragEvent: 'readonly',
         WheelEvent: 'readonly',
@@ -111,6 +112,7 @@ export default [
         Worker: 'readonly',
         MessageEvent: 'readonly',
         ErrorEvent: 'readonly',
+        PromiseRejectionEvent: 'readonly',
         Event: 'readonly',
         DragEvent: 'readonly',
         WheelEvent: 'readonly',
@@ -157,7 +159,7 @@ export default [
     }
   },
 
-  // Worker files
+  // Worker files - Enhanced configuration
   {
     files: ['src/workers/**/*.ts'],
     languageOptions: {
@@ -174,10 +176,28 @@ export default [
         DedicatedWorkerGlobalScope: 'readonly',
         MessageEvent: 'readonly',
         ErrorEvent: 'readonly',
+        PromiseRejectionEvent: 'readonly',
         OffscreenCanvas: 'readonly',
         OffscreenCanvasRenderingContext2D: 'readonly',
         ImageData: 'readonly',
-        console: 'readonly'
+        console: 'readonly',
+        setTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearTimeout: 'readonly',
+        clearInterval: 'readonly',
+        URL: 'readonly',
+        Blob: 'readonly',
+        Image: 'readonly',
+        Map: 'readonly',
+        Set: 'readonly',
+        Array: 'readonly',
+        Object: 'readonly',
+        Promise: 'readonly',
+        Error: 'readonly',
+        Math: 'readonly',
+        Number: 'readonly',
+        String: 'readonly',
+        Date: 'readonly'
       }
     },
     plugins: {
@@ -235,6 +255,7 @@ export default [
         Worker: 'readonly',
         MessageEvent: 'readonly',
         ErrorEvent: 'readonly',
+        PromiseRejectionEvent: 'readonly',
         Event: 'readonly',
         DragEvent: 'readonly',
         WheelEvent: 'readonly',

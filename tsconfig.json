@@ -21,6 +21,9 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": false,
+    "noImplicitReturns": true,
+    "noImplicitOverride": true,
 
     /* Paths */
     "baseUrl": ".",
@@ -35,7 +38,7 @@
     },
 
     /* Additional */
-    "types": ["vite/client", "vitest/globals"]
+    "types": ["vite/client", "vitest/globals", "webworker"]
   },
   "include": [
     "src/**/*.ts",

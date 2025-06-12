@@ -85,13 +85,44 @@ export interface ControlParameter {
 export interface WorkerMessage {
   id: string
   type: 'process' | 'cancel' | 'progress'
-  payload?: any
+  payload?: {
+    imageData?: any
+    type?: ProcessingType
+    parameters?: ProcessingParameters
+    progress?: number
+    message?: string
+  }
 }
 
 export interface WorkerResponse {
   id: string
   type: 'result' | 'progress' | 'error'
-  payload?: any
+  payload?: {
+    result?: ArrayBuffer
+    progress?: number
+    message?: string
+    error?: string
+  }
+}
+
+// Enhanced worker payload types
+export interface ProcessingTaskPayload {
+  imageData: any
+  type: ProcessingType
+  parameters: ProcessingParameters
+}
+
+export interface ProcessingResultPayload {
+  result: ArrayBuffer
+}
+
+export interface ProcessingProgressPayload {
+  progress: number
+  message?: string
+}
+
+export interface ProcessingErrorPayload {
+  error: string
 }
 
 // Plugin system types
@@ -141,4 +172,14 @@ export interface ProcessingError {
   message: string
   details?: any
   timestamp: Date
+}
+
+// Worker status types
+export interface WorkerStatus {
+  totalWorkers: number
+  availableWorkers: number
+  activeWorkers: number
+  queuedTasks: number
+  activeTasks: number
+  initialized: boolean
 }

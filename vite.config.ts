@@ -29,6 +29,10 @@ export default defineConfig({
     headers: {
       'Cross-Origin-Embedder-Policy': 'require-corp',
       'Cross-Origin-Opener-Policy': 'same-origin',
+    },
+    fs: {
+      // Allow serving files from one level up to the project root
+      allow: ['..']
     }
   },
   build: {
@@ -45,11 +49,27 @@ export default defineConfig({
         if (warning.code === 'EVAL' && warning.id?.includes('wasm-vips')) {
           return
         }
+        // Skip TypeScript issues that are handled by the TypeScript compiler
+        if (warning.code === 'PLUGIN_WARNING' && warning.plugin === 'typescript') {
+          return
+        }
         warn(warning)
       }
     },
     chunkSizeWarningLimit: 1000,
-    sourcemap: true
+    sourcemap: true,
+    // Ensure proper handling of worker files
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html')
+      },
+      output: {
+        manualChunks: {
+          'vue-vendor': ['vue', 'pinia'],
+          'image-processing': ['wasm-vips']
+        }
+      }
+    }
   },
   optimizeDeps: {
     exclude: ['wasm-vips'],
@@ -60,7 +80,29 @@ export default defineConfig({
     plugins: () => [
       wasm(),
       topLevelAwait()
-    ]
+    ],
+    rollupOptions: {
+      output: {
+        // Ensure workers are built with proper ES module format
+        format: 'es',
+        entryFileNames: 'assets/[name]-[hash].js'
+      }
+    }
   },
-  assetsInclude: ['**/*.wasm']
+  assetsInclude: ['**/*.wasm'],
+  esbuild: {
+    // Enhanced TypeScript compilation options
+    target: 'esnext',
+    tsconfigRaw: {
+      compilerOptions: {
+        // Ensure proper worker support
+        lib: ['ES2020', 'DOM', 'DOM.Iterable', 'WebWorker']
+      }
+    }
+  },
+  define: {
+    // Define global constants for better error handling
+    __DEV__: JSON.stringify(process.env.NODE_ENV !== 'production'),
+    __VERSION__: JSON.stringify(process.env.npm_package_version || '1.0.0')
+  }
 })
