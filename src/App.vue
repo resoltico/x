@@ -50,15 +50,15 @@
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue'
-  import ImageInput from './components/ImageInput.vue'
-  import PreviewRenderer from './components/PreviewRenderer.vue'
-  import ProcessingControls from './components/ProcessingControls.vue'
-  import ProgressDisplay from './components/ProgressDisplay.vue'
+import { ref } from 'vue'
+import ImageInput from './components/ImageInput.vue'
+import PreviewRenderer from './components/PreviewRenderer.vue'
+import ProcessingControls from './components/ProcessingControls.vue'
+import ProgressDisplay from './components/ProgressDisplay.vue'
 
-  const version = ref('1.0.0')
+const version = ref('1.0.0')
 </script>
 
 <style scoped>
-  /* Component-specific styles if needed */
+/* Component-specific styles if needed */
 </style>
