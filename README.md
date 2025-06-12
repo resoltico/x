@@ -1,6 +1,6 @@
 # Engraving Processor Pro
 
-An AI-driven web application for processing historical engravings and document scans with advanced image algorithms. Built with Vue 3, TypeScript, and WebAssembly for high-performance local processing.
+Application for processing historical engravings and document scans with advanced image algorithms. Built with Vue 3, TypeScript, and WebAssembly for high-performance local processing.
 
 ## 🚀 Features
 

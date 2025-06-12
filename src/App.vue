@@ -42,7 +42,7 @@
     <footer class="bg-white border-t border-slate-200 mt-16">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div class="text-center text-sm text-slate-500">
-          <p>&copy; 2025 Engraving Processor Pro. Built with Vue 3, TypeScript & WebAssembly.</p>
+          <p>&copy; 2025 Ervins Strauhmanis. Built with Vue 3, TypeScript & WebAssembly.</p>
         </div>
       </div>
     </footer>
