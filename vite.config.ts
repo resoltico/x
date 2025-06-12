@@ -6,6 +6,9 @@ import topLevelAwait from 'vite-plugin-top-level-await'
 import { resolve } from 'path'
 
 export default defineConfig({
+  css: {
+    transformer: 'lightningcss',
+  },
   plugins: [
     vue(),
     tailwindcss(),

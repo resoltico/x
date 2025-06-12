@@ -5,7 +5,7 @@
     <!-- Drop Zone -->
     <div
       ref="dropZone"
-      class="drop-zone"
+      class="drop-zone cursor-pointer transition-all duration-200 hover:border-blue-400 hover:bg-blue-50"
       :class="{ 'drag-over': isDragOver }"
       @drop="handleDrop"
       @dragover="handleDragOver"
@@ -263,17 +263,7 @@
 </script>
 
 <style scoped>
-  .drop-zone {
-    cursor: pointer;
-    transition: all 0.2s ease-in-out;
-  }
-
-  .drop-zone:hover {
-    @apply border-blue-300 bg-blue-50;
-  }
-
   .drop-zone.drag-over {
-    @apply border-blue-500 bg-blue-50;
     transform: scale(1.02);
   }
 </style>

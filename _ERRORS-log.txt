@@ -1,5 +1,5 @@
-Last login: Thu Jun 12 06:33:01 on ttys000
-[6:38:11 AM] % pnpm install
+Last login: Thu Jun 12 06:38:04 on ttys000
+[6:49:17 AM] % pnpm install
 Packages: +286
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 Progress: resolved 358, reused 286, downloaded 0, added 286, done
@@ -18,6 +18,7 @@ devDependencies:
 + eslint-config-prettier 10.1.5
 + eslint-plugin-prettier 5.4.1
 + eslint-plugin-vue 10.2.0
++ lightningcss 1.30.1
 + prettier 3.5.3
 + tailwindcss 4.1.10
 + typescript 5.8.3
@@ -26,30 +27,30 @@ devDependencies:
 + vite-plugin-wasm 3.4.1
 + vitest 3.2.3
 
-Done in 6.5s using pnpm v10.12.1
-[6:38:24 AM] % pnpm run build
+Done in 3.5s using pnpm v10.12.1
+[6:49:25 AM] % pnpm build
 
 > engraving-processor-pro@1.0.0 build /Users/erst/Library/CloudStorage/Dropbox/Websites/x
 > vite build
 
 vite v6.3.5 building for production...
-✓ 20 modules transformed.
-✗ Build failed in 253ms
-error during build:
-[@tailwindcss/vite:generate:build] Cannot apply unknown utility class `border-blue-300`. Are you using CSS modules or similar and missing `@reference`? https://tailwindcss.com/docs/functions-and-directives#reference-directive
-file: /Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/components/ImageInput.vue?vue&type=style&index=0&scoped=3b8439e4&lang.css
-    at onInvalidCandidate (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.10/node_modules/tailwindcss/dist/chunk-E562WLSY.mjs:18:1312)
-    at pe (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.10/node_modules/tailwindcss/dist/chunk-E562WLSY.mjs:13:29803)
-    at file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.10/node_modules/tailwindcss/dist/chunk-E562WLSY.mjs:18:373
-    at F (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.10/node_modules/tailwindcss/dist/chunk-E562WLSY.mjs:3:1656)
-    at Oe (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.10/node_modules/tailwindcss/dist/chunk-E562WLSY.mjs:18:172)
-    at ti (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.10/node_modules/tailwindcss/dist/chunk-E562WLSY.mjs:35:780)
-    at async mn (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.10/node_modules/tailwindcss/dist/chunk-E562WLSY.mjs:35:1123)
-    at async Ca (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/tailwindcss@4.1.10/node_modules/tailwindcss/dist/chunk-E562WLSY.mjs:35:1898)
-    at async $a (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@tailwindcss+node@4.1.10/node_modules/@tailwindcss/node/dist/index.mjs:10:3433)
-    at async C.generate (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/@tailwindcss+vite@4.1.10_vite@6.3.5_jiti@2.4.2_lightningcss@1.30.1_/node_modules/@tailwindcss/vite/dist/index.mjs:1:3571)
- ELIFECYCLE  Command failed with exit code 1.
-[6:38:42 AM] % 
+node_modules/.pnpm/wasm-vips@0.0.13/node_modules/wasm-vips/lib/vips-es6.js (45:109): Use of eval in "node_modules/.pnpm/wasm-vips@0.0.13/node_modules/wasm-vips/lib/vips-es6.js" is strongly discouraged as it poses security risks and may cause issues with minification.
+node_modules/.pnpm/wasm-vips@0.0.13/node_modules/wasm-vips/lib/vips-es6.js (45:304): Use of eval in "node_modules/.pnpm/wasm-vips@0.0.13/node_modules/wasm-vips/lib/vips-es6.js" is strongly discouraged as it poses security risks and may cause issues with minification.
+node_modules/.pnpm/wasm-vips@0.0.13/node_modules/wasm-vips/lib/vips-es6.js (45:109): Use of eval in "node_modules/.pnpm/wasm-vips@0.0.13/node_modules/wasm-vips/lib/vips-es6.js" is strongly discouraged as it poses security risks and may cause issues with minification.
+node_modules/.pnpm/wasm-vips@0.0.13/node_modules/wasm-vips/lib/vips-es6.js (45:304): Use of eval in "node_modules/.pnpm/wasm-vips@0.0.13/node_modules/wasm-vips/lib/vips-es6.js" is strongly discouraged as it poses security risks and may cause issues with minification.
+✓ 38 modules transformed.
+Generated an empty chunk: "wasm-vendor".
+dist/index.html                                    1.10 kB │ gzip:     0.57 kB
+dist/assets/imageProcessingWorker-Bi3ChN_1.js      5.98 kB
+dist/assets/vips-es6-DmeHDDA4.js                  96.03 kB
+dist/assets/vips-es6-B2_Osf5k.js                  96.09 kB
+dist/assets/vips-DNd7RpiG.wasm                 5,767.48 kB │ gzip: 2,041.43 kB
+dist/assets/index-CeOJiymn.css                    28.43 kB │ gzip:     5.70 kB
+dist/assets/wasm-vendor-l0sNRNKZ.js                0.00 kB │ gzip:     0.02 kB
+dist/assets/index-C0LGh40W.js                     45.76 kB │ gzip:    14.10 kB
+dist/assets/vue-vendor-xW1Kpa9x.js                66.14 kB │ gzip:    26.42 kB
+✓ built in 1.18s
+[6:49:57 AM] % 
 
 
 
