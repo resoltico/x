@@ -238,32 +238,38 @@ export class WorkerOrchestratorModule {
 
     switch (type) {
       case 'progress':
-        console.log(`Task ${id} progress: ${payload.progress}%`)
-        task.progress = payload.progress
-        this.notifyTaskUpdate(task)
+        if (payload && typeof payload.progress === 'number') {
+          console.log(`Task ${id} progress: ${payload.progress}%`)
+          task.progress = payload.progress
+          this.notifyTaskUpdate(task)
+        }
         break
 
       case 'result':
-        console.log(`Task ${id} completed successfully`)
-        task.status = 'completed'
-        task.progress = 100
-        task.result = payload.result
-        task.completedAt = new Date()
-        this.activeTasksMap.delete(id)
-        this.availableWorkers.push(worker)
-        this.notifyTaskUpdate(task)
-        this.processQueue()
+        if (payload && payload.result) {
+          console.log(`Task ${id} completed successfully`)
+          task.status = 'completed'
+          task.progress = 100
+          task.result = payload.result
+          task.completedAt = new Date()
+          this.activeTasksMap.delete(id)
+          this.availableWorkers.push(worker)
+          this.notifyTaskUpdate(task)
+          this.processQueue()
+        }
         break
 
       case 'error':
-        console.error(`Task ${id} failed:`, payload.error)
-        task.status = 'failed'
-        task.error = payload.error
-        task.completedAt = new Date()
-        this.activeTasksMap.delete(id)
-        this.availableWorkers.push(worker)
-        this.notifyTaskUpdate(task)
-        this.processQueue()
+        if (payload && payload.error) {
+          console.error(`Task ${id} failed:`, payload.error)
+          task.status = 'failed'
+          task.error = payload.error
+          task.completedAt = new Date()
+          this.activeTasksMap.delete(id)
+          this.availableWorkers.push(worker)
+          this.notifyTaskUpdate(task)
+          this.processQueue()
+        }
         break
     }
   }

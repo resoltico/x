@@ -3,12 +3,17 @@
   "compilerOptions": {
     "lib": ["ES2020", "WebWorker"],
     "types": ["vite/client"],
-    "noEmit": false,
-    "outDir": "dist"
+    "noEmit": true,
+    "strictNullChecks": true,
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler"
   },
   "include": [
     "src/workers/**/*.ts",
-    "src/types/worker*.d.ts"
+    "src/types/worker*.d.ts",
+    "src/types/index.ts",
+    "src/modules/processing/**/*.ts"
   ],
   "exclude": [
     "src/**/*.vue",

@@ -1,11 +1,9 @@
-Last login: Fri Jun 13 02:34:27 on ttys000
+Last login: Fri Jun 13 02:45:53 on ttys000
 Using Node v22.16.0
-[2:45:58 AM] % pnpm install
-
+[2:56:46 AM] % pnpm install
 Packages: +348
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 Progress: resolved 420, reused 348, downloaded 0, added 348, done
-node_modules/.pnpm/@swc+core@1.12.1/node_modules/@swc/core: Running postinstall script, done in 638ms
 . prepare$ npm run check
 │ > engraving-processor-pro@1.0.0 check
 │ > npm run typecheck:all && npm run lint:quiet && npm run test -- --run
@@ -13,24 +11,27 @@ node_modules/.pnpm/@swc+core@1.12.1/node_modules/@swc/core: Running postinstall 
 │ > npm run typecheck && npm run typecheck:worker
 │ > engraving-processor-pro@1.0.0 typecheck
 │ > vue-tsc --noEmit
-│ src/modules/WorkerOrchestratorModule.ts(241,45): error TS18048: 'payload' is possibly 'undefined'.
-│ src/modules/WorkerOrchestratorModule.ts(242,9): error TS2322: Type 'number | undefined' is not assignable to type 'number'.
-│   Type 'undefined' is not assignable to type 'number'.
-│ src/modules/WorkerOrchestratorModule.ts(242,25): error TS18048: 'payload' is possibly 'undefined'.
-│ src/modules/WorkerOrchestratorModule.ts(250,23): error TS18048: 'payload' is possibly 'undefined'.
-│ src/modules/WorkerOrchestratorModule.ts(259,45): error TS18048: 'payload' is possibly 'undefined'.
-│ src/modules/WorkerOrchestratorModule.ts(261,22): error TS18048: 'payload' is possibly 'undefined'.
 │ src/workers/imageProcessingWorker.ts(196,1): error TS2322: Type '(event: ErrorEvent) => void' is not assignable to type '((this: Dedica…
-│   Type '(event: ErrorEvent) => void' is not assignable to type '(this: DedicatedWorkerGlobalScope, ev: WorkerErrorEvent) => any'.
-│     Types of parameters 'event' and 'ev' are incompatible.
-│       Type 'WorkerErrorEvent' is not assignable to type 'ErrorEvent'.
-│         Types of property 'colno' are incompatible.
-│           Type 'number | undefined' is not assignable to type 'number'.
-│             Type 'undefined' is not assignable to type 'number'.
-└─ Failed in 2.8s at /Users/erst/Library/CloudStorage/Dropbox/Websites/x
+│   Type '(event: ErrorEvent) => void' is not assignable to type 'OnErrorEventHandlerNonNull'.
+│     Types of parameters 'event' and 'event' are incompatible.
+│       Type 'string | Event' is not assignable to type 'ErrorEvent'.
+│         Type 'string' is not assignable to type 'ErrorEvent'.
+└─ Failed in 3.2s at /Users/erst/Library/CloudStorage/Dropbox/Websites/x
  ELIFECYCLE  Command failed with exit code 2.
-[2:46:09 AM] % 
-[2:46:16 AM] % 
+[2:57:05 AM] % 
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

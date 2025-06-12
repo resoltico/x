@@ -4,7 +4,7 @@
 
 declare const self: DedicatedWorkerGlobalScope & typeof globalThis
 
-// Enhanced worker event types
+// Enhanced worker event types with proper compatibility
 interface WorkerErrorEvent extends ErrorEvent {
   message: string
   filename?: string
@@ -21,8 +21,9 @@ interface WorkerPromiseRejectionEvent extends Event {
 // Extend the global scope for workers
 declare global {
   interface DedicatedWorkerGlobalScope {
-    onerror: ((this: DedicatedWorkerGlobalScope, ev: WorkerErrorEvent) => any) | null
-    onunhandledrejection: ((this: DedicatedWorkerGlobalScope, ev: WorkerPromiseRejectionEvent) => any) | null
+    // Use the standard ErrorEvent type for better compatibility
+    onerror: ((this: DedicatedWorkerGlobalScope, ev: ErrorEvent) => any) | null
+    onunhandledrejection: ((this: DedicatedWorkerGlobalScope, ev: PromiseRejectionEvent) => any) | null
   }
   
   // Additional worker-specific globals

@@ -192,11 +192,12 @@ function sendError(taskId: string, error: string) {
   self.postMessage(response)
 }
 
-// Handle worker errors
+// Handle worker errors with proper type
 self.onerror = (event: ErrorEvent) => {
   console.error('Worker script error:', event.message, event.filename, event.lineno)
 }
 
+// Handle unhandled promise rejections
 self.onunhandledrejection = (event: PromiseRejectionEvent) => {
   console.error('Worker unhandled rejection:', event.reason)
 }

@@ -24,6 +24,7 @@
     "exactOptionalPropertyTypes": false,
     "noImplicitReturns": true,
     "noImplicitOverride": true,
+    "strictNullChecks": true,
 
     /* Paths */
     "baseUrl": ".",
