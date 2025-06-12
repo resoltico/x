@@ -1,110 +1,18 @@
-Last login: Wed Jun 11 12:17:53 on ttys000
-Using Node v22.16.0
-[4:29:52 PM] % pnpm install
-Packages: +782
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Progress: resolved 909, reused 784, downloaded 0, added 782, done
+[4:04:01 AM] % pnpm run build
 
-dependencies:
-+ @remix-run/express 2.16.8
-+ @remix-run/node 2.16.8
-+ @remix-run/react 2.16.8
-+ @remix-run/serve 2.16.8
-+ bufferutil 4.0.9
-+ express 4.21.2 (5.1.0 is available)
-+ isbot 5.1.28
-+ lucide-react 0.513.0 (0.514.0 is available)
-+ react 18.3.1 (19.1.0 is available)
-+ react-dom 18.3.1 (19.1.0 is available)
-+ sharp 0.34.2
-+ utf-8-validate 5.0.10 (6.0.5 is available)
-+ uuid 11.1.0
-+ ws 8.18.2
-
-devDependencies:
-+ @remix-run/dev 2.16.8
-+ @tailwindcss/vite 4.1.8
-+ @types/node 22.15.31 (24.0.0 is available)
-+ @types/react 19.1.7
-+ @types/react-dom 19.1.6
-+ @types/ws 8.18.1
-+ @typescript-eslint/eslint-plugin 8.34.0
-+ @typescript-eslint/parser 8.34.0
-+ @vitest/ui 3.2.3
-+ eslint 9.28.0
-+ eslint-plugin-react 7.37.5
-+ tailwindcss 4.1.8
-+ typescript 5.8.3
-+ vite 6.3.5
-+ vite-tsconfig-paths 5.1.4
-+ vitest 3.2.3
-
-Done in 9.1s using pnpm v10.12.1
-[4:30:11 PM] % pnpm run build
-
-> engraving-processor-pro@1.0.0 build /Users/erst/Library/CloudStorage/Dropbox/Websites/x
-> remix vite:build && node scripts/post-build.js
+> engraving-processor-pro@1.0.0 build /Users/erst/Downloads/____zz
+> vite build
 
 vite v6.3.5 building for production...
-✓ 1707 modules transformed.
-Generated an empty chunk: "health".
-build/client/.vite/manifest.json                       2.50 kB │ gzip:   0.50 kB
-build/client/assets/tailwind-bGp1hBx6.css             20.91 kB │ gzip:   4.88 kB
-build/client/assets/api.download._jobId-l0sNRNKZ.js    0.00 kB │ gzip:   0.02 kB
-build/client/assets/api.job._jobId-l0sNRNKZ.js         0.00 kB │ gzip:   0.02 kB
-build/client/assets/api.process-l0sNRNKZ.js            0.00 kB │ gzip:   0.02 kB
-build/client/assets/api.upload-l0sNRNKZ.js             0.00 kB │ gzip:   0.02 kB
-build/client/assets/health-l0sNRNKZ.js                 0.00 kB │ gzip:   0.02 kB
-build/client/assets/root-loJTNW4A.js                   1.65 kB │ gzip:   0.96 kB
-build/client/assets/entry.client-kqxXSlx6.js           4.19 kB │ gzip:   1.59 kB
-build/client/assets/_index-DmZpLMYx.js                36.60 kB │ gzip:   9.10 kB
-build/client/assets/index-yqQ8kitn.js                 40.18 kB │ gzip:  12.95 kB
-build/client/assets/components-DKuix-jd.js           406.39 kB │ gzip: 127.03 kB
-✓ built in 1.88s
-vite v6.3.5 building SSR bundle for production...
-✓ 47 modules transformed.
-build/server/.vite/manifest.json             0.48 kB
-build/server/assets/tailwind-bGp1hBx6.css   20.91 kB
-build/server/index.js                      127.82 kB
-✓ built in 151ms
-🔧 Running post-build script...
-⚠️ WebSocket modules may not be included in build
-💡 Tip: Ensure websocket.singleton.server.ts is imported in entry.server.tsx
-✅ Created WebSocket export helper
-✅ Post-build script completed
-[4:30:46 PM] % pnpm start
-
-> engraving-processor-pro@1.0.0 start /Users/erst/Library/CloudStorage/Dropbox/Websites/x
-> node scripts/start.js
-
-
-🚀 Starting Engraving Processor Pro...
-
-ℹ️ Checking Node.js version...
-✅ Node.js v22.16.0 ✓
-ℹ️ Checking build...
-✅ Build found ✓
-ℹ️ Checking dependencies...
-✅ Dependencies installed ✓
-ℹ️ Checking WebSocket configuration...
-⚠️ WebSocket files may need compilation
-
-Some checks failed (3/4) ⚠️
-
-
-Starting server...
-
-file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/scripts/server.js:411
-
-
-
-SyntaxError: Unexpected end of input
-    at compileSourceTextModule (node:internal/modules/esm/utils:344:16)
-    at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:105:18)
-    at #translate (node:internal/modules/esm/loader:534:12)
-    at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:581:27)
-    at async ModuleJob._link (node:internal/modules/esm/module_job:116:19)
-
-Node.js v22.16.0
+✓ 4 modules transformed.
+✗ Build failed in 188ms
+error during build:
+[vite:css] [postcss] It looks like you're trying to use `tailwindcss` directly as a PostCSS plugin. The PostCSS plugin has moved to a separate package, so to continue using Tailwind CSS with PostCSS you'll need to install `@tailwindcss/postcss` and update your PostCSS configuration.
+file: /Users/erst/Downloads/____zz/src/style.css:undefined:NaN
+    at We (/Users/erst/Downloads/____zz/node_modules/.pnpm/tailwindcss@4.1.10/node_modules/tailwindcss/dist/lib.js:35:2121)
+    at LazyResult.runOnRoot (/Users/erst/Downloads/____zz/node_modules/.pnpm/postcss@8.5.5/node_modules/postcss/lib/lazy-result.js:361:16)
+    at LazyResult.runAsync (/Users/erst/Downloads/____zz/node_modules/.pnpm/postcss@8.5.5/node_modules/postcss/lib/lazy-result.js:290:26)
+    at LazyResult.async (/Users/erst/Downloads/____zz/node_modules/.pnpm/postcss@8.5.5/node_modules/postcss/lib/lazy-result.js:192:30)
+    at LazyResult.then (/Users/erst/Downloads/____zz/node_modules/.pnpm/postcss@8.5.5/node_modules/postcss/lib/lazy-result.js:436:17)
  ELIFECYCLE  Command failed with exit code 1.
-[4:33:00 PM] % 
+[4:05:41 AM] % 

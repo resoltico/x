@@ -1,6 +1,3 @@
 onlyBuiltDependencies:
-  - '@tailwindcss/oxide'
-  - bufferutil
+  - '@swc/core'
   - esbuild
-  - sharp
-  - utf-8-validate

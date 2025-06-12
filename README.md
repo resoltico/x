@@ -1,158 +1,182 @@
 # Engraving Processor Pro
 
-Advanced image processing application for historical engravings and documents, featuring real-time preview, adaptive binarization, morphological operations, and pixel art scaling algorithms.
+An AI-driven web application for processing historical engravings and document scans with advanced image algorithms. Built with Vue 3, TypeScript, and WebAssembly for high-performance local processing.
 
-## Features
+## 🚀 Features
 
-- **Adaptive Binarization**: Sauvola, Niblack, and Otsu algorithms
-- **Morphological Operations**: Opening, closing, dilation, and erosion
-- **Noise Reduction**: Binary noise removal and median filtering
-- **Pixel Art Scaling**: Scale2x/3x/4x algorithms
-- **Real-time Preview**: WebSocket-powered instant feedback
-- **High Performance**: Efficient processing with progress tracking
+- **Advanced Image Processing**: Binarization, morphological operations, noise reduction, and pixel art scaling
+- **High Performance**: WebAssembly-powered processing with Web Workers for non-blocking operations
+- **Interactive UI**: Real-time preview, zoom/pan controls, and parameter adjustment
+- **Modern Architecture**: Modular design optimized for AI-driven development and extension
+- **Zero-Dependency Processing**: All processing happens locally in the browser
 
-## Requirements
+## 🛠️ Tech Stack
 
-- Node.js 22.0.0 or higher
-- 4GB RAM minimum (8GB recommended for large images)
+- **Frontend**: Vue 3 (Composition API), TypeScript, Tailwind CSS
+- **Processing**: wasm-vips, Custom WASM modules
+- **Build Tools**: Vite, ESLint, Prettier
+- **Testing**: Vitest, Vue Test Utils
+- **State Management**: Pinia
 
-## Quick Start
+## 📦 Installation
 
 ```bash
+# Clone the repository
+git clone <repository-url>
+cd engraving-processor-pro
+
 # Install dependencies
-pnpm install
+npm install
 
-# Build the application
-pnpm build
+# Start development server
+npm run dev
 
-# Start the server (includes all checks)
-pnpm start
+# Build for production
+npm run build
+
+# Run tests
+npm test
 ```
 
-The application will be available at http://localhost:3000
-
-## Available Commands
-
-- `pnpm dev` - Development mode with hot reload
-- `pnpm build` - Build for production
-- `pnpm start` - Start production server (runs all checks automatically)
-- `pnpm test` - Run tests
-- `pnpm typecheck` - Check TypeScript types
-
-## Usage Guide
-
-### 1. Upload an Image
-Drag and drop or click to browse. Supports PNG, JPEG, TIFF, and WebP formats (max 10MB).
-
-### 2. Adjust Parameters
-
-**Binarization**
-- **Sauvola**: Best for documents with uneven lighting
-  - Window size: 11-15 for small text, 25-35 for large text
-  - K parameter: 0.2-0.3 for faded text, 0.4-0.5 for high contrast
-- **Niblack**: Good for high-contrast text
-- **Otsu**: Automatic threshold for clear bimodal images
-
-**Morphology**
-- **Closing**: Fills gaps in text
-- **Opening**: Removes noise particles
-- **Dilate**: Thickens features
-- **Erode**: Thins features
-
-**Noise Reduction**
-- **Binary**: Removes isolated pixels
-- **Median**: Smooths while preserving edges
-
-**Scaling**
-- **Scale2x/3x/4x**: Pixel art algorithms
-- **Nearest/Bilinear**: Traditional scaling
-
-### 3. Preview & Process
-- See real-time updates as you adjust settings
-- Click "Process Full Resolution" to download the final result
-
-## Architecture
+## 🏗️ Project Structure
 
 ```
-engraving-processor-pro/
-├── app/                    # Remix application
-│   ├── components/         # React UI components
-│   ├── routes/            # API and page routes
-│   └── services/          # Server services (WebSocket, processing)
-├── src/engine/            # Core image processing engine
-│   ├── algorithms/        # Processing algorithms
-│   ├── core/             # Core data structures
-│   ├── pipeline/         # Processing orchestration
-│   └── utils/            # Image I/O utilities
-├── scripts/              # Server and utility scripts
-└── public/              # Static assets
+src/
+├── components/           # Vue components
+│   ├── ImageInput.vue           # File upload and drag-drop
+│   ├── PreviewRenderer.vue      # Canvas-based image preview
+│   ├── ProcessingControls.vue   # Algorithm parameter controls
+│   └── ProgressDisplay.vue      # Task progress and status
+├── modules/              # Core processing modules
+│   ├── ImageInputModule.ts      # File handling and validation
+│   ├── PreviewRendererModule.ts # Canvas rendering and interaction
+│   ├── ProcessingModule.ts      # Image processing algorithms
+│   └── WorkerOrchestratorModule.ts # Web Worker management
+├── stores/               # Pinia state management
+│   └── app.ts                   # Main application store
+├── types/                # TypeScript type definitions
+│   └── index.ts                 # Core types and interfaces
+├── utils/                # Utility functions
+│   ├── fileValidation.ts        # File validation helpers
+│   └── imageHelpers.ts          # Image manipulation utilities
+├── workers/              # Web Workers
+│   └── imageProcessingWorker.ts # Background image processing
+└── test/                 # Test setup and utilities
+    └── setup.ts                 # Test environment configuration
 ```
 
-## WebSocket Architecture
+## 🔧 Processing Algorithms
 
-The application uses WebSockets for real-time preview updates:
+### Binarization
+- **Otsu**: Global thresholding for clear bimodal images
+- **Sauvola**: Adaptive thresholding for varying lighting
+- **Niblack**: Local adaptive thresholding
 
-1. **Client** uploads image → receives image ID
-2. **Client** adjusts parameters → sends via WebSocket
-3. **Server** processes preview (512px max) → sends result
-4. **Client** displays updated preview instantly
+### Morphological Operations
+- **Opening**: Noise removal
+- **Closing**: Gap filling
+- **Erosion**: Object shrinking
+- **Dilation**: Object expansion
 
-The WebSocket manager is initialized as a singleton on server startup and handles multiple concurrent connections with automatic reconnection.
+### Noise Reduction
+- **Median Filter**: Salt-and-pepper noise removal
+- **Binary Noise Removal**: Small component elimination
 
-## Troubleshooting
+### Scaling
+- **Scale2x/3x/4x**: Pixel art scaling algorithms
+- **Nearest Neighbor**: Sharp edge preservation
+- **Bilinear**: Smooth scaling
 
-### Port Already in Use
-```bash
-lsof -i :3000
-kill -9 <PID>
-# Or use a different port
-PORT=3001 pnpm start
-```
+## 🎮 Usage
 
-### Memory Issues
-For large images, increase Node.js memory:
-```bash
-NODE_OPTIONS="--max-old-space-size=4096" pnpm start
-```
+1. **Upload Image**: Drag and drop or click to browse (PNG, JPEG, TIFF, WebP, max 10MB)
+2. **Select Algorithm**: Choose from binarization, morphology, noise reduction, or scaling
+3. **Adjust Parameters**: Fine-tune algorithm settings with real-time sliders
+4. **Preview**: Generate low-resolution preview for quick feedback
+5. **Process**: Run full-resolution processing
+6. **Download**: Export processed results
 
-### WebSocket Connection Issues
-- Check the health endpoint: http://localhost:3000/health
-- Ensure port 3000 is not blocked by firewall
-- Try refreshing the page
+### Keyboard Shortcuts
+- `Space`: Toggle between original and processed view
+- `F`: Fit image to canvas
+- `1`: Zoom to actual size (100%)
+- `R`: Reset view
 
-### Build Errors
-If you see module resolution errors:
-```bash
-rm -rf node_modules build
-pnpm install
-pnpm build
-```
-
-## Health Monitoring
-
-The server provides comprehensive health monitoring at `/health`:
-- Service status (HTTP, WebSocket)
-- Memory usage statistics
-- Active connections count
-- System diagnostics
-
-## Development
+## 🧪 Testing
 
 ```bash
-# Run in development mode
-pnpm dev
+# Run all tests
+npm test
 
-# Run tests with UI
-pnpm test:ui
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with coverage
+npm run test:coverage
 
 # Type checking
-pnpm typecheck
+npm run typecheck
+
+# Linting
+npm run lint
+npm run lint:fix
 ```
 
-## License
+## 🔌 Plugin System
 
-MIT
+The application supports a modular plugin architecture for extending processing capabilities:
 
-## Author
+```typescript
+interface Plugin {
+  name: string
+  version: string
+  description: string
+  parameters: ControlParameter[]
+  process: (data: ArrayBuffer, params: any) => Promise<ArrayBuffer>
+}
+```
 
-Ervins Strauhmanis
+## 📈 Performance
+
+- **Web Workers**: Non-blocking processing using all available CPU cores
+- **WebAssembly**: Native-speed image processing algorithms
+- **Memory Efficient**: Transferable objects for zero-copy data transfer
+- **Streaming**: Chunk-based processing for large images
+
+## 🌐 Browser Support
+
+- Chrome 90+
+- Firefox 88+
+- Safari 14+
+- Edge 90+
+
+Requires WebAssembly and Web Workers support.
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🔗 Links
+
+- [Vue.js Documentation](https://vuejs.org/)
+- [wasm-vips Documentation](https://www.npmjs.com/package/wasm-vips)
+- [Tailwind CSS Documentation](https://tailwindcss.com/)
+- [Vite Documentation](https://vitejs.dev/)
+
+## 🙏 Acknowledgments
+
+- Built with [wasm-vips](https://github.com/kleisauke/wasm-vips) for high-performance image processing
+- UI components styled with [Tailwind CSS](https://tailwindcss.com/)
+- Icons from [Heroicons](https://heroicons.com/)
+
+---
+
+Made with ❤️ for historical document preservation and image processing enthusiasts.
