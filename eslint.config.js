@@ -3,8 +3,6 @@ import tseslint from '@typescript-eslint/eslint-plugin'
 import tsparser from '@typescript-eslint/parser'
 import vue from 'eslint-plugin-vue'
 import vueParser from 'vue-eslint-parser'
-import prettier from 'eslint-plugin-prettier'
-import prettierConfig from 'eslint-config-prettier'
 
 export default [
   // Base JavaScript config
@@ -21,12 +19,10 @@ export default [
       }
     },
     plugins: {
-      '@typescript-eslint': tseslint,
-      prettier
+      '@typescript-eslint': tseslint
     },
     rules: {
       ...tseslint.configs.recommended.rules,
-      'prettier/prettier': 'error',
       '@typescript-eslint/no-unused-vars': ['error', { 
         argsIgnorePattern: '^_',
         varsIgnorePattern: '^_' 
@@ -50,13 +46,11 @@ export default [
     },
     plugins: {
       vue,
-      '@typescript-eslint': tseslint,
-      prettier
+      '@typescript-eslint': tseslint
     },
     rules: {
       ...vue.configs['vue3-recommended'].rules,
       ...tseslint.configs.recommended.rules,
-      'prettier/prettier': 'error',
       'vue/multi-word-component-names': 'off',
       'vue/no-unused-vars': 'error',
       '@typescript-eslint/no-unused-vars': ['error', { 
@@ -101,9 +95,6 @@ export default [
       'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off'
     }
   },
-  
-  // Prettier config (must be last)
-  prettierConfig,
   
   // Ignore patterns
   {

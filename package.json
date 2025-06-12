@@ -14,7 +14,6 @@
     "typecheck": "vue-tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier --write .",
     "clean": "rm -rf dist node_modules/.vite",
     "stats": "npm run build && du -sh dist && find dist -type f | wc -l"
   },
@@ -42,10 +41,7 @@
     "@typescript-eslint/parser": "^8.15.0",
     "eslint": "^9.28.0",
     "eslint-plugin-vue": "^9.30.0",
-    "vue-eslint-parser": "^9.4.3",
-    "prettier": "^3.3.3",
-    "eslint-config-prettier": "^10.1.0",
-    "eslint-plugin-prettier": "^5.4.1"
+    "vue-eslint-parser": "^9.4.3"
   },
   "engines": {
     "node": ">=22.0.0",
