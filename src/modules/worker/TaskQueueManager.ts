@@ -11,6 +11,7 @@ export interface TaskSubmissionResult {
 
 export class TaskQueueManager {
   private taskQueue: ProcessingTask[] = []
+  private allTasks = new Map<string, ProcessingTask>() // Store all tasks for lookup
   private onTaskUpdate?: (task: ProcessingTask) => void
 
   /**
@@ -49,9 +50,11 @@ export class TaskQueueManager {
     console.log(`Parameters:`, task.parameters)
     
     this.taskQueue.push(task)
+    this.allTasks.set(task.id, task)
     this.notifyTaskUpdate(task)
     
     console.log(`Queue length: ${this.taskQueue.length}`)
+    console.log(`Total tasks tracked: ${this.allTasks.size}`)
     console.groupEnd()
   }
 
@@ -59,7 +62,11 @@ export class TaskQueueManager {
    * Get next task from queue
    */
   getNextTask(): ProcessingTask | undefined {
-    return this.taskQueue.shift()
+    const task = this.taskQueue.shift()
+    if (task) {
+      console.log(`📤 Dequeued task: ${task.id}`)
+    }
+    return task
   }
 
   /**
@@ -71,6 +78,7 @@ export class TaskQueueManager {
       const task = this.taskQueue[index]
       task.status = 'cancelled'
       this.taskQueue.splice(index, 1)
+      this.allTasks.set(taskId, task) // Keep cancelled task in allTasks for tracking
       this.notifyTaskUpdate(task)
       console.log(`✅ Task ${taskId} removed from queue`)
       return true
@@ -102,6 +110,7 @@ export class TaskQueueManager {
     // Mark all queued tasks as cancelled
     this.taskQueue.forEach(task => {
       task.status = 'cancelled'
+      this.allTasks.set(task.id, task)
       this.notifyTaskUpdate(task)
     })
     
@@ -127,28 +136,41 @@ export class TaskQueueManager {
    * Update task status
    */
   updateTask(taskId: string, updates: Partial<ProcessingTask>): void {
-    // Find task in queue
+    // Check if task exists in allTasks
+    const existingTask = this.allTasks.get(taskId)
+    if (!existingTask) {
+      console.warn(`⚠️ Attempting to update unknown task: ${taskId}`)
+      return
+    }
+
+    // Update the task
+    const updatedTask = {
+      ...existingTask,
+      ...updates
+    }
+    
+    // Set completion time if task is completed or failed
+    if (updates.status === 'completed' || updates.status === 'failed') {
+      updatedTask.completedAt = new Date()
+    }
+    
+    this.allTasks.set(taskId, updatedTask)
+    
+    // Also update in queue if it's still there
     const queueIndex = this.taskQueue.findIndex(task => task.id === taskId)
     if (queueIndex !== -1) {
-      this.taskQueue[queueIndex] = {
-        ...this.taskQueue[queueIndex],
-        ...updates
-      }
-      
-      // Set completion time if task is completed or failed
-      if (updates.status === 'completed' || updates.status === 'failed') {
-        this.taskQueue[queueIndex].completedAt = new Date()
-      }
-      
-      this.notifyTaskUpdate(this.taskQueue[queueIndex])
+      this.taskQueue[queueIndex] = updatedTask
     }
+    
+    console.log(`📝 Task ${taskId} updated:`, updates)
+    this.notifyTaskUpdate(updatedTask)
   }
 
   /**
-   * Get task by ID (from queue)
+   * Get task by ID (from all tasks)
    */
   getTask(taskId: string): ProcessingTask | undefined {
-    return this.taskQueue.find(task => task.id === taskId)
+    return this.allTasks.get(taskId)
   }
 
   /**
@@ -162,7 +184,7 @@ export class TaskQueueManager {
    * Get tasks by status
    */
   getTasksByStatus(status: ProcessingTask['status']): ProcessingTask[] {
-    return this.taskQueue.filter(task => task.status === status)
+    return Array.from(this.allTasks.values()).filter(task => task.status === status)
   }
 
   /**
@@ -186,17 +208,17 @@ export class TaskQueueManager {
    */
   getStatistics() {
     const now = Date.now()
-    const tasks = this.taskQueue
+    const allTasksArray = Array.from(this.allTasks.values())
 
     return {
-      total: tasks.length,
-      pending: tasks.filter(t => t.status === 'pending').length,
-      processing: tasks.filter(t => t.status === 'processing').length,
-      completed: tasks.filter(t => t.status === 'completed').length,
-      failed: tasks.filter(t => t.status === 'failed').length,
-      cancelled: tasks.filter(t => t.status === 'cancelled').length,
-      averageAge: tasks.length > 0 ? tasks.reduce((sum, task) => sum + (now - task.createdAt.getTime()), 0) / tasks.length : 0,
-      oldestTask: tasks.length > 0 ? Math.min(...tasks.map(t => t.createdAt.getTime())) : 0
+      total: allTasksArray.length,
+      pending: allTasksArray.filter(t => t.status === 'pending').length,
+      processing: allTasksArray.filter(t => t.status === 'processing').length,
+      completed: allTasksArray.filter(t => t.status === 'completed').length,
+      failed: allTasksArray.filter(t => t.status === 'failed').length,
+      cancelled: allTasksArray.filter(t => t.status === 'cancelled').length,
+      averageAge: allTasksArray.length > 0 ? allTasksArray.reduce((sum, task) => sum + (now - task.createdAt.getTime()), 0) / allTasksArray.length : 0,
+      oldestTask: allTasksArray.length > 0 ? Math.min(...allTasksArray.map(t => t.createdAt.getTime())) : 0
     }
   }
 
@@ -212,7 +234,7 @@ export class TaskQueueManager {
    */
   getOldTasks(maxAge: number = 30000): ProcessingTask[] {
     const cutoff = Date.now() - maxAge
-    return this.taskQueue.filter(task => task.createdAt.getTime() < cutoff)
+    return Array.from(this.allTasks.values()).filter(task => task.createdAt.getTime() < cutoff)
   }
 
   /**
@@ -220,19 +242,42 @@ export class TaskQueueManager {
    */
   cleanup(maxAge: number = 60000): number {
     const cutoff = Date.now() - maxAge
-    const initialLength = this.taskQueue.length
+    const tasksToRemove: string[] = []
     
+    this.allTasks.forEach((task, taskId) => {
+      const isOld = task.createdAt.getTime() < cutoff
+      const isFinished = ['cancelled', 'failed', 'completed'].includes(task.status)
+      
+      if (isOld && isFinished) {
+        tasksToRemove.push(taskId)
+      }
+    })
+    
+    tasksToRemove.forEach(taskId => {
+      this.allTasks.delete(taskId)
+    })
+    
+    // Also clean up the queue
+    const initialQueueLength = this.taskQueue.length
     this.taskQueue = this.taskQueue.filter(task => {
       const isOld = task.createdAt.getTime() < cutoff
       const isFinished = ['cancelled', 'failed'].includes(task.status)
       return !(isOld && isFinished)
     })
     
-    const removed = initialLength - this.taskQueue.length
-    if (removed > 0) {
-      console.log(`🧹 Cleaned up ${removed} old tasks from queue`)
+    const totalRemoved = tasksToRemove.length + (initialQueueLength - this.taskQueue.length)
+    
+    if (totalRemoved > 0) {
+      console.log(`🧹 Cleaned up ${totalRemoved} old tasks`)
     }
     
-    return removed
+    return totalRemoved
+  }
+
+  /**
+   * Get all tasks (for debugging)
+   */
+  getAllTasks(): ProcessingTask[] {
+    return Array.from(this.allTasks.values())
   }
 }

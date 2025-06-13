@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "build": "echo '🔧 Building Engraving Processor Pro...' && rm -rf dist .vite && vue-tsc --noEmit --skipLibCheck && eslint . --quiet --max-warnings 0 && vite build && echo '✅ Build complete'",
-    "start": "echo '🚀 Starting Engraving Processor Pro...' && vite preview --host --port 4173 --open",
+    "start": "echo '🚀 Starting Engraving Processor Pro (Preview Mode)...' && vite preview --host --port 4173 --open",
+    "serve": "echo '🌐 Serving built application from dist/ on http://localhost:8080' && echo 'Open your browser to: http://localhost:8080' && cd dist && python3 -m http.server 8080",
+    "production": "echo '🚀 Building and serving for production...' && pnpm build && pnpm serve",
     "dev": "echo '🛠️ Starting development server...' && vite --host --open",
     "typecheck": "vue-tsc --noEmit --skipLibCheck",
     "lint": "eslint . --max-warnings 0",

@@ -30,6 +30,7 @@ export default [
         clearTimeout: 'readonly',
         clearInterval: 'readonly',
         URL: 'readonly',
+        URLSearchParams: 'readonly',
         Blob: 'readonly',
         File: 'readonly',
         FileReader: 'readonly',
@@ -135,6 +136,7 @@ export default [
         clearTimeout: 'readonly',
         clearInterval: 'readonly',
         URL: 'readonly',
+        URLSearchParams: 'readonly',
         Blob: 'readonly',
         File: 'readonly',
         FileReader: 'readonly',
@@ -195,6 +197,60 @@ export default [
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-non-null-assertion': 'off',
       '@typescript-eslint/no-unsafe-function-type': 'off',
+      'no-case-declarations': 'off'
+    }
+  },
+
+  // Worker files in public folder - Enhanced configuration with correct globals
+  {
+    files: ['public/workers/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'script', // Worker files are often scripts, not modules
+      globals: {
+        // Worker globals
+        self: 'readonly',
+        importScripts: 'readonly',
+        WorkerGlobalScope: 'readonly',
+        DedicatedWorkerGlobalScope: 'readonly',
+        MessageEvent: 'readonly',
+        ErrorEvent: 'readonly',
+        PromiseRejectionEvent: 'readonly',
+        OffscreenCanvas: 'readonly',
+        OffscreenCanvasRenderingContext2D: 'readonly',
+        ImageData: 'readonly',
+        ImageBitmap: 'readonly',
+        console: 'readonly',
+        setTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearTimeout: 'readonly',
+        clearInterval: 'readonly',
+        URL: 'readonly',
+        Blob: 'readonly',
+        Image: 'readonly',
+        Map: 'readonly',
+        Set: 'readonly',
+        Array: 'readonly',
+        Object: 'readonly',
+        Promise: 'readonly',
+        Error: 'readonly',
+        Math: 'readonly',
+        Number: 'readonly',
+        String: 'readonly',
+        Date: 'readonly',
+        Uint8ClampedArray: 'readonly',
+        ArrayBuffer: 'readonly',
+        Event: 'readonly',
+        createImageBitmap: 'readonly'
+      }
+    },
+    rules: {
+      'no-undef': 'error',
+      'no-unused-vars': ['error', { 
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_' 
+      }],
+      'no-async-promise-executor': 'off', // Allow async promise executors in worker
       'no-case-declarations': 'off'
     }
   },
@@ -287,6 +343,7 @@ export default [
         clearTimeout: 'readonly',
         clearInterval: 'readonly',
         URL: 'readonly',
+        URLSearchParams: 'readonly',
         Blob: 'readonly',
         File: 'readonly',
         FileReader: 'readonly',
@@ -353,6 +410,7 @@ export default [
         clearTimeout: 'readonly',
         clearInterval: 'readonly',
         URL: 'readonly',
+        URLSearchParams: 'readonly',
         Blob: 'readonly',
         File: 'readonly',
         FileReader: 'readonly',

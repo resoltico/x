@@ -91,12 +91,21 @@ export class WorkerOrchestratorModule {
     try {
       // Create and queue task
       const task = this.taskQueue.createTask(imageData, type, parameters)
+      console.log(`Created task: ${task.id}`)
+      
       this.taskQueue.queueTask(task)
+      console.log(`Task queued: ${task.id}`)
       
-      console.log(`Task ID: ${task.id}`)
       console.log(`Queue status:`, this.taskQueue.getQueueStatus())
+      console.log(`Pool status:`, this.workerPool.getStatus())
       
-      // Process the queue
+      // Process the queue immediately with the imageData
+      console.log(`Starting queue processing with imageData:`, {
+        width: imageData.width,
+        height: imageData.height,
+        size: imageData.data.byteLength
+      })
+      
       await this.processQueue(imageData)
       
       console.groupEnd()
@@ -161,10 +170,20 @@ export class WorkerOrchestratorModule {
       const task = this.taskQueue.getNextTask()
       const worker = this.workerPool.getAvailableWorker()
       
-      if (!task || !worker) break
+      if (!task || !worker) {
+        console.warn('⚠️ No task or worker available, breaking queue processing')
+        break
+      }
       
       console.log(`▶️ Assigning task ${task.id} to worker`)
       await this.executeTask(worker, task, imageData)
+      
+      // Update pool status for next iteration
+      const updatedPoolStatus = this.workerPool.getStatus()
+      if (updatedPoolStatus.availableWorkers === 0) {
+        console.log('⚠️ No more available workers, stopping queue processing')
+        break
+      }
     }
     
     const finalQueueStatus = this.taskQueue.getQueueStatus()
@@ -189,7 +208,14 @@ export class WorkerOrchestratorModule {
       // Send task to worker
       const message = this.taskQueue.createWorkerMessage(task, imageData)
       console.log(`📤 Sending message to worker for task ${task.id}`)
-      worker.postMessage(message)
+      
+      // Use transferable objects for imageData if it's an ArrayBuffer
+      const transferables: Transferable[] = []
+      if (imageData?.data && imageData.data instanceof ArrayBuffer) {
+        transferables.push(imageData.data)
+      }
+      
+      worker.postMessage(message, transferables)
     } catch (error) {
       console.error(`❌ Failed to execute task ${task.id}:`, error)
       task.status = 'failed'
@@ -255,6 +281,8 @@ export class WorkerOrchestratorModule {
             result: payload.result,
             completedAt: task.completedAt
           })
+          
+          // Continue processing queue
           this.processQueue()
         }
         break
@@ -273,6 +301,8 @@ export class WorkerOrchestratorModule {
             error: payload.error,
             completedAt: task.completedAt
           })
+          
+          // Continue processing queue
           this.processQueue()
         }
         break

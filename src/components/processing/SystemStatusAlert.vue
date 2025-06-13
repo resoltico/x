@@ -66,8 +66,8 @@
             <div><strong>Web Worker Support:</strong> {{ hasWebWorkerSupport ? 'Yes' : 'No' }}</div>
             <div><strong>OffscreenCanvas Support:</strong> {{ hasOffscreenCanvasSupport ? 'Yes' : 'No' }}</div>
             <div><strong>Hardware Concurrency:</strong> {{ hardwareConcurrency }}</div>
-            <div><strong>Protocol:</strong> {{ location.protocol }}</div>
-            <div><strong>URL:</strong> {{ location.href }}</div>
+            <div><strong>Protocol:</strong> {{ windowLocation.protocol }}</div>
+            <div><strong>URL:</strong> {{ windowLocation.href }}</div>
           </div>
         </div>
       </div>
@@ -101,7 +101,7 @@
 import { ref, computed } from 'vue'
 import type { SystemStatus } from '@/modules/processing/SystemStatusManager'
 
-const props = defineProps<{
+const _props = defineProps<{
   status: SystemStatus
 }>()
 
@@ -117,8 +117,8 @@ const showDetailedInfo = ref(false)
 const hasWebWorkerSupport = computed(() => typeof Worker !== 'undefined')
 const hasOffscreenCanvasSupport = computed(() => typeof OffscreenCanvas !== 'undefined')
 const hardwareConcurrency = computed(() => navigator.hardwareConcurrency || 'Unknown')
-const isFileProtocol = computed(() => location.protocol === 'file:')
-const location = computed(() => ({
+const isFileProtocol = computed(() => window.location.protocol === 'file:')
+const windowLocation = computed(() => ({
   protocol: window.location.protocol,
   href: window.location.href
 }))

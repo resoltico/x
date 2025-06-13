@@ -6,7 +6,7 @@
   console.log('🔧 Production fallback worker starting...');
 
   function simpleBinarization(imageData, threshold = 128) {
-    return new Promise(async (resolve) => {
+    return new Promise((resolve) => {
       const canvas = new OffscreenCanvas(imageData.width, imageData.height);
       const ctx = canvas.getContext('2d');
       const canvasImageData = new ImageData(new Uint8ClampedArray(imageData.data), imageData.width, imageData.height);
@@ -24,14 +24,12 @@
       }
       
       ctx.putImageData(data, 0, 0);
-      const blob = await canvas.convertToBlob();
-      const result = await blob.arrayBuffer();
-      resolve(result);
+      canvas.convertToBlob().then(blob => blob.arrayBuffer()).then(resolve);
     });
   }
   
   function simpleScale(imageData, factor) {
-    return new Promise(async (resolve) => {
+    return new Promise((resolve) => {
       const canvas = new OffscreenCanvas(imageData.width, imageData.height);
       const ctx = canvas.getContext('2d');
       const canvasImageData = new ImageData(new Uint8ClampedArray(imageData.data), imageData.width, imageData.height);
@@ -45,19 +43,18 @@
       scaledCtx.imageSmoothingEnabled = false;
       scaledCtx.drawImage(canvas, 0, 0, scaledCanvas.width, scaledCanvas.height);
       
-      const blob = await scaledCanvas.convertToBlob();
-      const result = await blob.arrayBuffer();
-      resolve(result);
+      scaledCanvas.convertToBlob().then(blob => blob.arrayBuffer()).then(resolve);
     });
   }
   
   function simpleMorphology(imageData, operation) {
-    return new Promise(async (resolve) => {
+    return new Promise((resolve) => {
       const canvas = new OffscreenCanvas(imageData.width, imageData.height);
       const ctx = canvas.getContext('2d');
       const canvasImageData = new ImageData(new Uint8ClampedArray(imageData.data), imageData.width, imageData.height);
       ctx.putImageData(canvasImageData, 0, 0);
       
+      // Simple erosion/dilation simulation
       const data = ctx.getImageData(0, 0, imageData.width, imageData.height);
       const pixels = data.data;
       const newPixels = new Uint8ClampedArray(pixels);
@@ -68,14 +65,14 @@
           let value = pixels[idx];
           
           // Simple 3x3 kernel operation
-          if (operation === 'erosion' || operation === 'opening') {
+          if (operation === 'erosion') {
             for (let dy = -1; dy <= 1; dy++) {
               for (let dx = -1; dx <= 1; dx++) {
                 const nIdx = ((y + dy) * imageData.width + (x + dx)) * 4;
                 value = Math.min(value, pixels[nIdx]);
               }
             }
-          } else if (operation === 'dilation' || operation === 'closing') {
+          } else if (operation === 'dilation') {
             for (let dy = -1; dy <= 1; dy++) {
               for (let dx = -1; dx <= 1; dx++) {
                 const nIdx = ((y + dy) * imageData.width + (x + dx)) * 4;
@@ -92,19 +89,18 @@
       
       const newData = new ImageData(newPixels, imageData.width, imageData.height);
       ctx.putImageData(newData, 0, 0);
-      const blob = await canvas.convertToBlob();
-      const result = await blob.arrayBuffer();
-      resolve(result);
+      canvas.convertToBlob().then(blob => blob.arrayBuffer()).then(resolve);
     });
   }
   
   function simpleNoiseReduction(imageData) {
-    return new Promise(async (resolve) => {
+    return new Promise((resolve) => {
       const canvas = new OffscreenCanvas(imageData.width, imageData.height);
       const ctx = canvas.getContext('2d');
       const canvasImageData = new ImageData(new Uint8ClampedArray(imageData.data), imageData.width, imageData.height);
       ctx.putImageData(canvasImageData, 0, 0);
       
+      // Simple median filter
       const data = ctx.getImageData(0, 0, imageData.width, imageData.height);
       const pixels = data.data;
       const newPixels = new Uint8ClampedArray(pixels);
@@ -132,13 +128,11 @@
       
       const newData = new ImageData(newPixels, imageData.width, imageData.height);
       ctx.putImageData(newData, 0, 0);
-      const blob = await canvas.convertToBlob();
-      const result = await blob.arrayBuffer();
-      resolve(result);
+      canvas.convertToBlob().then(blob => blob.arrayBuffer()).then(resolve);
     });
   }
   
-  self.onmessage = async function(event) {
+  self.onmessage = function(event) {
     const { id, type, payload } = event.data;
     
     console.log('🔧 Production worker received:', type, 'for task:', id);
@@ -149,41 +143,43 @@
     }
     
     if (type === 'process') {
-      try {
-        const { imageData, type: processType, parameters } = payload;
-        
-        self.postMessage({
-          id, type: 'progress',
-          payload: { progress: 25, message: 'Processing with production worker...' }
-        });
-        
-        let result;
-        
-        switch (processType) {
-          case 'binarization':
-            const threshold = parameters.binarization?.threshold || 128;
-            result = await simpleBinarization(imageData, threshold);
-            break;
-            
-          case 'scaling':
-            const factor = parameters.scaling?.factor || 2;
-            result = await simpleScale(imageData, factor);
-            break;
-            
-          case 'morphology':
-            const operation = parameters.morphology?.operation || 'opening';
-            result = await simpleMorphology(imageData, operation);
-            break;
-            
-          case 'noise-reduction':
-            result = await simpleNoiseReduction(imageData);
-            break;
-            
-          default:
-            // Return original data if processing type is unknown
-            result = imageData.data.slice(0);
+      const { imageData, type: processType, parameters } = payload;
+      
+      self.postMessage({
+        id, type: 'progress',
+        payload: { progress: 25, message: 'Processing with production worker...' }
+      });
+      
+      let resultPromise;
+      
+      switch (processType) {
+        case 'binarization': {
+          const threshold = parameters.binarization?.threshold || 128;
+          resultPromise = simpleBinarization(imageData, threshold);
+          break;
         }
-        
+        case 'scaling': {
+          const factor = parameters.scaling?.factor || 2;
+          resultPromise = simpleScale(imageData, factor);
+          break;
+        }
+        case 'morphology': {
+          const operation = parameters.morphology?.operation || 'opening';
+          resultPromise = simpleMorphology(imageData, operation);
+          break;
+        }
+        case 'noise-reduction': {
+          resultPromise = simpleNoiseReduction(imageData);
+          break;
+        }
+        default: {
+          // Return original data if processing type is unknown
+          resultPromise = Promise.resolve(imageData.data.slice(0));
+          break;
+        }
+      }
+      
+      resultPromise.then(function(result) {
         self.postMessage({
           id, type: 'progress',
           payload: { progress: 75, message: 'Finalizing...' }
@@ -193,14 +189,13 @@
           id, type: 'result',
           payload: { result }
         }, result instanceof ArrayBuffer ? [result] : []);
-        
-      } catch (error) {
+      }).catch(function(error) {
         console.error('🔧 Production worker error:', error);
         self.postMessage({
           id, type: 'error',
           payload: { error: 'Production processing failed: ' + error.message }
         });
-      }
+      });
     }
   };
   

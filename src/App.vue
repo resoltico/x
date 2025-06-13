@@ -114,8 +114,9 @@ const environmentInfo = computed(() => {
   const isLocalhost = window.location.hostname === 'localhost' || 
                      window.location.hostname === '127.0.0.1' ||
                      window.location.hostname === '0.0.0.0'
-  const isDevelopment = isLocalhost || window.location.port === '3000' || window.location.port === '5173'
-  const isProduction = !isDevelopment && !isFileProtocol
+  const isDevelopment = isLocalhost && (window.location.port === '3000' || window.location.port === '5173')
+  const isPreview = isLocalhost && window.location.port === '4173'
+  const isProduction = !isDevelopment && !isPreview && !isFileProtocol
 
   if (isFileProtocol) {
     return {
@@ -127,6 +128,13 @@ const environmentInfo = computed(() => {
   if (isDevelopment) {
     return {
       label: `Development${window.location.port ? ` (${window.location.port})` : ''}`,
+      warning: null
+    }
+  }
+  
+  if (isPreview) {
+    return {
+      label: `Preview${window.location.port ? ` (${window.location.port})` : ''}`,
       warning: null
     }
   }
@@ -200,13 +208,15 @@ const checkBrowserCompatibility = () => {
 
 // URL parameter handling for fallback mode
 const checkUrlParameters = () => {
-  const urlParams = new URLSearchParams(window.location.search)
-  if (urlParams.get('fallback') === 'true') {
-    console.warn('🔧 Fallback mode requested via URL parameter')
-    // Set up global fallback flag
-    ;(window as any).__FORCE_FALLBACK = () => {
-      console.log('🔧 Forcing fallback mode...')
-      // This would be handled by the system status manager
+  if (typeof window !== 'undefined' && window.URLSearchParams) {
+    const urlParams = new window.URLSearchParams(window.location.search)
+    if (urlParams.get('fallback') === 'true') {
+      console.warn('🔧 Fallback mode requested via URL parameter')
+      // Set up global fallback flag
+      ;(window as any).__FORCE_FALLBACK = () => {
+        console.log('🔧 Forcing fallback mode...')
+        // This would be handled by the system status manager
+      }
     }
   }
 }
@@ -287,4 +297,9 @@ onMounted(() => {
   })
 })
 
-onUnmounted(()
+onUnmounted(() => {
+  if (performanceInterval) {
+    clearInterval(performanceInterval)
+  }
+})
+</script>
