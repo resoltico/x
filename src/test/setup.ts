@@ -1,3 +1,4 @@
+// src/test/setup.ts
 import { beforeAll, vi } from 'vitest'
 
 // Mock Web APIs that might not be available in test environment
@@ -129,7 +130,7 @@ beforeAll(() => {
       onerror: ((event: ErrorEvent) => void) | null = null
       onmessageerror: ((event: MessageEvent) => void) | null = null
       
-      constructor(_url: string | URL, _options?: WorkerOptions) {
+      constructor(_url: string | URL, _options?: { type?: 'classic' | 'module'; name?: string }) {
         // Mock worker constructor
       }
       
@@ -320,5 +321,16 @@ beforeAll(() => {
         }
       }
     } as any
+  }
+
+  // Mock createImageBitmap
+  if (typeof globalThis.createImageBitmap === 'undefined') {
+    globalThis.createImageBitmap = async function(_source: any, _options?: any) {
+      return {
+        width: 100,
+        height: 100,
+        close: () => {}
+      } as ImageBitmap
+    }
   }
 })

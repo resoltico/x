@@ -1,4 +1,6 @@
-[3:06:45 AM] % pnpm install
+Last login: Fri Jun 13 02:58:35 on ttys000
+Using Node v22.16.0
+[3:27:43 AM] % pnpm install
 Packages: +348
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 Progress: resolved 420, reused 348, downloaded 0, added 348, done
@@ -13,29 +15,28 @@ Progress: resolved 420, reused 348, downloaded 0, added 348, done
 │ > tsc --project tsconfig.worker.json --noEmit
 │ > engraving-processor-pro@1.0.0 lint:quiet
 │ > eslint . --quiet
-│ /Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/modules/processing/scaling.ts
-│   162:15  error  'srcIdx' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
-│   272:31  error  'createImageBitmap' is not defined                                                 no-undef
 │ /Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/test/setup.ts
-│   132:50  error  'WorkerOptions' is not defined  no-undef
+│   333:12  error  'ImageBitmap' is not defined  no-undef
 │ /Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/types/globals.d.ts
-│   48:16  error  'ReadableStream' is not defined      no-undef
-│   55:43  error  'MediaSource' is not defined         no-undef
-│   92:30  error  'MessagePort' is not defined         no-undef
-│   93:22  error  'MessageEventSource' is not defined  no-undef
+│   108:21   error  'SVGAnimatedLength' is not defined   no-undef
+│   109:22   error  'SVGAnimatedLength' is not defined   no-undef
+│   118:37   error  'ImageBitmapSource' is not defined   no-undef
+│   118:65   error  'ImageBitmap' is not defined         no-undef
+│   119:37   error  'ImageBitmapSource' is not defined   no-undef
+│   119:65   error  'ImageBitmapOptions' is not defined  no-undef
+│   119:94   error  'ImageBitmap' is not defined         no-undef
+│   120:37   error  'ImageBitmapSource' is not defined   no-undef
+│   120:113  error  'ImageBitmap' is not defined         no-undef
+│   121:37   error  'ImageBitmapSource' is not defined   no-undef
+│   121:113  error  'ImageBitmapOptions' is not defined  no-undef
+│   121:142  error  'ImageBitmap' is not defined         no-undef
+│   143:33   error  'EventTarget' is not defined         no-undef
+│   152:29   error  'WindowProxy' is not defined         no-undef
+│   152:57   error  'ServiceWorker' is not defined       no-undef
 │ /Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/types/worker-globals.d.ts
-│    5:15  error  'self' is defined but never used. Allowed unused vars must match /^_/u                         @typescript-eslint/no-un…
-│    5:21  error  'DedicatedWorkerGlobalScope' is not defined                                                    no-undef
-│    8:11  error  'WorkerErrorEvent' is defined but never used. Allowed unused vars must match /^_/u             @typescript-eslint/no-un…
-│   16:11  error  'WorkerPromiseRejectionEvent' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-un…
-│   58:28  error  'HTMLImageElement' is not defined                                                              no-undef
-│   58:47  error  'SVGImageElement' is not defined                                                               no-undef
-│   58:65  error  'HTMLVideoElement' is not defined                                                              no-undef
-│ /Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/workers/imageProcessingWorker.ts
-│   2:1  error  Do not use a triple slash reference for ../types/worker-globals.d.ts, use `import` style instead  @typescript-eslint/trip…
-│ ✖ 15 problems (15 errors, 0 warnings)
-└─ Failed in 5.6s at /Users/erst/Library/CloudStorage/Dropbox/Websites/x
+│   6:22  error  'DedicatedWorkerGlobalScope' is not defined  no-undef
+│ ✖ 17 problems (17 errors, 0 warnings)
+└─ Failed in 6s at /Users/erst/Library/CloudStorage/Dropbox/Websites/x
  ELIFECYCLE  Command failed with exit code 1.
-[3:08:52 AM] % 
-
+[3:28:40 AM] % 
 

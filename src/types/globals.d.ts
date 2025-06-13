@@ -1,3 +1,4 @@
+// src/types/globals.d.ts
 // Global type extensions for browser APIs
 
 declare global {
@@ -96,6 +97,59 @@ declare global {
   // Constants for development/production builds
   const __DEV__: boolean
   const __VERSION__: string
+
+  // Global browser APIs that might not be available in all environments
+  interface HTMLImageElement {
+    readonly naturalWidth: number
+    readonly naturalHeight: number
+  }
+
+  interface SVGImageElement {
+    readonly width: SVGAnimatedLength
+    readonly height: SVGAnimatedLength
+  }
+
+  interface HTMLVideoElement {
+    readonly videoWidth: number
+    readonly videoHeight: number
+  }
+
+  // Add missing createImageBitmap function
+  function createImageBitmap(image: ImageBitmapSource): Promise<ImageBitmap>
+  function createImageBitmap(image: ImageBitmapSource, options: ImageBitmapOptions): Promise<ImageBitmap>
+  function createImageBitmap(image: ImageBitmapSource, sx: number, sy: number, sw: number, sh: number): Promise<ImageBitmap>
+  function createImageBitmap(image: ImageBitmapSource, sx: number, sy: number, sw: number, sh: number, options: ImageBitmapOptions): Promise<ImageBitmap>
+
+  // ReadableStream type
+  interface ReadableStream<R = any> {
+    readonly locked: boolean
+    cancel(reason?: any): Promise<void>
+    getReader(): ReadableStreamDefaultReader<R>
+  }
+
+  interface ReadableStreamDefaultReader<R = any> {
+    readonly closed: Promise<undefined>
+    cancel(reason?: any): Promise<void>
+    read(): Promise<ReadableStreamDefaultReadResult<R>>
+    releaseLock(): void
+  }
+
+  interface ReadableStreamDefaultReadResult<T> {
+    done: boolean
+    value: T
+  }
+
+  // MessagePort type
+  interface MessagePort extends EventTarget {
+    onmessage: ((this: MessagePort, ev: MessageEvent) => any) | null
+    onmessageerror: ((this: MessagePort, ev: MessageEvent) => any) | null
+    close(): void
+    postMessage(message: any, transfer?: Transferable[]): void
+    start(): void
+  }
+
+  // MessageEventSource type
+  type MessageEventSource = WindowProxy | MessagePort | ServiceWorker
 }
 
 export {}

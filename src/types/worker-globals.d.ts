@@ -1,11 +1,12 @@
+// src/types/worker-globals.d.ts
 // Worker global scope type definitions
 
 /// <reference lib="webworker" />
 
-declare const self: DedicatedWorkerGlobalScope & typeof globalThis
+declare const _self: DedicatedWorkerGlobalScope & typeof globalThis
 
 // Enhanced worker event types with proper compatibility
-interface WorkerErrorEvent extends ErrorEvent {
+interface _WorkerErrorEvent extends ErrorEvent {
   message: string
   filename?: string
   lineno?: number
@@ -13,7 +14,7 @@ interface WorkerErrorEvent extends ErrorEvent {
   error?: any
 }
 
-interface WorkerPromiseRejectionEvent extends Event {
+interface _WorkerPromiseRejectionEvent extends Event {
   promise: Promise<any>
   reason: any
 }

@@ -1,5 +1,5 @@
+// src/workers/imageProcessingWorker.ts
 /// <reference lib="webworker" />
-/// <reference path="../types/worker-globals.d.ts" />
 
 import type { WorkerMessage, WorkerResponse, ProcessingType, ProcessingParameters } from '../types'
 

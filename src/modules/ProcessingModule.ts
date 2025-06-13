@@ -1,3 +1,4 @@
+// src/modules/ProcessingModule.ts
 import type { 
   ImageData, 
   ProcessingParameters, 

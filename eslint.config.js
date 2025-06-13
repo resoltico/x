@@ -1,3 +1,4 @@
+// eslint.config.js
 import js from '@eslint/js'
 import tseslint from '@typescript-eslint/eslint-plugin'
 import tsparser from '@typescript-eslint/parser'
@@ -37,6 +38,9 @@ export default [
         HTMLElement: 'readonly',
         HTMLCanvasElement: 'readonly',
         HTMLInputElement: 'readonly',
+        HTMLImageElement: 'readonly',
+        SVGImageElement: 'readonly',
+        HTMLVideoElement: 'readonly',
         CanvasRenderingContext2D: 'readonly',
         OffscreenCanvas: 'readonly',
         OffscreenCanvasRenderingContext2D: 'readonly',
@@ -53,6 +57,11 @@ export default [
         KeyboardEvent: 'readonly',
         Node: 'readonly',
         Transferable: 'readonly',
+        ReadableStream: 'readonly',
+        MediaSource: 'readonly',
+        MessagePort: 'readonly',
+        MessageEventSource: 'readonly',
+        createImageBitmap: 'readonly',
         // Node.js globals for config files
         __dirname: 'readonly',
         process: 'readonly'
@@ -69,6 +78,7 @@ export default [
       }],
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-non-null-assertion': 'off',
+      '@typescript-eslint/triple-slash-reference': 'off',
       'no-case-declarations': 'off'
     }
   },
@@ -198,7 +208,8 @@ export default [
         Date: 'readonly',
         Uint8ClampedArray: 'readonly',
         ArrayBuffer: 'readonly',
-        Event: 'readonly'
+        Event: 'readonly',
+        createImageBitmap: 'readonly'
       }
     },
     plugins: {
@@ -211,6 +222,7 @@ export default [
         varsIgnorePattern: '^_' 
       }],
       '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/triple-slash-reference': 'off',
       'no-case-declarations': 'off'
     }
   },
@@ -254,6 +266,7 @@ export default [
         OffscreenCanvasRenderingContext2D: 'readonly',
         ImageData: 'readonly',
         Worker: 'readonly',
+        WorkerOptions: 'readonly',
         MessageEvent: 'readonly',
         ErrorEvent: 'readonly',
         PromiseRejectionEvent: 'readonly',
