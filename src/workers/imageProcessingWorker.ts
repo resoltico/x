@@ -30,7 +30,8 @@ const workerLog = (level: 'log' | 'warn' | 'error', ...args: any[]) => {
 
 // Message handler with enhanced error handling
 self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
-  const { id, type, payload } = event.data
+  const message = event.data
+  const { id, type, payload } = message
 
   workerLog('log', `Received message: ${type} for task ${id}`)
 

@@ -211,7 +211,9 @@ export class WorkerOrchestratorModule {
    * Handle messages from workers
    */
   private handleWorkerMessage(event: MessageEvent<WorkerResponse>, worker: Worker): void {
-    const { id, type, payload } = event.data
+    const message = event.data
+    const { id, type } = message
+    const payload = message.payload
     
     // Don't log test messages
     if (id.startsWith('test-')) {
@@ -304,10 +306,24 @@ export class WorkerOrchestratorModule {
    */
   getActiveTasks(): ProcessingTask[] {
     const queuedTasks = this.taskQueue.getQueueStatus().tasks
-    const activeTasks = Array.from(this.workerPool.getStatus().activeTasks)
+    const allTasks: ProcessingTask[] = []
     
-    // This is a simplified version - in reality we'd need to properly merge
-    return [...queuedTasks] as ProcessingTask[]
+    // Add queued tasks (they're already ProcessingTask objects)
+    queuedTasks.forEach(taskInfo => {
+      const fullTask = this.taskQueue.getTask(taskInfo.id)
+      if (fullTask) {
+        allTasks.push(fullTask)
+      }
+    })
+    
+    // Add active tasks from worker mappings
+    this.workerPool.getActiveTasks().forEach(mapping => {
+      if (mapping.task) {
+        allTasks.push(mapping.task)
+      }
+    })
+    
+    return allTasks
   }
 
   /**

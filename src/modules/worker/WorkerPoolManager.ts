@@ -190,6 +190,13 @@ export class WorkerPoolManager {
   }
 
   /**
+   * Get all active task mappings
+   */
+  getActiveTasks(): WorkerTaskMapping[] {
+    return Array.from(this.activeTasksMap.values())
+  }
+
+  /**
    * Get worker pool status
    */
   getStatus(): WorkerStatus {

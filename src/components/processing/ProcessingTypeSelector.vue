@@ -6,7 +6,7 @@
       :model-value="modelValue"
       class="input"
       :disabled="disabled"
-      @input="$emit('update:modelValue', ($event.target as HTMLSelectElement).value)"
+      @input="$emit('update:modelValue', ($event.target as HTMLSelectElement).value as ProcessingType | '')"
     >
       <option value="">Select algorithm...</option>
       <option value="binarization">Binarization</option>

@@ -4,10 +4,12 @@
 export interface BaseWorkerMessage {
   id: string
   type: string
+  payload?: any // Add optional payload to base interface
 }
 
 export interface TestWorkerMessage extends BaseWorkerMessage {
   type: 'test'
+  payload?: undefined // Explicitly mark as no payload for test messages
 }
 
 export interface ProcessWorkerMessage extends BaseWorkerMessage {
@@ -21,6 +23,7 @@ export interface ProcessWorkerMessage extends BaseWorkerMessage {
 
 export interface CancelWorkerMessage extends BaseWorkerMessage {
   type: 'cancel'
+  payload?: undefined // Explicitly mark as no payload for cancel messages
 }
 
 export interface ProgressWorkerMessage extends BaseWorkerMessage {
@@ -40,10 +43,12 @@ export type WorkerMessage =
 export interface BaseWorkerResponse {
   id: string
   type: string
+  payload?: any // Make payload optional and flexible for all response types
 }
 
 export interface TestWorkerResponse extends BaseWorkerResponse {
   type: 'test-response'
+  payload?: any
 }
 
 export interface ResultWorkerResponse extends BaseWorkerResponse {
@@ -70,7 +75,7 @@ export interface ErrorWorkerResponse extends BaseWorkerResponse {
 
 export interface ReadyWorkerResponse extends BaseWorkerResponse {
   type: 'ready'
-  payload: {
+  payload?: {
     message: string
   }
 }
