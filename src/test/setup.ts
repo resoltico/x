@@ -325,12 +325,21 @@ beforeAll(() => {
 
   // Mock createImageBitmap
   if (typeof globalThis.createImageBitmap === 'undefined') {
-    globalThis.createImageBitmap = async function(_source: any, _options?: any) {
+    globalThis.createImageBitmap = async function(_source: any, _options?: any): Promise<ImageBitmap> {
       return {
         width: 100,
         height: 100,
         close: () => {}
       } as ImageBitmap
     }
+  }
+
+  // Mock ImageBitmap
+  if (typeof globalThis.ImageBitmap === 'undefined') {
+    globalThis.ImageBitmap = class MockImageBitmap {
+      width = 100
+      height = 100
+      close() {}
+    } as any
   }
 })

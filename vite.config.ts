@@ -48,17 +48,6 @@ export default defineConfig({
           'vue-vendor': ['vue', 'pinia'],
           'image-processing': ['wasm-vips']
         }
-      },
-      onwarn(warning, warn) {
-        // Skip eval warnings from wasm-vips as they are intentional and safe
-        if (warning.code === 'EVAL' && warning.id?.includes('wasm-vips')) {
-          return
-        }
-        // Skip TypeScript issues that are handled by the TypeScript compiler
-        if (warning.code === 'PLUGIN_WARNING' && warning.plugin === 'typescript') {
-          return
-        }
-        warn(warning)
       }
     }
   },
@@ -74,7 +63,6 @@ export default defineConfig({
     ],
     rollupOptions: {
       output: {
-        // Ensure workers are built with proper ES module format
         format: 'es',
         entryFileNames: 'assets/[name]-[hash].js'
       }
@@ -82,11 +70,9 @@ export default defineConfig({
   },
   assetsInclude: ['**/*.wasm'],
   esbuild: {
-    // Enhanced TypeScript compilation options
     target: 'esnext'
   },
   define: {
-    // Define global constants for better error handling
     __DEV__: JSON.stringify(process.env.NODE_ENV !== 'production'),
     __VERSION__: JSON.stringify(process.env.npm_package_version || '1.0.0')
   }

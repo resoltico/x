@@ -51,12 +51,6 @@ declare global {
     text(): Promise<string>
   }
 
-  // Enhanced URL types
-  interface URL {
-    createObjectURL(object: File | Blob | MediaSource): string
-    revokeObjectURL(url: string): void
-  }
-
   // Enhanced ImageData types
   interface ImageData {
     readonly data: Uint8ClampedArray
@@ -98,27 +92,16 @@ declare global {
   const __DEV__: boolean
   const __VERSION__: string
 
-  // Global browser APIs that might not be available in all environments
+  // Enhanced HTML element types
   interface HTMLImageElement {
     readonly naturalWidth: number
     readonly naturalHeight: number
-  }
-
-  interface SVGImageElement {
-    readonly width: SVGAnimatedLength
-    readonly height: SVGAnimatedLength
   }
 
   interface HTMLVideoElement {
     readonly videoWidth: number
     readonly videoHeight: number
   }
-
-  // Add missing createImageBitmap function
-  function createImageBitmap(image: ImageBitmapSource): Promise<ImageBitmap>
-  function createImageBitmap(image: ImageBitmapSource, options: ImageBitmapOptions): Promise<ImageBitmap>
-  function createImageBitmap(image: ImageBitmapSource, sx: number, sy: number, sw: number, sh: number): Promise<ImageBitmap>
-  function createImageBitmap(image: ImageBitmapSource, sx: number, sy: number, sw: number, sh: number, options: ImageBitmapOptions): Promise<ImageBitmap>
 
   // ReadableStream type
   interface ReadableStream<R = any> {
@@ -147,9 +130,6 @@ declare global {
     postMessage(message: any, transfer?: Transferable[]): void
     start(): void
   }
-
-  // MessageEventSource type
-  type MessageEventSource = WindowProxy | MessagePort | ServiceWorker
 }
 
 export {}

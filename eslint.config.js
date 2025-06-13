@@ -45,6 +45,7 @@ export default [
         OffscreenCanvas: 'readonly',
         OffscreenCanvasRenderingContext2D: 'readonly',
         ImageData: 'readonly',
+        ImageBitmap: 'readonly',
         Worker: 'readonly',
         MessageEvent: 'readonly',
         ErrorEvent: 'readonly',
@@ -56,12 +57,19 @@ export default [
         TouchEvent: 'readonly',
         KeyboardEvent: 'readonly',
         Node: 'readonly',
+        EventTarget: 'readonly',
         Transferable: 'readonly',
         ReadableStream: 'readonly',
         MediaSource: 'readonly',
         MessagePort: 'readonly',
         MessageEventSource: 'readonly',
+        WindowProxy: 'readonly',
+        ServiceWorker: 'readonly',
         createImageBitmap: 'readonly',
+        // Browser API types
+        ImageBitmapSource: 'readonly',
+        ImageBitmapOptions: 'readonly',
+        SVGAnimatedLength: 'readonly',
         // Node.js globals for config files
         __dirname: 'readonly',
         process: 'readonly'
@@ -167,7 +175,7 @@ export default [
     }
   },
 
-  // Worker files - Enhanced configuration with correct globals and better error handling
+  // Worker files - Enhanced configuration with correct globals
   {
     files: ['src/workers/**/*.ts'],
     languageOptions: {
@@ -177,7 +185,7 @@ export default [
         sourceType: 'module'
       },
       globals: {
-        // Worker globals with corrected types
+        // Worker globals
         self: 'readonly',
         importScripts: 'readonly',
         WorkerGlobalScope: 'readonly',
@@ -188,6 +196,7 @@ export default [
         OffscreenCanvas: 'readonly',
         OffscreenCanvasRenderingContext2D: 'readonly',
         ImageData: 'readonly',
+        ImageBitmap: 'readonly',
         console: 'readonly',
         setTimeout: 'readonly',
         setInterval: 'readonly',
@@ -265,6 +274,7 @@ export default [
         OffscreenCanvas: 'readonly',
         OffscreenCanvasRenderingContext2D: 'readonly',
         ImageData: 'readonly',
+        ImageBitmap: 'readonly',
         Worker: 'readonly',
         WorkerOptions: 'readonly',
         MessageEvent: 'readonly',
@@ -280,6 +290,85 @@ export default [
         Transferable: 'readonly',
         globalThis: 'writable'
       }
+    }
+  },
+
+  // Type definition files - Special handling
+  {
+    files: ['src/types/**/*.d.ts'],
+    languageOptions: {
+      parser: tsparser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module'
+      },
+      globals: {
+        // All browser and worker globals for type definitions
+        window: 'readonly',
+        document: 'readonly',
+        navigator: 'readonly',
+        performance: 'readonly',
+        console: 'readonly',
+        setTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearTimeout: 'readonly',
+        clearInterval: 'readonly',
+        URL: 'readonly',
+        Blob: 'readonly',
+        File: 'readonly',
+        FileReader: 'readonly',
+        FileList: 'readonly',
+        Image: 'readonly',
+        HTMLElement: 'readonly',
+        HTMLCanvasElement: 'readonly',
+        HTMLInputElement: 'readonly',
+        HTMLImageElement: 'readonly',
+        SVGImageElement: 'readonly',
+        HTMLVideoElement: 'readonly',
+        CanvasRenderingContext2D: 'readonly',
+        OffscreenCanvas: 'readonly',
+        OffscreenCanvasRenderingContext2D: 'readonly',
+        ImageData: 'readonly',
+        ImageBitmap: 'readonly',
+        ImageBitmapSource: 'readonly',
+        ImageBitmapOptions: 'readonly',
+        Worker: 'readonly',
+        WorkerGlobalScope: 'readonly',
+        DedicatedWorkerGlobalScope: 'readonly',
+        MessageEvent: 'readonly',
+        ErrorEvent: 'readonly',
+        PromiseRejectionEvent: 'readonly',
+        Event: 'readonly',
+        DragEvent: 'readonly',
+        WheelEvent: 'readonly',
+        MouseEvent: 'readonly',
+        TouchEvent: 'readonly',
+        KeyboardEvent: 'readonly',
+        Node: 'readonly',
+        EventTarget: 'readonly',
+        Transferable: 'readonly',
+        ReadableStream: 'readonly',
+        MediaSource: 'readonly',
+        MessagePort: 'readonly',
+        MessageEventSource: 'readonly',
+        WindowProxy: 'readonly',
+        ServiceWorker: 'readonly',
+        SVGAnimatedLength: 'readonly',
+        createImageBitmap: 'readonly',
+        globalThis: 'readonly'
+      }
+    },
+    plugins: {
+      '@typescript-eslint': tseslint
+    },
+    rules: {
+      ...tseslint.configs.recommended.rules,
+      '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-non-null-assertion': 'off',
+      '@typescript-eslint/triple-slash-reference': 'off',
+      'no-undef': 'off', // Disable no-undef for type definition files
+      'no-case-declarations': 'off'
     }
   },
 

@@ -13,6 +13,7 @@
     "src/workers/**/*.ts",
     "src/types/worker*.d.ts",
     "src/types/index.ts",
+    "src/types/browser.d.ts",
     "src/modules/processing/**/*.ts"
   ],
   "exclude": [

@@ -1,6 +1,6 @@
-Last login: Fri Jun 13 02:58:35 on ttys000
+Last login: Fri Jun 13 03:27:38 on ttys000
 Using Node v22.16.0
-[3:27:43 AM] % pnpm install
+[3:37:59 AM] % pnpm install
 Packages: +348
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 Progress: resolved 420, reused 348, downloaded 0, added 348, done
@@ -10,33 +10,42 @@ Progress: resolved 420, reused 348, downloaded 0, added 348, done
 │ > engraving-processor-pro@1.0.0 typecheck:all
 │ > npm run typecheck && npm run typecheck:worker
 │ > engraving-processor-pro@1.0.0 typecheck
-│ > vue-tsc --noEmit
+│ > vue-tsc --noEmit --skipLibCheck
 │ > engraving-processor-pro@1.0.0 typecheck:worker
-│ > tsc --project tsconfig.worker.json --noEmit
+│ > tsc --project tsconfig.worker.json --noEmit --skipLibCheck
 │ > engraving-processor-pro@1.0.0 lint:quiet
 │ > eslint . --quiet
-│ /Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/test/setup.ts
-│   333:12  error  'ImageBitmap' is not defined  no-undef
-│ /Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/types/globals.d.ts
-│   108:21   error  'SVGAnimatedLength' is not defined   no-undef
-│   109:22   error  'SVGAnimatedLength' is not defined   no-undef
-│   118:37   error  'ImageBitmapSource' is not defined   no-undef
-│   118:65   error  'ImageBitmap' is not defined         no-undef
-│   119:37   error  'ImageBitmapSource' is not defined   no-undef
-│   119:65   error  'ImageBitmapOptions' is not defined  no-undef
-│   119:94   error  'ImageBitmap' is not defined         no-undef
-│   120:37   error  'ImageBitmapSource' is not defined   no-undef
-│   120:113  error  'ImageBitmap' is not defined         no-undef
-│   121:37   error  'ImageBitmapSource' is not defined   no-undef
-│   121:113  error  'ImageBitmapOptions' is not defined  no-undef
-│   121:142  error  'ImageBitmap' is not defined         no-undef
-│   143:33   error  'EventTarget' is not defined         no-undef
-│   152:29   error  'WindowProxy' is not defined         no-undef
-│   152:57   error  'ServiceWorker' is not defined       no-undef
-│ /Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/types/worker-globals.d.ts
-│   6:22  error  'DedicatedWorkerGlobalScope' is not defined  no-undef
-│ ✖ 17 problems (17 errors, 0 warnings)
-└─ Failed in 6s at /Users/erst/Library/CloudStorage/Dropbox/Websites/x
+│ /Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/types/browser.d.ts
+│    67:24  error  'Location' is not defined                    no-undef
+│    68:23  error  'History' is not defined                     no-undef
+│    69:30  error  'CustomElementRegistry' is not defined       no-undef
+│    70:25  error  'Navigator' is not defined                   no-undef
+│    71:27  error  'Performance' is not defined                 no-undef
+│    72:22  error  'Screen' is not defined                      no-undef
+│    73:30  error  'VisualViewport' is not defined              no-undef
+│    88:22  error  'CacheStorage' is not defined                no-undef
+│    89:22  error  'Crypto' is not defined                      no-undef
+│    90:25  error  'IDBFactory' is not defined                  no-undef
+│    95:27  error  'Performance' is not defined                 no-undef
+│   109:18  error  'RequestInfo' is not defined                 no-undef
+│   109:44  error  'RequestInit' is not defined                 no-undef
+│   109:66  error  'Response' is not defined                    no-undef
+│   111:30  error  'VoidFunction' is not defined                no-undef
+│   113:26  error  'TimerHandler' is not defined                no-undef
+│   114:25  error  'TimerHandler' is not defined                no-undef
+│   115:43  error  'StructuredSerializeOptions' is not defined  no-undef
+│   134:26  error  'NetworkInformation' is not defined          no-undef
+│   139:21  error  'LockManager' is not defined                 no-undef
+│   141:27  error  'Permissions' is not defined                 no-undef
+│   145:22  error  'Serial' is not defined                      no-undef
+│   146:29  error  'ServiceWorkerContainer' is not defined      no-undef
+│   147:23  error  'StorageManager' is not defined              no-undef
+│   149:29  error  'NavigatorUAData' is not defined             no-undef
+│   152:39  error  'DeprecatedStorageQuota' is not defined      no-undef
+│   153:38  error  'DeprecatedStorageQuota' is not defined      no-undef
+│ ✖ 27 problems (27 errors, 0 warnings)
+└─ Failed in 5.9s at /Users/erst/Library/CloudStorage/Dropbox/Websites/x
  ELIFECYCLE  Command failed with exit code 1.
-[3:28:40 AM] % 
+[3:38:25 AM] % 
+
 
