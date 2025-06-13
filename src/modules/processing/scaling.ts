@@ -61,7 +61,7 @@ export class ScalingProcessor {
     const ctx = canvas.getContext('2d')!
     
     // Create ImageData object for canvas
-    const canvasImageData = new ImageData(
+    const canvasImageData = new globalThis.ImageData(
       new Uint8ClampedArray(imageData.data),
       imageData.width,
       imageData.height
@@ -265,25 +265,24 @@ export class ScalingProcessor {
     // Apply Scale2x twice
     const intermediate = await this.canvasScale2x(canvas)
     
-    // Create intermediate canvas
+    // Create intermediate canvas from the result
     const blob = new Blob([intermediate], { type: 'image/png' })
-    const img = new Image()
+    
+    // Use createImageBitmap instead of Image constructor for worker compatibility
+    const imageBitmap = await createImageBitmap(blob)
+    
     const intermediateCanvas = new OffscreenCanvas(canvas.width * 2, canvas.height * 2)
     const intermediateCtx = intermediateCanvas.getContext('2d')!
     
-    return new Promise((resolve, reject) => {
-      img.onload = async () => {
-        intermediateCtx.drawImage(img, 0, 0)
-        try {
-          const result = await this.canvasScale2x(intermediateCanvas)
-          resolve(result)
-        } catch (error) {
-          reject(error)
-        }
-      }
-      img.onerror = reject
-      img.src = URL.createObjectURL(blob)
-    })
+    intermediateCtx.drawImage(imageBitmap, 0, 0)
+    
+    // Apply Scale2x again
+    const result = await this.canvasScale2x(intermediateCanvas)
+    
+    // Clean up the image bitmap
+    imageBitmap.close()
+    
+    return result
   }
 
   /**
@@ -556,7 +555,7 @@ export class ScalingProcessor {
     // This is a simplified heuristic - in practice, content detection is complex
     const canvas = new OffscreenCanvas(imageData.width, imageData.height)
     const ctx = canvas.getContext('2d')!
-    const data = new ImageData(new Uint8ClampedArray(imageData.data), imageData.width, imageData.height)
+    const data = new globalThis.ImageData(new Uint8ClampedArray(imageData.data), imageData.width, imageData.height)
     ctx.putImageData(data, 0, 0)
     
     const pixels = data.data

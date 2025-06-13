@@ -192,9 +192,15 @@ function sendError(taskId: string, error: string) {
   self.postMessage(response)
 }
 
-// Handle worker errors with proper type
-self.onerror = (event: ErrorEvent) => {
-  console.error('Worker script error:', event.message, event.filename, event.lineno)
+// Handle worker errors with proper typing - fix for the TypeScript error
+self.onerror = (event: string | Event) => {
+  if (typeof event === 'string') {
+    console.error('Worker script error:', event)
+  } else if (event instanceof ErrorEvent) {
+    console.error('Worker script error:', event.message, event.filename, event.lineno)
+  } else {
+    console.error('Worker script error:', event)
+  }
 }
 
 // Handle unhandled promise rejections

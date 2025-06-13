@@ -1,6 +1,4 @@
-Last login: Fri Jun 13 02:45:53 on ttys000
-Using Node v22.16.0
-[2:56:46 AM] % pnpm install
+[3:06:45 AM] % pnpm install
 Packages: +348
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 Progress: resolved 420, reused 348, downloaded 0, added 348, done
@@ -11,29 +9,33 @@ Progress: resolved 420, reused 348, downloaded 0, added 348, done
 │ > npm run typecheck && npm run typecheck:worker
 │ > engraving-processor-pro@1.0.0 typecheck
 │ > vue-tsc --noEmit
-│ src/workers/imageProcessingWorker.ts(196,1): error TS2322: Type '(event: ErrorEvent) => void' is not assignable to type '((this: Dedica…
-│   Type '(event: ErrorEvent) => void' is not assignable to type 'OnErrorEventHandlerNonNull'.
-│     Types of parameters 'event' and 'event' are incompatible.
-│       Type 'string | Event' is not assignable to type 'ErrorEvent'.
-│         Type 'string' is not assignable to type 'ErrorEvent'.
-└─ Failed in 3.2s at /Users/erst/Library/CloudStorage/Dropbox/Websites/x
- ELIFECYCLE  Command failed with exit code 2.
-[2:57:05 AM] % 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+│ > engraving-processor-pro@1.0.0 typecheck:worker
+│ > tsc --project tsconfig.worker.json --noEmit
+│ > engraving-processor-pro@1.0.0 lint:quiet
+│ > eslint . --quiet
+│ /Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/modules/processing/scaling.ts
+│   162:15  error  'srcIdx' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+│   272:31  error  'createImageBitmap' is not defined                                                 no-undef
+│ /Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/test/setup.ts
+│   132:50  error  'WorkerOptions' is not defined  no-undef
+│ /Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/types/globals.d.ts
+│   48:16  error  'ReadableStream' is not defined      no-undef
+│   55:43  error  'MediaSource' is not defined         no-undef
+│   92:30  error  'MessagePort' is not defined         no-undef
+│   93:22  error  'MessageEventSource' is not defined  no-undef
+│ /Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/types/worker-globals.d.ts
+│    5:15  error  'self' is defined but never used. Allowed unused vars must match /^_/u                         @typescript-eslint/no-un…
+│    5:21  error  'DedicatedWorkerGlobalScope' is not defined                                                    no-undef
+│    8:11  error  'WorkerErrorEvent' is defined but never used. Allowed unused vars must match /^_/u             @typescript-eslint/no-un…
+│   16:11  error  'WorkerPromiseRejectionEvent' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-un…
+│   58:28  error  'HTMLImageElement' is not defined                                                              no-undef
+│   58:47  error  'SVGImageElement' is not defined                                                               no-undef
+│   58:65  error  'HTMLVideoElement' is not defined                                                              no-undef
+│ /Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/workers/imageProcessingWorker.ts
+│   2:1  error  Do not use a triple slash reference for ../types/worker-globals.d.ts, use `import` style instead  @typescript-eslint/trip…
+│ ✖ 15 problems (15 errors, 0 warnings)
+└─ Failed in 5.6s at /Users/erst/Library/CloudStorage/Dropbox/Websites/x
+ ELIFECYCLE  Command failed with exit code 1.
+[3:08:52 AM] % 
 
 

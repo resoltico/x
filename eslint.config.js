@@ -157,7 +157,7 @@ export default [
     }
   },
 
-  // Worker files - Enhanced configuration with correct globals
+  // Worker files - Enhanced configuration with correct globals and better error handling
   {
     files: ['src/workers/**/*.ts'],
     languageOptions: {
@@ -167,7 +167,7 @@ export default [
         sourceType: 'module'
       },
       globals: {
-        // Worker globals
+        // Worker globals with corrected types
         self: 'readonly',
         importScripts: 'readonly',
         WorkerGlobalScope: 'readonly',
@@ -197,7 +197,8 @@ export default [
         String: 'readonly',
         Date: 'readonly',
         Uint8ClampedArray: 'readonly',
-        ArrayBuffer: 'readonly'
+        ArrayBuffer: 'readonly',
+        Event: 'readonly'
       }
     },
     plugins: {
