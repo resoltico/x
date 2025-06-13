@@ -49,8 +49,8 @@ export class WorkerFactory {
         } else {
           worker.terminate()
         }
-      } catch (error) {
-        console.warn(`❌ Worker ${index} failed with URL ${url}:`, error)
+      } catch (_error) {
+        console.warn(`❌ Worker ${index} failed with URL ${url}:`, _error)
         continue
       }
     }
@@ -100,6 +100,7 @@ export class WorkerFactory {
       try {
         worker.postMessage({ id: testId, type: 'test' })
       } catch (error) {
+        console.warn('Failed to post test message to worker:', error)
         onError()
       }
     })
