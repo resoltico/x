@@ -49,15 +49,16 @@
     "src/**/*.d.ts",
     "src/**/*.tsx",
     "src/**/*.vue",
-    "src/types/**/*.d.ts",
-    "vite.config.ts",
-    "vitest.config.ts"
+    "src/types/**/*.d.ts"
   ],
   "exclude": [
     "node_modules",
     "dist",
     "coverage",
-    "**/*.worker.ts"
-  ],
-  "references": [{ "path": "./tsconfig.node.json" }]
+    "**/*.worker.ts",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "tailwind.config.ts",
+    "**/*.config.ts"
+  ]
 }

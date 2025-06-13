@@ -18,7 +18,7 @@ export class PreviewRendererModule {
 
   private isDragging = false
   private lastMousePos = { x: 0, y: 0 }
-  private eventListeners: { element: EventTarget; type: string; listener: EventListener }[] = []
+  private eventListeners: { element: EventTarget; type: string; listener: (event: Event) => void }[] = []
 
   /**
    * Initialize the renderer with a canvas element
@@ -49,7 +49,7 @@ export class PreviewRendererModule {
     if (!this.canvas) return
 
     // Store event listeners for cleanup
-    const addListener = (element: EventTarget, type: string, listener: EventListener, options?: AddEventListenerOptions) => {
+    const addListener = (element: EventTarget, type: string, listener: (event: Event) => void, options?: boolean | { passive?: boolean; once?: boolean; capture?: boolean }) => {
       element.addEventListener(type, listener, options)
       this.eventListeners.push({ element, type, listener })
     }

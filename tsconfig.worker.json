@@ -32,6 +32,9 @@
     "src/stores/**/*",
     "src/**/*.test.ts",
     "src/**/*.spec.ts",
-    "node_modules"
+    "node_modules",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "tailwind.config.ts"
   ]
 }

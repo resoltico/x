@@ -9,13 +9,13 @@ vi.mock('@/utils/imageHelpers', () => ({
 describe('ImageInputModule', () => {
   let mockFileToImageData: any
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Reset all mocks before each test
     vi.clearAllMocks()
     
     // Get the mocked function
-    const { fileToImageData } = require('@/utils/imageHelpers')
-    mockFileToImageData = fileToImageData
+    const imageHelpers = await import('@/utils/imageHelpers')
+    mockFileToImageData = imageHelpers.fileToImageData
   })
 
   describe('getInstance', () => {

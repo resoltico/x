@@ -8,9 +8,6 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
-    transformMode: {
-      web: [/\.[jt]sx?$/, /\.vue$/]
-    },
     // Exclude worker files from main test suite as they need special handling
     exclude: [
       '**/node_modules/**',
@@ -23,7 +20,7 @@ export default defineConfig({
     testTimeout: 15000,
     hookTimeout: 15000,
     // Enable better stack traces
-    includeSource: ['src/**/*.{js,ts,vue}'],
+    include: ['src/**/*.{test,spec}.{js,ts,jsx,tsx}'],
     // Coverage configuration
     coverage: {
       provider: 'v8',
@@ -51,10 +48,10 @@ export default defineConfig({
       return true
     },
     // Add pool options for better performance
-    pool: 'threads',
+    pool: 'forks',
     poolOptions: {
-      threads: {
-        singleThread: true
+      forks: {
+        singleFork: true
       }
     },
     // Increase max concurrency for better performance

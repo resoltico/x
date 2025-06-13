@@ -54,7 +54,7 @@ beforeAll(() => {
     const mockURLs = new Set<string>()
     
     globalThis.URL = {
-      createObjectURL: (object: File | Blob | MediaSource) => {
+      createObjectURL: (_object: File | Blob | MediaSource) => {
         const mockUrl = `blob:mock-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
         mockURLs.add(mockUrl)
         return mockUrl
@@ -167,9 +167,9 @@ beforeAll(() => {
         return null
       }
       
-      convertToBlob(options: any = {}) {
+      convertToBlob(_options: any = {}) {
         return Promise.resolve(new Blob(['mock-offscreen-canvas-data'], { 
-          type: options.type || 'image/png' 
+          type: _options.type || 'image/png' 
         }))
       }
       
@@ -229,12 +229,12 @@ beforeAll(() => {
       onerror: ((event: ErrorEvent) => void) | null = null
       onmessageerror: ((event: MessageEvent) => void) | null = null
       
-      constructor(private url: string | URL, private options?: WorkerOptions) {
+      constructor(private url: string | URL, private _options?: WorkerOptions) {
         // Mock worker constructor
         console.log(`Mock Worker created for: ${url}`)
       }
       
-      postMessage(message: any, transfer?: Transferable[]) {
+      postMessage(message: any, _transfer?: Transferable[]) {
         // Mock postMessage with realistic delay and response
         setTimeout(() => {
           if (this.onmessage) {
@@ -341,14 +341,14 @@ beforeAll(() => {
       size: number
       type: string
       
-      constructor(chunks: any[] = [], options: any = {}) {
+      constructor(chunks: any[] = [], _options: any = {}) {
         this.size = chunks.reduce((size, chunk) => {
           if (typeof chunk === 'string') return size + chunk.length
           if (chunk instanceof ArrayBuffer) return size + chunk.byteLength
           if (ArrayBuffer.isView(chunk)) return size + chunk.byteLength
           return size + String(chunk).length
         }, 0)
-        this.type = options.type || ''
+        this.type = _options.type || ''
       }
       
       arrayBuffer() {
@@ -380,7 +380,7 @@ beforeAll(() => {
 
   // Mock createImageBitmap
   if (typeof globalThis.createImageBitmap === 'undefined') {
-    globalThis.createImageBitmap = async function(source: any, options?: any): Promise<ImageBitmap> {
+    globalThis.createImageBitmap = async function(_source: any, _options?: any): Promise<ImageBitmap> {
       // Simulate async operation
       await new Promise(resolve => setTimeout(resolve, 1))
       
@@ -494,9 +494,72 @@ beforeAll(() => {
 
   // Mock document.createElement for canvas
   const originalCreateElement = document.createElement.bind(document)
-  document.createElement = vi.fn((tagName: string) => {
+  document.createElement = vi.fn((tagName: string): HTMLElement => {
     if (tagName.toLowerCase() === 'canvas') {
-      return new (globalThis.HTMLCanvasElement as any)()
+      // Create a mock canvas element that properly extends HTMLElement
+      const mockCanvas = originalCreateElement('div') as any
+      
+      // Use Object.defineProperty to properly set canvas properties
+      Object.defineProperty(mockCanvas, 'width', {
+        value: 300,
+        writable: true,
+        configurable: true
+      })
+      
+      Object.defineProperty(mockCanvas, 'height', {
+        value: 150,
+        writable: true,
+        configurable: true
+      })
+      
+      Object.defineProperty(mockCanvas, 'getContext', {
+        value: vi.fn((contextType: string) => {
+          if (contextType === '2d') {
+            const ctx = { ...mockContext }
+            ctx.canvas = mockCanvas
+            return ctx
+          }
+          return null
+        }),
+        writable: true,
+        configurable: true
+      })
+      
+      Object.defineProperty(mockCanvas, 'toDataURL', {
+        value: vi.fn((type = 'image/png') => {
+          return `data:${type};base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGAWjR9awAAAABJRU5ErkJggg==`
+        }),
+        writable: true,
+        configurable: true
+      })
+      
+      Object.defineProperty(mockCanvas, 'toBlob', {
+        value: vi.fn((callback: (blob: Blob) => void, type = 'image/png') => {
+          setTimeout(() => {
+            callback(new Blob(['mock-canvas-data'], { type }))
+          }, 0)
+        }),
+        writable: true,
+        configurable: true
+      })
+      
+      Object.defineProperty(mockCanvas, 'getBoundingClientRect', {
+        value: vi.fn(() => ({
+          left: 0,
+          top: 0,
+          right: 300,
+          bottom: 150,
+          width: 300,
+          height: 150,
+          x: 0,
+          y: 0,
+          toJSON: () => ({})
+        })),
+        writable: true,
+        configurable: true
+      })
+      
+      return mockCanvas
     }
     return originalCreateElement(tagName)
   })
