@@ -14,13 +14,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src'),
-      '@/components': resolve(__dirname, 'src/components'),
-      '@/modules': resolve(__dirname, 'src/modules'),
-      '@/stores': resolve(__dirname, 'src/stores'),
-      '@/utils': resolve(__dirname, 'src/utils'),
-      '@/types': resolve(__dirname, 'src/types'),
-      '@/workers': resolve(__dirname, 'src/workers')
+      '@': resolve(__dirname, 'src')
     }
   },
   server: {
@@ -29,51 +23,47 @@ export default defineConfig({
     headers: {
       'Cross-Origin-Embedder-Policy': 'require-corp',
       'Cross-Origin-Opener-Policy': 'same-origin',
-    },
-    fs: {
-      // Allow serving files from one level up to the project root
-      allow: ['..']
     }
   },
   build: {
     target: 'esnext',
-    chunkSizeWarningLimit: 1000,
     sourcemap: true,
     rollupOptions: {
-      input: {
-        main: resolve(__dirname, 'index.html')
-      },
       output: {
         manualChunks: {
-          'vue-vendor': ['vue', 'pinia'],
-          'image-processing': ['wasm-vips']
+          'vue-vendor': ['vue', 'pinia']
+        },
+        // Ensure worker files are accessible at predictable paths
+        assetFileNames: (assetInfo) => {
+          if (assetInfo.name?.includes('worker') || assetInfo.name?.includes('Worker')) {
+            return 'workers/[name]-[hash][extname]'
+          }
+          return 'assets/[name]-[hash][extname]'
+        },
+        chunkFileNames: (chunkInfo) => {
+          if (chunkInfo.name?.includes('worker') || chunkInfo.facadeModuleId?.includes('worker')) {
+            return 'workers/[name]-[hash].js'
+          }
+          return 'assets/[name]-[hash].js'
         }
       }
     }
   },
-  optimizeDeps: {
-    exclude: ['wasm-vips'],
-    include: ['vue', 'pinia']
-  },
   worker: {
     format: 'es',
-    plugins: () => [
-      wasm(),
-      topLevelAwait()
-    ],
     rollupOptions: {
       output: {
-        format: 'es',
-        entryFileNames: 'assets/[name]-[hash].js'
+        entryFileNames: 'workers/[name]-[hash].js'
       }
     }
   },
-  assetsInclude: ['**/*.wasm'],
-  esbuild: {
-    target: 'esnext'
+  optimizeDeps: {
+    exclude: ['wasm-vips']
   },
   define: {
-    __DEV__: JSON.stringify(process.env.NODE_ENV !== 'production'),
-    __VERSION__: JSON.stringify(process.env.npm_package_version || '1.0.0')
-  }
+    __DEV__: JSON.stringify(process.env.NODE_ENV !== 'production')
+  },
+  // Enhanced logging for debugging
+  logLevel: 'info',
+  clearScreen: false
 })

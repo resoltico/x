@@ -1,6 +1,52 @@
+<!-- src/components/ProcessingControls.vue -->
 <template>
   <div class="card">
     <h2 class="text-xl font-semibold text-slate-800 mb-4">Processing Controls</h2>
+
+    <!-- System Status Alert -->
+    <div v-if="systemStatus.error" class="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+      <div class="flex">
+        <svg class="h-5 w-5 text-red-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+        </svg>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-red-800">System Error</h3>
+          <p class="mt-1 text-sm text-red-700">{{ systemStatus.error }}</p>
+          <button 
+            class="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+            @click="retryInitialization"
+          >
+            Retry Initialization
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Worker Status -->
+    <div v-if="!systemStatus.error" class="mb-4 bg-slate-50 border border-slate-200 rounded-lg p-3">
+      <h3 class="text-sm font-medium text-slate-700 mb-2">System Status</h3>
+      <div class="grid grid-cols-2 gap-3 text-xs">
+        <div class="flex items-center">
+          <div 
+            class="w-2 h-2 rounded-full mr-2"
+            :class="systemStatus.initialized ? 'bg-green-500' : 'bg-red-500'"
+          ></div>
+          <span>{{ systemStatus.initialized ? 'Ready' : 'Initializing...' }}</span>
+        </div>
+        <div>
+          <span class="text-slate-500">Workers:</span>
+          <span class="ml-1 font-medium">{{ systemStatus.availableWorkers }}/{{ systemStatus.totalWorkers }}</span>
+        </div>
+        <div>
+          <span class="text-slate-500">Queue:</span>
+          <span class="ml-1 font-medium">{{ systemStatus.queuedTasks }}</span>
+        </div>
+        <div>
+          <span class="text-slate-500">Environment:</span>
+          <span class="ml-1 font-medium text-xs">{{ systemStatus.environment }}</span>
+        </div>
+      </div>
+    </div>
 
     <!-- Algorithm Selection -->
     <div class="space-y-6">
@@ -10,7 +56,7 @@
         <select
           v-model="selectedType"
           class="input"
-          :disabled="!hasImage || isProcessing"
+          :disabled="!hasImage || isProcessing || !systemStatus.initialized"
         >
           <option value="">Select algorithm...</option>
           <option value="binarization">Binarization</option>
@@ -211,28 +257,28 @@
         <div class="grid grid-cols-2 gap-2">
           <button
             class="btn btn-secondary text-sm"
-            :disabled="!hasImage"
+            :disabled="!hasImage || !systemStatus.initialized"
             @click="applyPreset('document')"
           >
             📄 Document
           </button>
           <button
             class="btn btn-secondary text-sm"
-            :disabled="!hasImage"
+            :disabled="!hasImage || !systemStatus.initialized"
             @click="applyPreset('engraving')"
           >
             🖼️ Engraving
           </button>
           <button
             class="btn btn-secondary text-sm"
-            :disabled="!hasImage"
+            :disabled="!hasImage || !systemStatus.initialized"
             @click="applyPreset('pixel-art')"
           >
             🎮 Pixel Art
           </button>
           <button
             class="btn btn-secondary text-sm"
-            :disabled="!hasImage"
+            :disabled="!hasImage || !systemStatus.initialized"
             @click="applyPreset('noise-clean')"
           >
             ✨ Noise Clean
@@ -245,12 +291,24 @@
         <h3 class="text-sm font-medium text-blue-800 mb-2">Algorithm Info</h3>
         <p class="text-sm text-blue-700">{{ getAlgorithmDescription() }}</p>
       </div>
+
+      <!-- Debug Information (only in development) -->
+      <div v-if="showDebugInfo" class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+        <h3 class="text-sm font-medium text-gray-800 mb-2">Debug Information</h3>
+        <div class="text-xs text-gray-600 space-y-1">
+          <div>Worker Status: {{ JSON.stringify(systemStatus) }}</div>
+          <div>Has Image: {{ hasImage }}</div>
+          <div>Can Process: {{ canProcess }}</div>
+          <div>Selected Type: {{ selectedType }}</div>
+          <div>Active Tasks: {{ activeTasks.length }}</div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, watch, onMounted } from 'vue'
+  import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
   import { useAppStore } from '@/stores/app'
   import { WorkerOrchestratorModule } from '@/modules/WorkerOrchestratorModule'
   import { ProcessingModule } from '@/modules/ProcessingModule'
@@ -271,8 +329,23 @@
   let workerOrchestrator: WorkerOrchestratorModule | null = null
   let processingModule: ProcessingModule | null = null
 
+  // System status
+  const systemStatus = ref({
+    initialized: false,
+    totalWorkers: 0,
+    availableWorkers: 0,
+    queuedTasks: 0,
+    environment: 'Unknown',
+    error: null as string | null
+  })
+
   // Refs
   const selectedType = ref<ProcessingType | ''>('')
+  const initializationAttempts = ref(0)
+  const maxInitializationAttempts = 3
+
+  // Debug mode (enable in development)
+  const showDebugInfo = ref(process.env.NODE_ENV === 'development')
 
   // Parameter objects
   const binarizationParams = ref<BinarizationParams>({
@@ -302,7 +375,30 @@
   // Computed
   const hasImage = computed(() => appStore.hasImage)
   const isProcessing = computed(() => appStore.isProcessing)
-  const canProcess = computed(() => hasImage.value && selectedType.value !== '')
+  const activeTasks = computed(() => appStore.activeTasks)
+  const canProcess = computed(() => 
+    hasImage.value && 
+    selectedType.value !== '' && 
+    systemStatus.value.initialized && 
+    !systemStatus.value.error
+  )
+
+  // Update system status periodically
+  let statusUpdateInterval: number | null = null
+
+  const updateSystemStatus = () => {
+    if (workerOrchestrator) {
+      const status = workerOrchestrator.getWorkerStatus()
+      systemStatus.value = {
+        initialized: status.initialized,
+        totalWorkers: status.totalWorkers,
+        availableWorkers: status.availableWorkers,
+        queuedTasks: status.queuedTasks,
+        environment: status.environment,
+        error: status.initializationError
+      }
+    }
+  }
 
   // Methods
   const buildProcessingParameters = (): ProcessingParameters => {
@@ -333,12 +429,16 @@
 
   const processPreview = async () => {
     if (!canProcess.value || !appStore.currentImage || !workerOrchestrator) {
-      console.warn('Cannot process: missing requirements')
+      console.warn('❌ Cannot process: missing requirements', {
+        canProcess: canProcess.value,
+        hasImage: !!appStore.currentImage,
+        hasOrchestrator: !!workerOrchestrator
+      })
       return
     }
 
     try {
-      console.log('Starting preview processing...')
+      console.group('🔍 Starting Preview Processing')
       const parameters = buildProcessingParameters()
       console.log('Parameters:', parameters)
       
@@ -348,25 +448,31 @@
         parameters
       )
       
-      console.log('Preview processing task submitted:', taskId)
+      console.log('✅ Preview processing task submitted:', taskId)
       
       // Add task to store
       const task = appStore.addTask(selectedType.value as ProcessingType, parameters)
-      console.log('Task added to store:', task.id)
+      console.log('✅ Task added to store:', task.id)
+      console.groupEnd()
       
     } catch (error) {
-      console.error('Failed to start preview processing:', error)
+      console.error('❌ Failed to start preview processing:', error)
+      systemStatus.value.error = error instanceof Error ? error.message : 'Unknown error'
     }
   }
 
   const processFullSize = async () => {
     if (!canProcess.value || !appStore.currentImage || !workerOrchestrator) {
-      console.warn('Cannot process: missing requirements')
+      console.warn('❌ Cannot process: missing requirements', {
+        canProcess: canProcess.value,
+        hasImage: !!appStore.currentImage,
+        hasOrchestrator: !!workerOrchestrator
+      })
       return
     }
 
     try {
-      console.log('Starting full-size processing...')
+      console.group('🔧 Starting Full-Size Processing')
       const parameters = buildProcessingParameters()
       console.log('Parameters:', parameters)
       
@@ -376,24 +482,27 @@
         parameters
       )
       
-      console.log('Full-size processing task submitted:', taskId)
+      console.log('✅ Full-size processing task submitted:', taskId)
       
       // Add task to store
       const task = appStore.addTask(selectedType.value as ProcessingType, parameters)
-      console.log('Task added to store:', task.id)
+      console.log('✅ Task added to store:', task.id)
+      console.groupEnd()
       
     } catch (error) {
-      console.error('Failed to start full-size processing:', error)
+      console.error('❌ Failed to start full-size processing:', error)
+      systemStatus.value.error = error instanceof Error ? error.message : 'Unknown error'
     }
   }
 
   const applyPreset = (presetName: string) => {
     const preset = PROCESSING_PRESETS[presetName]
     if (!preset) {
-      console.warn('Unknown preset:', presetName)
+      console.warn('⚠️ Unknown preset:', presetName)
       return
     }
 
+    console.log('🎯 Applying preset:', presetName)
     selectedType.value = preset.type
     
     switch (preset.type) {
@@ -439,27 +548,42 @@
     }
   }
 
+  const retryInitialization = async () => {
+    if (initializationAttempts.value >= maxInitializationAttempts) {
+      console.error('❌ Maximum initialization attempts reached')
+      return
+    }
+
+    initializationAttempts.value++
+    systemStatus.value.error = null
+    console.log(`🔄 Retrying initialization (attempt ${initializationAttempts.value}/${maxInitializationAttempts})`)
+    
+    await initializeWorkers()
+  }
+
   // Initialize worker orchestrator and set up callbacks
   const initializeWorkers = async () => {
     try {
-      console.log('Initializing workers...')
+      console.group('🚀 Initializing Processing System')
+      console.log('Attempt:', initializationAttempts.value + 1)
+      
       workerOrchestrator = WorkerOrchestratorModule.getInstance()
       await workerOrchestrator.initialize()
-      console.log('Workers initialized successfully')
+      console.log('✅ Workers initialized successfully')
       
       // Initialize processing module
       processingModule = ProcessingModule.getInstance()
       await processingModule.initialize()
-      console.log('Processing module initialized')
+      console.log('✅ Processing module initialized')
       
       // Set up task update callback
       workerOrchestrator.setTaskUpdateCallback((task) => {
-        console.log('Task update received:', task)
+        console.log('📝 Task update received:', task.id, task.status, `${task.progress}%`)
         appStore.updateTask(task.id, task)
         
         // If task completed successfully, update processed image
         if (task.status === 'completed' && task.result) {
-          console.log('Task completed, updating processed image')
+          console.log('✅ Task completed, updating processed image')
           // Convert ArrayBuffer back to ImageData format
           const processedImageData = {
             data: task.result,
@@ -473,8 +597,19 @@
           appStore.setProcessedImage(processedImageData)
         }
       })
+      
+      // Start status updates
+      statusUpdateInterval = window.setInterval(updateSystemStatus, 1000)
+      updateSystemStatus()
+      
+      systemStatus.value.error = null
+      console.log('✅ Processing system fully initialized')
+      console.groupEnd()
+      
     } catch (error) {
-      console.error('Failed to initialize workers:', error)
+      console.error('❌ Failed to initialize processing system:', error)
+      systemStatus.value.error = error instanceof Error ? error.message : 'Initialization failed'
+      console.groupEnd()
     }
   }
 
@@ -488,8 +623,25 @@
 
   // Initialize on component mount
   onMounted(() => {
-    console.log('ProcessingControls component mounted, initializing...')
+    console.log('🎛️ ProcessingControls component mounted, initializing...')
     initializeWorkers()
+  })
+
+  // Cleanup on component unmount
+  onUnmounted(() => {
+    console.log('🎛️ ProcessingControls component unmounting, cleaning up...')
+    
+    if (statusUpdateInterval) {
+      clearInterval(statusUpdateInterval)
+    }
+    
+    if (workerOrchestrator) {
+      // Don't destroy the orchestrator as it might be used by other components
+      // Just clean up our references
+      workerOrchestrator = null
+    }
+    
+    processingModule = null
   })
 </script>
 
@@ -522,5 +674,12 @@
 
   .slider:focus::-webkit-slider-thumb {
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+  }
+
+  /* Debug panel styling */
+  .debug-panel {
+    font-family: 'Courier New', monospace;
+    white-space: pre-wrap;
+    word-break: break-all;
   }
 </style>

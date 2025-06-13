@@ -10,7 +10,7 @@ import { NoiseReductionProcessor } from '../modules/processing/noiseReduction'
 import { ScalingProcessor } from '../modules/processing/scaling'
 
 /**
- * Web Worker for image processing tasks
+ * Enhanced Web Worker for image processing tasks
  * Runs processing operations in a separate thread to avoid blocking the UI
  */
 
@@ -20,14 +20,26 @@ const activeTasks = new Map<string, boolean>()
 // Ensure we're in worker context
 declare const self: DedicatedWorkerGlobalScope & typeof globalThis
 
-// Message handler
+// Enhanced console logging for worker
+const workerLog = (level: 'log' | 'warn' | 'error', ...args: any[]) => {
+  const timestamp = new Date().toISOString().substr(11, 12)
+  const prefix = `[${timestamp}] 🔧 Worker:`
+  console[level](prefix, ...args)
+}
+
+// Message handler with enhanced error handling
 self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
   const { id, type, payload } = event.data
 
-  console.log(`Worker received message: ${type} for task ${id}`)
+  workerLog('log', `Received message: ${type} for task ${id}`)
 
   try {
     switch (type) {
+      case 'test':
+        // Handle test messages for worker validation
+        sendTestResponse(id)
+        break
+        
       case 'process':
         await handleProcessRequest(id, payload)
         break
@@ -40,22 +52,37 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
         sendError(id, `Unknown message type: ${type}`)
     }
   } catch (error) {
-    console.error('Worker error processing message:', error)
+    workerLog('error', 'Error processing message:', error)
     sendError(id, error instanceof Error ? error.message : 'Unknown error')
   }
 }
 
 /**
- * Handle process request
+ * Send test response for worker validation
+ */
+function sendTestResponse(taskId: string) {
+  const response = {
+    id: taskId,
+    type: 'test-response' as const
+  }
+  self.postMessage(response)
+}
+
+/**
+ * Handle process request with enhanced error handling
  */
 async function handleProcessRequest(taskId: string, payload: any) {
   try {
-    console.log(`Worker processing task ${taskId}`)
+    workerLog('log', `Processing task ${taskId}`)
     
     // Mark task as active
     activeTasks.set(taskId, true)
     
-    sendProgress(taskId, 10, 'Initializing processing...')
+    sendProgress(taskId, 5, 'Initializing worker processing...')
+
+    if (!payload) {
+      throw new Error('No payload provided')
+    }
 
     const { imageData, type, parameters } = payload
     
@@ -63,25 +90,49 @@ async function handleProcessRequest(taskId: string, payload: any) {
       throw new Error('No image data provided')
     }
 
-    console.log(`Processing type: ${type}`, parameters)
-    sendProgress(taskId, 30, 'Starting image processing...')
+    if (!type) {
+      throw new Error('No processing type specified')
+    }
+
+    if (!parameters) {
+      throw new Error('No parameters provided')
+    }
+
+    workerLog('log', `Processing type: ${type}`, {
+      imageSize: imageData.width ? `${imageData.width}x${imageData.height}` : 'unknown',
+      parameters: Object.keys(parameters)
+    })
+    
+    sendProgress(taskId, 15, 'Validating image data...')
+
+    // Validate image data
+    if (!imageData.data || !imageData.width || !imageData.height) {
+      throw new Error('Invalid image data structure')
+    }
+
+    sendProgress(taskId, 25, 'Starting image processing...')
 
     // Process the image using the appropriate processor
-    const result = await processImage(imageData, type, parameters)
+    const result = await processImage(taskId, imageData, type, parameters)
 
-    // Check if task was cancelled
+    // Check if task was cancelled during processing
     if (!activeTasks.get(taskId)) {
-      console.log(`Task ${taskId} was cancelled`)
+      workerLog('log', `Task ${taskId} was cancelled during processing`)
       return // Task was cancelled
     }
 
-    sendProgress(taskId, 90, 'Finalizing result...')
+    sendProgress(taskId, 95, 'Finalizing result...')
+
+    // Validate result
+    if (!result || !(result instanceof ArrayBuffer)) {
+      throw new Error('Invalid processing result')
+    }
 
     // Send result back to main thread
     sendResult(taskId, result)
     
   } catch (error) {
-    console.error(`Worker task ${taskId} failed:`, error)
+    workerLog('error', `Task ${taskId} failed:`, error)
     sendError(taskId, error instanceof Error ? error.message : 'Processing failed')
   } finally {
     activeTasks.delete(taskId)
@@ -92,49 +143,87 @@ async function handleProcessRequest(taskId: string, payload: any) {
  * Handle cancel request
  */
 function handleCancelRequest(taskId: string) {
-  console.log(`Worker cancelling task ${taskId}`)
+  workerLog('log', `Cancelling task ${taskId}`)
   activeTasks.delete(taskId)
   sendError(taskId, 'Task cancelled by user')
 }
 
 /**
- * Main image processing function
+ * Main image processing function with progress tracking
  */
 async function processImage(
+  taskId: string,
   imageData: any,
   type: ProcessingType,
   parameters: ProcessingParameters
 ): Promise<ArrayBuffer> {
-  console.log(`Worker processing image: ${imageData.width}x${imageData.height}, type: ${type}`)
+  workerLog('log', `Processing image: ${imageData.width}x${imageData.height}, type: ${type}`)
   
-  // Process based on type using the appropriate processor
-  switch (type) {
-    case 'binarization':
-      if (!parameters.binarization) {
-        throw new Error('Binarization parameters required')
-      }
-      return await BinarizationProcessor.process(imageData, parameters.binarization)
-      
-    case 'morphology':
-      if (!parameters.morphology) {
-        throw new Error('Morphology parameters required')
-      }
-      return await MorphologyProcessor.process(imageData, parameters.morphology)
-      
-    case 'noise-reduction':
-      if (!parameters.noise) {
-        throw new Error('Noise reduction parameters required')
-      }
-      return await NoiseReductionProcessor.process(imageData, parameters.noise)
-      
-    case 'scaling':
-      if (!parameters.scaling) {
-        throw new Error('Scaling parameters required')
-      }
-      return await ScalingProcessor.process(imageData, parameters.scaling)
-      
-    default:
-      throw new Error(`Unsupported processing type: ${type}`)
+  // Check if task was cancelled
+  if (!activeTasks.get(taskId)) {
+    throw new Error('Task was cancelled')
+  }
+  
+  sendProgress(taskId, 35, `Applying ${type} processing...`)
+  
+  try {
+    // Process based on type using the appropriate processor
+    let result: ArrayBuffer
+    
+    switch (type) {
+      case 'binarization':
+        if (!parameters.binarization) {
+          throw new Error('Binarization parameters required')
+        }
+        sendProgress(taskId, 45, 'Applying binarization...')
+        result = await BinarizationProcessor.process(imageData, parameters.binarization)
+        break
+        
+      case 'morphology':
+        if (!parameters.morphology) {
+          throw new Error('Morphology parameters required')
+        }
+        sendProgress(taskId, 45, 'Applying morphological operations...')
+        result = await MorphologyProcessor.process(imageData, parameters.morphology)
+        break
+        
+      case 'noise-reduction':
+        if (!parameters.noise) {
+          throw new Error('Noise reduction parameters required')
+        }
+        sendProgress(taskId, 45, 'Reducing noise...')
+        result = await NoiseReductionProcessor.process(imageData, parameters.noise)
+        break
+        
+      case 'scaling':
+        if (!parameters.scaling) {
+          throw new Error('Scaling parameters required')
+        }
+        sendProgress(taskId, 45, 'Scaling image...')
+        result = await ScalingProcessor.process(imageData, parameters.scaling)
+        break
+        
+      default:
+        throw new Error(`Unsupported processing type: ${type}`)
+    }
+    
+    // Check if task was cancelled during processing
+    if (!activeTasks.get(taskId)) {
+      throw new Error('Task was cancelled during processing')
+    }
+    
+    sendProgress(taskId, 85, 'Processing completed, preparing result...')
+    
+    if (!result || result.byteLength === 0) {
+      throw new Error('Processing produced empty result')
+    }
+    
+    workerLog('log', `Processing completed successfully, result size: ${result.byteLength} bytes`)
+    return result
+    
+  } catch (error) {
+    workerLog('error', 'Processing error:', error)
+    throw error
   }
 }
 
@@ -147,15 +236,15 @@ function sendProgress(taskId: string, progress: number, message?: string) {
     type: 'progress',
     payload: { progress, message }
   }
-  console.log(`Worker progress for ${taskId}: ${progress}%`)
+  workerLog('log', `Progress for ${taskId}: ${progress}%${message ? ' - ' + message : ''}`)
   self.postMessage(response)
 }
 
 /**
- * Send result to main thread
+ * Send result to main thread with enhanced error handling
  */
 function sendResult(taskId: string, result: ArrayBuffer) {
-  console.log(`Worker sending result for ${taskId}, size: ${result.byteLength} bytes`)
+  workerLog('log', `Sending result for ${taskId}, size: ${result.byteLength} bytes`)
   
   const response: WorkerResponse = {
     id: taskId,
@@ -166,15 +255,22 @@ function sendResult(taskId: string, result: ArrayBuffer) {
   try {
     // Use transferable objects for zero-copy transfer
     self.postMessage(response, [result])
-  } catch (error) {
-    console.error('Failed to transfer result:', error)
-    // Fallback: try without transfer
-    const response2: WorkerResponse = {
-      id: taskId,
-      type: 'result',
-      payload: { result: result.slice(0) } // Create a copy
+    workerLog('log', `Result sent successfully for ${taskId}`)
+  } catch (transferError) {
+    workerLog('warn', 'Failed to transfer result, trying fallback:', transferError)
+    // Fallback: try without transfer (creates a copy)
+    try {
+      const response2: WorkerResponse = {
+        id: taskId,
+        type: 'result',
+        payload: { result: result.slice(0) } // Create a copy
+      }
+      self.postMessage(response2)
+      workerLog('log', `Result sent with fallback method for ${taskId}`)
+    } catch (fallbackError) {
+      workerLog('error', 'Both transfer methods failed:', fallbackError)
+      sendError(taskId, 'Failed to send processing result')
     }
-    self.postMessage(response2)
   }
 }
 
@@ -182,33 +278,89 @@ function sendResult(taskId: string, result: ArrayBuffer) {
  * Send error to main thread
  */
 function sendError(taskId: string, error: string) {
-  console.error(`Worker error for ${taskId}:`, error)
+  workerLog('error', `Error for ${taskId}:`, error)
   
   const response: WorkerResponse = {
     id: taskId,
     type: 'error',
     payload: { error }
   }
-  self.postMessage(response)
+  
+  try {
+    self.postMessage(response)
+  } catch (postError) {
+    workerLog('error', 'Failed to send error message:', postError)
+  }
 }
 
-// Handle worker errors with proper typing - fix for the TypeScript error
+// Enhanced error handling with proper typing
 self.onerror = (event: string | Event) => {
   if (typeof event === 'string') {
-    console.error('Worker script error:', event)
+    workerLog('error', 'Worker script error:', event)
   } else if (event instanceof ErrorEvent) {
-    console.error('Worker script error:', event.message, event.filename, event.lineno)
+    workerLog('error', 'Worker script error:', {
+      message: event.message,
+      filename: event.filename,
+      lineno: event.lineno,
+      colno: event.colno,
+      error: event.error
+    })
   } else {
-    console.error('Worker script error:', event)
+    workerLog('error', 'Worker script error:', event)
+  }
+  
+  // Try to notify main thread about critical worker error
+  try {
+    self.postMessage({
+      id: 'worker-error',
+      type: 'error',
+      payload: { error: 'Worker encountered a critical error' }
+    })
+  } catch (postError) {
+    // If we can't even send an error message, log it
+    workerLog('error', 'Cannot send error to main thread:', postError)
   }
 }
 
 // Handle unhandled promise rejections
 self.onunhandledrejection = (event: PromiseRejectionEvent) => {
-  console.error('Worker unhandled rejection:', event.reason)
+  workerLog('error', 'Worker unhandled rejection:', event.reason)
+  
+  // Try to prevent the default behavior
+  event.preventDefault()
+  
+  // Try to notify main thread
+  try {
+    self.postMessage({
+      id: 'worker-rejection',
+      type: 'error',
+      payload: { error: `Unhandled promise rejection: ${event.reason}` }
+    })
+  } catch (postError) {
+    workerLog('error', 'Cannot send rejection error to main thread:', postError)
+  }
 }
 
-console.log('Image processing worker initialized')
+// Enhanced worker initialization logging
+workerLog('log', 'Image processing worker initialized successfully')
+workerLog('log', 'Worker capabilities:', {
+  hasOffscreenCanvas: typeof OffscreenCanvas !== 'undefined',
+  hasImageBitmap: typeof ImageBitmap !== 'undefined',  
+  hasCreateImageBitmap: typeof createImageBitmap !== 'undefined',
+  hasArrayBuffer: typeof ArrayBuffer !== 'undefined',
+  hasUint8ClampedArray: typeof Uint8ClampedArray !== 'undefined'
+})
+
+// Send initialization complete message
+try {
+  self.postMessage({
+    id: 'worker-init',
+    type: 'ready',
+    payload: { message: 'Worker initialized and ready' }
+  })
+} catch (initError) {
+  workerLog('error', 'Cannot send initialization message:', initError)
+}
 
 // Export empty object to make this a module
 export {}

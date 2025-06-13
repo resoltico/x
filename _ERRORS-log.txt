@@ -1,0 +1,15 @@
+[8:31:30 AM] % pnpm build
+
+> engraving-processor-pro@1.0.0 build /Users/erst/Library/CloudStorage/Dropbox/Websites/x
+> echo '🔧 Building Engraving Processor Pro...' && rm -rf dist .vite && vue-tsc --noEmit --skipLibCheck && eslint . --quiet && vite build && echo '✅ Build complete'
+
+🔧 Building Engraving Processor Pro...
+src/workers/imageProcessingWorker.ts:38:12 - error TS2678: Type '"test"' is not comparable to type '"process" | "cancel" | "progress"'.
+
+38       case 'test':
+              ~~~~~~
+Found 1 error in src/workers/imageProcessingWorker.ts:38
+
+ ELIFECYCLE  Command failed with exit code 2.
+[8:32:02 AM] % 
+
