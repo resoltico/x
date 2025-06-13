@@ -1,7 +1,23 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ImageInputModule } from '@/modules/ImageInputModule'
 
+// Mock the fileToImageData utility function
+vi.mock('@/utils/imageHelpers', () => ({
+  fileToImageData: vi.fn()
+}))
+
 describe('ImageInputModule', () => {
+  let mockFileToImageData: any
+
+  beforeEach(() => {
+    // Reset all mocks before each test
+    vi.clearAllMocks()
+    
+    // Get the mocked function
+    const { fileToImageData } = require('@/utils/imageHelpers')
+    mockFileToImageData = fileToImageData
+  })
+
   describe('getInstance', () => {
     it('returns singleton instance', () => {
       const instance1 = ImageInputModule.getInstance()
@@ -122,7 +138,7 @@ describe('ImageInputModule', () => {
       // Create a mock file
       const file = new File(['test content'], 'test.png', { type: 'image/png' })
       
-      // Mock the fileToImageData function
+      // Mock the fileToImageData function to return success
       const mockImageData = {
         data: new ArrayBuffer(100),
         width: 100,
@@ -133,15 +149,13 @@ describe('ImageInputModule', () => {
         size: 1024
       }
 
-      // Mock the fileToImageData utility function
-      vi.doMock('@/utils/imageHelpers', () => ({
-        fileToImageData: vi.fn().mockResolvedValue(mockImageData)
-      }))
+      mockFileToImageData.mockResolvedValue(mockImageData)
 
       const result = await module.processFile(file)
       
       expect(result.success).toBe(true)
       expect(result.validation.isValid).toBe(true)
+      expect(result.imageData).toEqual(mockImageData)
     })
 
     it('handles invalid file type', async () => {
@@ -162,14 +176,39 @@ describe('ImageInputModule', () => {
       const file = new File(['test content'], 'test.png', { type: 'image/png' })
       
       // Mock fileToImageData to throw an error
-      vi.doMock('@/utils/imageHelpers', () => ({
-        fileToImageData: vi.fn().mockRejectedValue(new Error('Processing failed'))
-      }))
+      mockFileToImageData.mockRejectedValue(new Error('Processing failed'))
 
       const result = await module.processFile(file)
       
       expect(result.success).toBe(false)
       expect(result.error).toBe('Processing failed')
+    })
+
+    it('handles large file warning', async () => {
+      const module = ImageInputModule.getInstance()
+      
+      // Create a large file (6MB)
+      const largeContent = new Array(6 * 1024 * 1024).fill('x').join('')
+      const file = new File([largeContent], 'large.png', { type: 'image/png' })
+      
+      const mockImageData = {
+        data: new ArrayBuffer(100),
+        width: 100,
+        height: 100,
+        channels: 4,
+        format: 'PNG' as const,
+        filename: 'large.png',
+        size: file.size
+      }
+
+      mockFileToImageData.mockResolvedValue(mockImageData)
+
+      const result = await module.processFile(file)
+      
+      expect(result.success).toBe(true)
+      expect(result.validation.isValid).toBe(true)
+      expect(result.validation.warnings).toBeDefined()
+      expect(result.validation.warnings![0]).toContain('Large file detected')
     })
   })
 
@@ -251,6 +290,245 @@ describe('ImageInputModule', () => {
       
       expect(onError).toHaveBeenCalledWith('Please drop only one file at a time')
       expect(onSuccess).not.toHaveBeenCalled()
+    })
+
+    it('handles successful file drop', async () => {
+      const module = ImageInputModule.getInstance()
+      const onSuccess = vi.fn()
+      const onError = vi.fn()
+      
+      const handler = module.createDropHandler(onSuccess, onError)
+      
+      const file = new File(['content'], 'test.png', { type: 'image/png' })
+      
+      const mockImageData = {
+        data: new ArrayBuffer(100),
+        width: 100,
+        height: 100,
+        channels: 4,
+        format: 'PNG' as const,
+        filename: 'test.png',
+        size: 1024
+      }
+
+      mockFileToImageData.mockResolvedValue(mockImageData)
+      
+      const mockEvent = {
+        preventDefault: vi.fn(),
+        dataTransfer: { files: [file] },
+        type: 'drop',
+        bubbles: false,
+        cancelable: true,
+        composed: false,
+        currentTarget: null,
+        defaultPrevented: false,
+        eventPhase: 0,
+        isTrusted: true,
+        target: null,
+        timeStamp: Date.now(),
+        initEvent: vi.fn(),
+        stopPropagation: vi.fn(),
+        stopImmediatePropagation: vi.fn()
+      } as unknown as DragEvent
+      
+      await handler.handleDrop(mockEvent)
+      
+      expect(onSuccess).toHaveBeenCalledWith(mockImageData, undefined)
+      expect(onError).not.toHaveBeenCalled()
+    })
+
+    it('handles file drop processing error', async () => {
+      const module = ImageInputModule.getInstance()
+      const onSuccess = vi.fn()
+      const onError = vi.fn()
+      
+      const handler = module.createDropHandler(onSuccess, onError)
+      
+      const file = new File(['content'], 'test.png', { type: 'image/png' })
+
+      mockFileToImageData.mockRejectedValue(new Error('Drop processing failed'))
+      
+      const mockEvent = {
+        preventDefault: vi.fn(),
+        dataTransfer: { files: [file] },
+        type: 'drop',
+        bubbles: false,
+        cancelable: true,
+        composed: false,
+        currentTarget: null,
+        defaultPrevented: false,
+        eventPhase: 0,
+        isTrusted: true,
+        target: null,
+        timeStamp: Date.now(),
+        initEvent: vi.fn(),
+        stopPropagation: vi.fn(),
+        stopImmediatePropagation: vi.fn()
+      } as unknown as DragEvent
+      
+      await handler.handleDrop(mockEvent)
+      
+      expect(onError).toHaveBeenCalledWith('Drop processing failed')
+      expect(onSuccess).not.toHaveBeenCalled()
+    })
+
+    it('handles drag over event', () => {
+      const module = ImageInputModule.getInstance()
+      const onSuccess = vi.fn()
+      const onError = vi.fn()
+      
+      const handler = module.createDropHandler(onSuccess, onError)
+      
+      const mockEvent = {
+        preventDefault: vi.fn(),
+        dataTransfer: { dropEffect: 'none' },
+        type: 'dragover',
+        bubbles: false,
+        cancelable: true,
+        composed: false,
+        currentTarget: null,
+        defaultPrevented: false,
+        eventPhase: 0,
+        isTrusted: true,
+        target: null,
+        timeStamp: Date.now(),
+        initEvent: vi.fn(),
+        stopPropagation: vi.fn(),
+        stopImmediatePropagation: vi.fn()
+      } as unknown as DragEvent
+      
+      handler.handleDragOver(mockEvent)
+      
+      expect(mockEvent.preventDefault).toHaveBeenCalled()
+      expect((mockEvent.dataTransfer as any).dropEffect).toBe('copy')
+    })
+
+    it('handles drag enter event', () => {
+      const module = ImageInputModule.getInstance()
+      const onSuccess = vi.fn()
+      const onError = vi.fn()
+      
+      const handler = module.createDropHandler(onSuccess, onError)
+      
+      const mockEvent = {
+        preventDefault: vi.fn(),
+        type: 'dragenter',
+        bubbles: false,
+        cancelable: true,
+        composed: false,
+        currentTarget: null,
+        defaultPrevented: false,
+        eventPhase: 0,
+        isTrusted: true,
+        target: null,
+        timeStamp: Date.now(),
+        initEvent: vi.fn(),
+        stopPropagation: vi.fn(),
+        stopImmediatePropagation: vi.fn()
+      } as unknown as DragEvent
+      
+      handler.handleDragEnter(mockEvent)
+      
+      expect(mockEvent.preventDefault).toHaveBeenCalled()
+    })
+
+    it('handles drag leave event', () => {
+      const module = ImageInputModule.getInstance()
+      const onSuccess = vi.fn()
+      const onError = vi.fn()
+      
+      const handler = module.createDropHandler(onSuccess, onError)
+      
+      const mockEvent = {
+        preventDefault: vi.fn(),
+        type: 'dragleave',
+        bubbles: false,
+        cancelable: true,
+        composed: false,
+        currentTarget: null,
+        defaultPrevented: false,
+        eventPhase: 0,
+        isTrusted: true,
+        target: null,
+        timeStamp: Date.now(),
+        initEvent: vi.fn(),
+        stopPropagation: vi.fn(),
+        stopImmediatePropagation: vi.fn()
+      } as unknown as DragEvent
+      
+      handler.handleDragLeave(mockEvent)
+      
+      expect(mockEvent.preventDefault).toHaveBeenCalled()
+    })
+  })
+
+  describe('processFiles (batch processing)', () => {
+    it('processes multiple files successfully', async () => {
+      const module = ImageInputModule.getInstance()
+      
+      const file1 = new File(['content1'], 'test1.png', { type: 'image/png' })
+      const file2 = new File(['content2'], 'test2.png', { type: 'image/png' })
+      const files = [file1, file2] as unknown as FileList
+      
+      const mockImageData1 = {
+        data: new ArrayBuffer(100),
+        width: 100,
+        height: 100,
+        channels: 4,
+        format: 'PNG' as const,
+        filename: 'test1.png',
+        size: 1024
+      }
+      
+      const mockImageData2 = {
+        data: new ArrayBuffer(200),
+        width: 200,
+        height: 200,
+        channels: 4,
+        format: 'PNG' as const,
+        filename: 'test2.png',
+        size: 2048
+      }
+
+      mockFileToImageData
+        .mockResolvedValueOnce(mockImageData1)
+        .mockResolvedValueOnce(mockImageData2)
+
+      const result = await module.processFiles(files)
+      
+      expect(result.successful).toHaveLength(2)
+      expect(result.failed).toHaveLength(0)
+      expect(result.warnings).toHaveLength(0)
+      expect(result.successful[0]).toEqual(mockImageData1)
+      expect(result.successful[1]).toEqual(mockImageData2)
+    })
+
+    it('handles mixed success and failure in batch processing', async () => {
+      const module = ImageInputModule.getInstance()
+      
+      const file1 = new File(['content1'], 'test1.png', { type: 'image/png' })
+      const file2 = new File(['content2'], 'test2.txt', { type: 'text/plain' }) // Invalid type
+      const files = [file1, file2] as unknown as FileList
+      
+      const mockImageData1 = {
+        data: new ArrayBuffer(100),
+        width: 100,
+        height: 100,
+        channels: 4,
+        format: 'PNG' as const,
+        filename: 'test1.png',
+        size: 1024
+      }
+
+      mockFileToImageData.mockResolvedValueOnce(mockImageData1)
+
+      const result = await module.processFiles(files)
+      
+      expect(result.successful).toHaveLength(1)
+      expect(result.failed).toHaveLength(1)
+      expect(result.successful[0]).toEqual(mockImageData1)
+      expect(result.failed[0].file).toBe(file2)
+      expect(result.failed[0].error).toContain('Unsupported file type')
     })
   })
 })

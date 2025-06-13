@@ -13,7 +13,7 @@
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage",
     "test:ui": "vitest --ui",
-    "test:run": "vitest run --passWithNoTests",
+    "test:run": "vitest run --passWithNoTests --reporter=verbose",
     "typecheck": "vue-tsc --noEmit --skipLibCheck",
     "typecheck:worker": "tsc --project tsconfig.worker.json --noEmit --skipLibCheck",
     "typecheck:all": "npm run typecheck && npm run typecheck:worker",

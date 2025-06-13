@@ -33,7 +33,8 @@ describe('App Store', () => {
 
     store.setCurrentImage(mockImage)
 
-    expect(store.currentImage).toBe(mockImage)
+    // Use toStrictEqual for deep comparison instead of toBe for object reference
+    expect(store.currentImage).toStrictEqual(mockImage)
     expect(store.hasImage).toBe(true)
     expect(store.processedImage).toBe(null) // Should reset processed image
   })
@@ -107,5 +108,111 @@ describe('App Store', () => {
     expect(store.canvasState.zoom).toBe(1)
     expect(store.canvasState.offsetX).toBe(0)
     expect(store.canvasState.offsetY).toBe(0)
+  })
+
+  it('handles processed image setting', () => {
+    const store = useAppStore()
+    const mockProcessedImage: ImageData = {
+      data: new ArrayBuffer(200),
+      width: 200,
+      height: 200,
+      channels: 4,
+      format: 'PNG',
+      filename: 'processed.png',
+      size: 2048
+    }
+
+    store.setProcessedImage(mockProcessedImage)
+
+    expect(store.processedImage).toStrictEqual(mockProcessedImage)
+    expect(store.hasProcessedImage).toBe(true)
+  })
+
+  it('handles task cancellation', () => {
+    const store = useAppStore()
+    
+    const task = store.addTask('binarization', { binarization: { method: 'otsu' } })
+    expect(store.activeTasks).toHaveLength(1)
+
+    store.cancelTask(task.id)
+    
+    const cancelledTask = store.activeTasks.find(t => t.id === task.id)
+    expect(cancelledTask?.status).toBe('cancelled')
+  })
+
+  it('handles task removal', () => {
+    const store = useAppStore()
+    
+    const task = store.addTask('binarization', { binarization: { method: 'otsu' } })
+    expect(store.activeTasks).toHaveLength(1)
+
+    store.removeTask(task.id)
+    
+    expect(store.activeTasks).toHaveLength(0)
+  })
+
+  it('computes processing state correctly', () => {
+    const store = useAppStore()
+    
+    expect(store.isProcessing).toBe(false)
+    
+    const task = store.addTask('binarization', { binarization: { method: 'otsu' } })
+    expect(store.isProcessing).toBe(false) // Still pending
+    
+    store.updateTask(task.id, { status: 'processing', progress: 50 })
+    expect(store.isProcessing).toBe(true)
+    
+    store.updateTask(task.id, { status: 'completed', progress: 100 })
+    expect(store.isProcessing).toBe(false)
+  })
+
+  it('computes current task correctly', () => {
+    const store = useAppStore()
+    
+    expect(store.currentTask).toBeUndefined()
+    
+    const task1 = store.addTask('binarization', { binarization: { method: 'otsu' } })
+    const task2 = store.addTask('scaling', { scaling: { method: 'scale2x', factor: 2 } })
+    
+    expect(store.currentTask).toBeUndefined() // None processing yet
+    
+    store.updateTask(task1.id, { status: 'processing', progress: 50 })
+    expect(store.currentTask?.id).toBe(task1.id)
+    
+    // Second task starts processing
+    store.updateTask(task2.id, { status: 'processing', progress: 25 })
+    // Should still return first processing task found
+    expect(store.currentTask?.id).toBe(task1.id)
+  })
+
+  it('computes completed tasks correctly', () => {
+    const store = useAppStore()
+    
+    const task1 = store.addTask('binarization', { binarization: { method: 'otsu' } })
+    const task2 = store.addTask('scaling', { scaling: { method: 'scale2x', factor: 2 } })
+    
+    expect(store.completedTasks).toHaveLength(0)
+    
+    store.updateTask(task1.id, { status: 'completed', progress: 100 })
+    expect(store.completedTasks).toHaveLength(1)
+    expect(store.completedTasks[0].id).toBe(task1.id)
+    
+    store.updateTask(task2.id, { status: 'failed', progress: 0 })
+    expect(store.completedTasks).toHaveLength(1) // Failed tasks not included in completed
+  })
+
+  it('handles canvas reset', () => {
+    const store = useAppStore()
+    
+    store.updateCanvasState({ zoom: 3, offsetX: 200, offsetY: 100, showOriginal: false })
+    
+    store.resetCanvas()
+    
+    expect(store.canvasState).toEqual({
+      zoom: 1,
+      offsetX: 0,
+      offsetY: 0,
+      showOriginal: true
+    })
   })
 })

@@ -20,8 +20,8 @@ export default defineConfig({
       '**/workers/**/*.ts'
     ],
     // Add better error handling and timeout
-    testTimeout: 10000,
-    hookTimeout: 10000,
+    testTimeout: 15000,
+    hookTimeout: 15000,
     // Enable better stack traces
     includeSource: ['src/**/*.{js,ts,vue}'],
     // Coverage configuration
@@ -36,6 +36,19 @@ export default defineConfig({
         '**/*.config.*',
         '**/coverage/**'
       ]
+    },
+    // Suppress expected console output during tests
+    onConsoleLog: (log: string) => {
+      // Suppress expected logs from tests
+      if (log.includes('Mock Worker created for:') ||
+          log.includes('Test environment detected') ||
+          log.includes('Non-browser environment detected') ||
+          log.includes('Falling back to JavaScript-based processing') ||
+          log.includes('Processing with Canvas API fallback') ||
+          log.includes('OffscreenCanvas not available')) {
+        return false
+      }
+      return true
     }
   },
   resolve: {

@@ -18,20 +18,28 @@ export class PreviewRendererModule {
 
   private isDragging = false
   private lastMousePos = { x: 0, y: 0 }
+  private eventListeners: { element: EventTarget; type: string; listener: EventListener }[] = []
 
   /**
    * Initialize the renderer with a canvas element
    */
   initialize(canvas: HTMLCanvasElement) {
-    this.canvas = canvas
-    this.ctx = canvas.getContext('2d')
-    
-    if (!this.ctx) {
-      throw new Error('Failed to get 2D context from canvas')
-    }
+    try {
+      this.canvas = canvas
+      this.ctx = canvas.getContext('2d')
+      
+      if (!this.ctx) {
+        throw new Error('Failed to get 2D context from canvas')
+      }
 
-    this.setupEventListeners()
-    this.resize()
+      this.setupEventListeners()
+      this.resize()
+      
+      console.log('PreviewRendererModule initialized successfully')
+    } catch (error) {
+      console.error('Failed to initialize PreviewRendererModule:', error)
+      throw error
+    }
   }
 
   /**
@@ -40,47 +48,57 @@ export class PreviewRendererModule {
   private setupEventListeners() {
     if (!this.canvas) return
 
+    // Store event listeners for cleanup
+    const addListener = (element: EventTarget, type: string, listener: EventListener, options?: AddEventListenerOptions) => {
+      element.addEventListener(type, listener, options)
+      this.eventListeners.push({ element, type, listener })
+    }
+
     // Mouse events for panning
-    this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this))
-    this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this))
-    this.canvas.addEventListener('mouseup', this.handleMouseUp.bind(this))
-    this.canvas.addEventListener('mouseleave', this.handleMouseUp.bind(this))
+    addListener(this.canvas, 'mousedown', this.handleMouseDown.bind(this))
+    addListener(this.canvas, 'mousemove', this.handleMouseMove.bind(this))
+    addListener(this.canvas, 'mouseup', this.handleMouseUp.bind(this))
+    addListener(this.canvas, 'mouseleave', this.handleMouseUp.bind(this))
 
     // Wheel event for zooming
-    this.canvas.addEventListener('wheel', this.handleWheel.bind(this))
+    addListener(this.canvas, 'wheel', this.handleWheel.bind(this), { passive: false })
 
     // Touch events for mobile support
-    this.canvas.addEventListener('touchstart', this.handleTouchStart.bind(this))
-    this.canvas.addEventListener('touchmove', this.handleTouchMove.bind(this))
-    this.canvas.addEventListener('touchend', this.handleTouchEnd.bind(this))
+    addListener(this.canvas, 'touchstart', this.handleTouchStart.bind(this), { passive: false })
+    addListener(this.canvas, 'touchmove', this.handleTouchMove.bind(this), { passive: false })
+    addListener(this.canvas, 'touchend', this.handleTouchEnd.bind(this))
 
     // Window resize
-    window.addEventListener('resize', this.resize.bind(this))
+    addListener(window, 'resize', this.resize.bind(this))
   }
 
   /**
    * Handle mouse down for drag start
    */
-  private handleMouseDown(event: MouseEvent) {
-    if (event.button === 0) { // Left mouse button
+  private handleMouseDown(event: Event) {
+    const mouseEvent = event as MouseEvent
+    if (mouseEvent.button === 0) { // Left mouse button
       this.isDragging = true
-      this.lastMousePos = { x: event.clientX, y: event.clientY }
-      this.canvas!.style.cursor = 'grabbing'
+      this.lastMousePos = { x: mouseEvent.clientX, y: mouseEvent.clientY }
+      if (this.canvas) {
+        this.canvas.style.cursor = 'grabbing'
+      }
     }
   }
 
   /**
    * Handle mouse move for dragging
    */
-  private handleMouseMove(event: MouseEvent) {
+  private handleMouseMove(event: Event) {
+    const mouseEvent = event as MouseEvent
     if (this.isDragging) {
-      const deltaX = event.clientX - this.lastMousePos.x
-      const deltaY = event.clientY - this.lastMousePos.y
+      const deltaX = mouseEvent.clientX - this.lastMousePos.x
+      const deltaY = mouseEvent.clientY - this.lastMousePos.y
       
       this.state.offsetX += deltaX
       this.state.offsetY += deltaY
       
-      this.lastMousePos = { x: event.clientX, y: event.clientY }
+      this.lastMousePos = { x: mouseEvent.clientX, y: mouseEvent.clientY }
       this.render()
     }
   }
@@ -90,20 +108,25 @@ export class PreviewRendererModule {
    */
   private handleMouseUp() {
     this.isDragging = false
-    this.canvas!.style.cursor = 'grab'
+    if (this.canvas) {
+      this.canvas.style.cursor = 'grab'
+    }
   }
 
   /**
    * Handle wheel event for zooming
    */
-  private handleWheel(event: WheelEvent) {
-    event.preventDefault()
+  private handleWheel(event: Event) {
+    const wheelEvent = event as WheelEvent
+    wheelEvent.preventDefault()
     
-    const rect = this.canvas!.getBoundingClientRect()
-    const mouseX = event.clientX - rect.left
-    const mouseY = event.clientY - rect.top
+    if (!this.canvas) return
     
-    const zoomFactor = event.deltaY > 0 ? 0.9 : 1.1
+    const rect = this.canvas.getBoundingClientRect()
+    const mouseX = wheelEvent.clientX - rect.left
+    const mouseY = wheelEvent.clientY - rect.top
+    
+    const zoomFactor = wheelEvent.deltaY > 0 ? 0.9 : 1.1
     const newZoom = Math.max(0.1, Math.min(5, this.state.zoom * zoomFactor))
     
     // Zoom towards mouse position
@@ -118,19 +141,21 @@ export class PreviewRendererModule {
   /**
    * Handle touch events for mobile panning
    */
-  private handleTouchStart(event: TouchEvent) {
-    event.preventDefault()
-    if (event.touches.length === 1) {
-      const touch = event.touches[0]
+  private handleTouchStart(event: Event) {
+    const touchEvent = event as TouchEvent
+    touchEvent.preventDefault()
+    if (touchEvent.touches.length === 1) {
+      const touch = touchEvent.touches[0]
       this.isDragging = true
       this.lastMousePos = { x: touch.clientX, y: touch.clientY }
     }
   }
 
-  private handleTouchMove(event: TouchEvent) {
-    event.preventDefault()
-    if (this.isDragging && event.touches.length === 1) {
-      const touch = event.touches[0]
+  private handleTouchMove(event: Event) {
+    const touchEvent = event as TouchEvent
+    touchEvent.preventDefault()
+    if (this.isDragging && touchEvent.touches.length === 1) {
+      const touch = touchEvent.touches[0]
       const deltaX = touch.clientX - this.lastMousePos.x
       const deltaY = touch.clientY - this.lastMousePos.y
       
@@ -152,11 +177,16 @@ export class PreviewRendererModule {
   resize() {
     if (!this.canvas) return
 
-    const container = this.canvas.parentElement
-    if (container) {
-      this.canvas.width = container.clientWidth
-      this.canvas.height = container.clientHeight
-      this.render()
+    try {
+      const container = this.canvas.parentElement
+      if (container) {
+        const rect = container.getBoundingClientRect()
+        this.canvas.width = rect.width || 800
+        this.canvas.height = rect.height || 600
+        this.render()
+      }
+    } catch (error) {
+      console.warn('Failed to resize canvas:', error)
     }
   }
 
@@ -164,17 +194,25 @@ export class PreviewRendererModule {
    * Set the current original image
    */
   setCurrentImage(imageData: ImageData) {
-    this.currentImage = imageData
-    this.fitToCanvas()
-    this.render()
+    try {
+      this.currentImage = imageData
+      this.fitToCanvas()
+      this.render()
+    } catch (error) {
+      console.error('Failed to set current image:', error)
+    }
   }
 
   /**
    * Set the processed image
    */
   setProcessedImage(imageData: ImageData) {
-    this.processedImage = imageData
-    this.render()
+    try {
+      this.processedImage = imageData
+      this.render()
+    } catch (error) {
+      console.error('Failed to set processed image:', error)
+    }
   }
 
   /**
@@ -206,12 +244,16 @@ export class PreviewRendererModule {
   fitToCanvas() {
     if (!this.canvas || !this.currentImage) return
 
-    const zoom = calculateFitZoom(this.currentImage, this.canvas)
-    const center = getImageCenter(this.currentImage, this.canvas)
-    
-    this.state.zoom = zoom
-    this.state.offsetX = center.x - (this.currentImage.width * zoom) / 2
-    this.state.offsetY = center.y - (this.currentImage.height * zoom) / 2
+    try {
+      const zoom = calculateFitZoom(this.currentImage, this.canvas)
+      const center = getImageCenter(this.currentImage, this.canvas)
+      
+      this.state.zoom = zoom
+      this.state.offsetX = center.x - (this.currentImage.width * zoom) / 2
+      this.state.offsetY = center.y - (this.currentImage.height * zoom) / 2
+    } catch (error) {
+      console.warn('Failed to fit image to canvas:', error)
+    }
   }
 
   /**
@@ -230,11 +272,15 @@ export class PreviewRendererModule {
   zoomToActualSize() {
     if (!this.canvas || !this.currentImage) return
 
-    const center = getImageCenter(this.currentImage, this.canvas)
-    this.state.zoom = 1
-    this.state.offsetX = center.x - this.currentImage.width / 2
-    this.state.offsetY = center.y - this.currentImage.height / 2
-    this.render()
+    try {
+      const center = getImageCenter(this.currentImage, this.canvas)
+      this.state.zoom = 1
+      this.state.offsetX = center.x - this.currentImage.width / 2
+      this.state.offsetY = center.y - this.currentImage.height / 2
+      this.render()
+    } catch (error) {
+      console.warn('Failed to zoom to actual size:', error)
+    }
   }
 
   /**
@@ -243,22 +289,26 @@ export class PreviewRendererModule {
   render() {
     if (!this.canvas || !this.ctx) return
 
-    // Clear canvas
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
+    try {
+      // Clear canvas
+      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
 
-    // Draw background pattern
-    this.drawBackground()
+      // Draw background pattern
+      this.drawBackground()
 
-    // Determine which image to show
-    const imageToShow = this.state.showOriginal ? this.currentImage : 
-                      (this.processedImage || this.currentImage)
+      // Determine which image to show
+      const imageToShow = this.state.showOriginal ? this.currentImage : 
+                        (this.processedImage || this.currentImage)
 
-    if (imageToShow) {
-      this.drawImage(imageToShow)
+      if (imageToShow) {
+        this.drawImage(imageToShow)
+      }
+
+      // Draw overlay info
+      this.drawOverlay()
+    } catch (error) {
+      console.warn('Failed to render canvas:', error)
     }
-
-    // Draw overlay info
-    this.drawOverlay()
   }
 
   /**
@@ -267,17 +317,21 @@ export class PreviewRendererModule {
   private drawBackground() {
     if (!this.ctx || !this.canvas) return
 
-    const size = 20
-    this.ctx.fillStyle = '#f0f0f0'
-    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
+    try {
+      const size = 20
+      this.ctx.fillStyle = '#f0f0f0'
+      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
 
-    this.ctx.fillStyle = '#e0e0e0'
-    for (let x = 0; x < this.canvas.width; x += size) {
-      for (let y = 0; y < this.canvas.height; y += size) {
-        if ((x / size + y / size) % 2 === 0) {
-          this.ctx.fillRect(x, y, size, size)
+      this.ctx.fillStyle = '#e0e0e0'
+      for (let x = 0; x < this.canvas.width; x += size) {
+        for (let y = 0; y < this.canvas.height; y += size) {
+          if ((x / size + y / size) % 2 === 0) {
+            this.ctx.fillRect(x, y, size, size)
+          }
         }
       }
+    } catch (error) {
+      console.warn('Failed to draw background:', error)
     }
   }
 
@@ -287,24 +341,47 @@ export class PreviewRendererModule {
   private drawImage(imageData: ImageData) {
     if (!this.ctx) return
 
-    const img = new Image()
-    img.onload = () => {
-      const width = imageData.width * this.state.zoom
-      const height = imageData.height * this.state.zoom
-      
-      this.ctx!.imageSmoothingEnabled = this.state.zoom < 1
-      this.ctx!.drawImage(
-        img,
-        this.state.offsetX,
-        this.state.offsetY,
-        width,
-        height
-      )
-    }
+    try {
+      // Check if we're in a browser environment
+      if (typeof Image === 'undefined' || typeof URL === 'undefined' || !URL.createObjectURL) {
+        console.warn('Image rendering not supported in this environment')
+        return
+      }
 
-    // Convert ArrayBuffer to object URL
-    const blob = new Blob([imageData.data])
-    img.src = URL.createObjectURL(blob)
+      const img = new Image()
+      img.onload = () => {
+        try {
+          if (!this.ctx) return
+          
+          const width = imageData.width * this.state.zoom
+          const height = imageData.height * this.state.zoom
+          
+          this.ctx.imageSmoothingEnabled = this.state.zoom < 1
+          this.ctx.drawImage(
+            img,
+            this.state.offsetX,
+            this.state.offsetY,
+            width,
+            height
+          )
+          
+          // Clean up object URL
+          URL.revokeObjectURL(img.src)
+        } catch (error) {
+          console.warn('Failed to draw image:', error)
+        }
+      }
+
+      img.onerror = () => {
+        console.warn('Failed to load image for rendering')
+      }
+
+      // Convert ArrayBuffer to object URL
+      const blob = new Blob([imageData.data])
+      img.src = URL.createObjectURL(blob)
+    } catch (error) {
+      console.warn('Failed to setup image drawing:', error)
+    }
   }
 
   /**
@@ -313,20 +390,24 @@ export class PreviewRendererModule {
   private drawOverlay() {
     if (!this.ctx || !this.currentImage) return
 
-    const padding = 10
-    const fontSize = 12
-    this.ctx.font = `${fontSize}px Inter, sans-serif`
-    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
-    this.ctx.fillRect(padding, padding, 200, 60)
+    try {
+      const padding = 10
+      const fontSize = 12
+      this.ctx.font = `${fontSize}px Inter, sans-serif`
+      this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
+      this.ctx.fillRect(padding, padding, 200, 60)
 
-    this.ctx.fillStyle = 'white'
-    this.ctx.fillText(`Zoom: ${(this.state.zoom * 100).toFixed(0)}%`, padding + 10, padding + 20)
-    this.ctx.fillText(`Size: ${this.currentImage.width}×${this.currentImage.height}`, padding + 10, padding + 35)
-    this.ctx.fillText(
-      `View: ${this.state.showOriginal ? 'Original' : 'Processed'}`,
-      padding + 10,
-      padding + 50
-    )
+      this.ctx.fillStyle = 'white'
+      this.ctx.fillText(`Zoom: ${(this.state.zoom * 100).toFixed(0)}%`, padding + 10, padding + 20)
+      this.ctx.fillText(`Size: ${this.currentImage.width}×${this.currentImage.height}`, padding + 10, padding + 35)
+      this.ctx.fillText(
+        `View: ${this.state.showOriginal ? 'Original' : 'Processed'}`,
+        padding + 10,
+        padding + 50
+      )
+    } catch (error) {
+      console.warn('Failed to draw overlay:', error)
+    }
   }
 
   /**
@@ -334,25 +415,34 @@ export class PreviewRendererModule {
    */
   exportView(): string {
     if (!this.canvas) return ''
-    return this.canvas.toDataURL('image/png')
+    
+    try {
+      return this.canvas.toDataURL('image/png')
+    } catch (error) {
+      console.warn('Failed to export view:', error)
+      return ''
+    }
   }
 
   /**
    * Cleanup resources
    */
   destroy() {
-    if (this.canvas) {
-      // Remove event listeners
-      this.canvas.removeEventListener('mousedown', this.handleMouseDown)
-      this.canvas.removeEventListener('mousemove', this.handleMouseMove)
-      this.canvas.removeEventListener('mouseup', this.handleMouseUp)
-      this.canvas.removeEventListener('wheel', this.handleWheel)
-      window.removeEventListener('resize', this.resize)
+    try {
+      // Remove all event listeners
+      this.eventListeners.forEach(({ element, type, listener }) => {
+        element.removeEventListener(type, listener)
+      })
+      this.eventListeners = []
+      
+      this.canvas = null
+      this.ctx = null
+      this.currentImage = null
+      this.processedImage = null
+      
+      console.log('PreviewRendererModule destroyed')
+    } catch (error) {
+      console.warn('Error during PreviewRendererModule cleanup:', error)
     }
-    
-    this.canvas = null
-    this.ctx = null
-    this.currentImage = null
-    this.processedImage = null
   }
 }
