@@ -1,31 +1,28 @@
-[7:13:30 PM] % pnpm build
+[2:15:49 AM] % pnpm build
 
 > engraving-processor-pro@1.0.0 build /Users/erst/Library/CloudStorage/Dropbox/Websites/x
-> echo '🔧 Building Engraving Processor Pro...' && rm -rf dist .vite && vue-tsc --noEmit --skipLibCheck && eslint . --quiet --max-warnings 0 && vite build && echo '✅ Build complete'
+> echo '🔧 Building Engraving Processor Pro...' && rm -rf dist .vite && vue-tsc --noEmit --skipLibCheck && eslint . --max-warnings 0 && vite build && echo '✅ Build complete'
 
 🔧 Building Engraving Processor Pro...
 
-/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/components/DebugPanel.vue
-   7:41  error  Attribute "class" should go before "@click"  vue/attributes-order
-  10:37  error  Attribute "class" should go before "@click"  vue/attributes-order
-  13:36  error  Attribute "class" should go before "@click"  vue/attributes-order
-  16:44  error  Attribute "class" should go before "@click"  vue/attributes-order
-  66:5   error  Attribute "class" should go before "@click"  vue/attributes-order
-  67:5   error  Attribute "title" should go before "@click"  vue/attributes-order
-  77:50  error  Attribute "class" should go before "@click"  vue/attributes-order
+Oops! Something went wrong! :(
 
-/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/modules/worker/WorkerFactory.ts
-  103:30  error  'fetch' is not defined                                                               no-undef
-  174:11  error  'patterns' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
-  185:40  error  'fetch' is not defined                                                               no-undef
+ESLint: 9.28.0
 
-/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/utils/debugLogger.ts
-  156:13  error  'WebAssembly' is not defined  no-undef
-  177:30  error  'fetch' is not defined        no-undef
-  201:32  error  'fetch' is not defined        no-undef
+SyntaxError: Unexpected token ':'
+    at compileSourceTextModule (node:internal/modules/esm/utils:344:16)
+    at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:105:18)
+    at #translate (node:internal/modules/esm/loader:534:12)
+    at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:581:27)
+    at async ModuleJob._link (node:internal/modules/esm/module_job:116:19)
+ ELIFECYCLE  Command failed with exit code 2.
+[2:16:29 AM] % 
 
-✖ 13 problems (13 errors, 0 warnings)
-  7 errors and 0 warnings potentially fixable with the `--fix` option.
 
- ELIFECYCLE  Command failed with exit code 1.
-[7:13:49 PM] % 
+
+
+
+
+
+
+

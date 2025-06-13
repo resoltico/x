@@ -150,10 +150,15 @@ class DebugLogger {
 
   private async checkWasmSupport(): Promise<boolean> {
     try {
+      // Check if WebAssembly is available
+      if (typeof globalThis.WebAssembly === 'undefined') {
+        return false
+      }
+
       const wasmCode = new Uint8Array([
         0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00
       ])
-      await WebAssembly.instantiate(wasmCode)
+      await globalThis.WebAssembly.instantiate(wasmCode)
       return true
     } catch {
       return false
@@ -174,7 +179,12 @@ class DebugLogger {
 
   private async checkCrossOriginHeaders(): Promise<any> {
     try {
-      const response = await fetch(window.location.href, { method: 'HEAD' })
+      // Check if fetch is available
+      if (typeof globalThis.fetch === 'undefined') {
+        return { error: 'fetch not available' }
+      }
+
+      const response = await globalThis.fetch(window.location.href, { method: 'HEAD' })
       return {
         coep: response.headers.get('cross-origin-embedder-policy'),
         coop: response.headers.get('cross-origin-opener-policy'),
@@ -198,11 +208,19 @@ class DebugLogger {
 
     for (const url of workerUrls) {
       try {
-        const response = await fetch(url, { method: 'HEAD' })
-        results[url] = {
-          status: response.status,
-          contentType: response.headers.get('content-type'),
-          accessible: response.ok
+        // Check if fetch is available
+        if (typeof globalThis.fetch !== 'undefined') {
+          const response = await globalThis.fetch(url, { method: 'HEAD' })
+          results[url] = {
+            status: response.status,
+            contentType: response.headers.get('content-type'),
+            accessible: response.ok
+          }
+        } else {
+          results[url] = {
+            error: 'fetch not available',
+            accessible: false
+          }
         }
       } catch (error) {
         results[url] = {

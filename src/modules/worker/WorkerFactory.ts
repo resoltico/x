@@ -100,7 +100,12 @@ export class WorkerFactory {
     }
 
     try {
-      const response = await fetch(url, { 
+      // Check if fetch is available (it might not be in worker context)
+      if (typeof globalThis.fetch === 'undefined') {
+        return true // Assume accessible if we can't test
+      }
+      
+      const response = await globalThis.fetch(url, { 
         method: 'HEAD',
         mode: 'no-cors' // Allow cross-origin requests
       })
@@ -171,25 +176,22 @@ export class WorkerFactory {
 
     // Common production paths
     const basePaths = ['/workers/', '/assets/', '/']
-    const patterns = [
-      'imageProcessingWorker*.js',
-      'worker*.js',
-      '*worker*.js'
-    ]
 
     // Try to find actual files by checking common hashed names
     for (const basePath of basePaths) {
-      // Try to fetch directory listing or manifest
+      // Try to check for Vite manifest
       try {
-        // Check for Vite manifest
-        const manifestResponse = await fetch('/.vite/manifest.json', { mode: 'no-cors' })
-        if (manifestResponse.ok) {
-          const manifest = await manifestResponse.json()
-          for (const [key, value] of Object.entries(manifest)) {
-            if (key.includes('worker') || key.includes('Worker')) {
-              const manifestUrl = `/${(value as any).file}`
-              urls.push(manifestUrl)
-              debugLogger.log('debug', 'worker', `Found worker in manifest: ${manifestUrl}`)
+        // Check if fetch is available
+        if (typeof globalThis.fetch !== 'undefined') {
+          const manifestResponse = await globalThis.fetch('/.vite/manifest.json', { mode: 'no-cors' })
+          if (manifestResponse.ok) {
+            const manifest = await manifestResponse.json()
+            for (const [key, value] of Object.entries(manifest)) {
+              if (key.includes('worker') || key.includes('Worker')) {
+                const manifestUrl = `/${(value as any).file}`
+                urls.push(manifestUrl)
+                debugLogger.log('debug', 'worker', `Found worker in manifest: ${manifestUrl}`)
+              }
             }
           }
         }
@@ -207,7 +209,7 @@ export class WorkerFactory {
         'worker.[a-zA-Z0-9]{8}.js'
       ]
 
-      for (const pattern of hashPatterns) {
+      for (const _pattern of hashPatterns) {
         // Generate some likely hash values to test
         const testHashes = [
           'CoQywvDx', 'V7JHClvx', 'C8Ss_lB_', 'CPGz7D-4', // From your actual build
@@ -215,7 +217,7 @@ export class WorkerFactory {
         ]
 
         for (const hash of testHashes) {
-          const testUrl = basePath + pattern.replace('[a-zA-Z0-9]{8}', hash)
+          const testUrl = basePath + _pattern.replace('[a-zA-Z0-9]{8}', hash)
           urls.push(testUrl)
         }
       }

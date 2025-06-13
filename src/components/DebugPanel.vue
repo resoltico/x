@@ -4,16 +4,16 @@
     <div class="bg-gray-800 p-2 flex items-center justify-between">
       <span class="text-white font-bold">🔧 Debug Console</span>
       <div class="flex space-x-2">
-        <button @click="runDiagnostics" class="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700">
+        <button class="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700" @click="runDiagnostics">
           Diagnose
         </button>
-        <button @click="exportLogs" class="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700">
+        <button class="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700" @click="exportLogs">
           Export
         </button>
-        <button @click="clearLogs" class="px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700">
+        <button class="px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700" @click="clearLogs">
           Clear
         </button>
-        <button @click="showDebug = false" class="px-2 py-1 bg-gray-600 text-white rounded text-xs hover:bg-gray-700">
+        <button class="px-2 py-1 bg-gray-600 text-white rounded text-xs hover:bg-gray-700" @click="showDebug = false">
           ×
         </button>
       </div>
@@ -62,9 +62,9 @@
   <!-- Debug toggle button -->
   <button
     v-if="!showDebug"
-    @click="showDebug = true"
     class="fixed bottom-4 right-4 w-12 h-12 bg-black text-green-400 rounded-full shadow-xl z-50 flex items-center justify-center hover:bg-gray-800 transition-colors"
     title="Open Debug Console"
+    @click="showDebug = true"
   >
     🔧
   </button>
@@ -74,7 +74,7 @@
     <div class="bg-white rounded-lg p-6 max-w-4xl max-h-96 overflow-auto">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-xl font-bold">System Diagnostics</h2>
-        <button @click="showDiagnostics = false" class="text-gray-500 hover:text-gray-700">×</button>
+        <button class="text-gray-500 hover:text-gray-700" @click="showDiagnostics = false">×</button>
       </div>
       
       <div v-if="diagnosticData" class="space-y-4">
