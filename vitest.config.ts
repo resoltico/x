@@ -49,7 +49,16 @@ export default defineConfig({
         return false
       }
       return true
-    }
+    },
+    // Add pool options for better performance
+    pool: 'threads',
+    poolOptions: {
+      threads: {
+        singleThread: true
+      }
+    },
+    // Increase max concurrency for better performance
+    maxConcurrency: 1
   },
   resolve: {
     alias: {

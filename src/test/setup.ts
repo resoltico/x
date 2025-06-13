@@ -296,10 +296,10 @@ beforeAll(() => {
     } as any
   }
 
-  // Mock performance.memory
+  // Fixed performance.memory mock with proper type assertion
   if (!globalThis.performance) {
     globalThis.performance = {
-      now: () => Date.now(),
+      now: vi.fn(() => Date.now()),
       mark: vi.fn(),
       measure: vi.fn(),
       clearMarks: vi.fn(),
@@ -307,10 +307,13 @@ beforeAll(() => {
       getEntries: vi.fn(() => []),
       getEntriesByName: vi.fn(() => []),
       getEntriesByType: vi.fn(() => []),
-      timeOrigin: Date.now()
-    } as Performance
+      timeOrigin: Date.now(),
+      // Fix: Properly define toJSON to avoid type errors
+      toJSON: vi.fn(() => ({}))
+    } as unknown as Performance
   }
   
+  // Mock performance.memory with proper typing
   if (!(globalThis.performance as any).memory) {
     Object.defineProperty(globalThis.performance, 'memory', {
       value: {
@@ -318,7 +321,8 @@ beforeAll(() => {
         totalJSHeapSize: 50 * 1024 * 1024,
         jsHeapSizeLimit: 100 * 1024 * 1024
       },
-      writable: true
+      writable: true,
+      configurable: true
     })
   }
 
@@ -326,7 +330,8 @@ beforeAll(() => {
   if (!navigator.hardwareConcurrency) {
     Object.defineProperty(navigator, 'hardwareConcurrency', {
       writable: true,
-      value: 4
+      value: 4,
+      configurable: true
     })
   }
 

@@ -1,6 +1,4 @@
-Last login: Fri Jun 13 03:55:21 on ttys000
-Using Node v22.16.0
-[7:11:46 AM] % pnpm install
+[7:22:25 AM] % pnpm install
 Packages: +350
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 Progress: resolved 422, reused 350, downloaded 0, added 350, done
@@ -11,10 +9,13 @@ Progress: resolved 422, reused 350, downloaded 0, added 350, done
 │ > npm run typecheck && npm run typecheck:worker
 │ > engraving-processor-pro@1.0.0 typecheck
 │ > vue-tsc --noEmit --skipLibCheck
-│ src/test/setup.ts(301,30): error TS2352: Conversion of type '{ now: () => number; mark: Mock<Procedure>; measure: Mock<Procedure>; clea…
-│   Type '{ now: () => number; mark: Mock<Procedure>; measure: Mock<Procedure>; clearMarks: Mock<Procedure>; clearMeasures: Mock<Procedur…
-└─ Failed in 4.7s at /Users/erst/Library/CloudStorage/Dropbox/Websites/x
+│ error TS6305: Output file '/Users/erst/Library/CloudStorage/Dropbox/Websites/x/vite.config.d.ts' has not been built from source file '/…
+│   The file is in the program because:
+│     Matched by include pattern 'vite.config.ts' in '/Users/erst/Library/CloudStorage/Dropbox/Websites/x/tsconfig.json'
+│ error TS6305: Output file '/Users/erst/Library/CloudStorage/Dropbox/Websites/x/vitest.config.d.ts' has not been built from source file …
+│   The file is in the program because:
+│     Matched by include pattern 'vitest.config.ts' in '/Users/erst/Library/CloudStorage/Dropbox/Websites/x/tsconfig.json'
+└─ Failed in 2.7s at /Users/erst/Library/CloudStorage/Dropbox/Websites/x
  ELIFECYCLE  Command failed with exit code 2.
-[7:12:28 AM] % 
-
+[7:22:55 AM] % 
 
