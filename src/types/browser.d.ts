@@ -60,19 +60,6 @@ declare global {
 
   type ServiceWorkerState = 'installing' | 'installed' | 'activating' | 'activated' | 'redundant'
 
-  // Window proxy type
-  interface WindowProxy {
-    readonly window: WindowProxy
-    readonly self: WindowProxy
-    readonly location: Location
-    readonly history: History
-    readonly customElements: CustomElementRegistry
-    readonly navigator: Navigator
-    readonly performance: Performance
-    readonly screen: Screen
-    readonly visualViewport: VisualViewport | null
-  }
-
   // Message event source types
   type MessageEventSource = WindowProxy | MessagePort | ServiceWorker
 

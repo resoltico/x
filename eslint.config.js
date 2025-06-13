@@ -293,7 +293,7 @@ export default [
     }
   },
 
-  // Type definition files - Special handling
+  // Type definition files - Special handling with all globals defined
   {
     files: ['src/types/**/*.d.ts'],
     languageOptions: {
@@ -355,7 +355,31 @@ export default [
         ServiceWorker: 'readonly',
         SVGAnimatedLength: 'readonly',
         createImageBitmap: 'readonly',
-        globalThis: 'readonly'
+        globalThis: 'readonly',
+        Location: 'readonly',
+        History: 'readonly',
+        CustomElementRegistry: 'readonly',
+        Navigator: 'readonly',
+        Performance: 'readonly',
+        Screen: 'readonly',
+        VisualViewport: 'readonly',
+        CacheStorage: 'readonly',
+        Crypto: 'readonly',
+        IDBFactory: 'readonly',
+        RequestInfo: 'readonly',
+        RequestInit: 'readonly',
+        Response: 'readonly',
+        VoidFunction: 'readonly',
+        TimerHandler: 'readonly',
+        StructuredSerializeOptions: 'readonly',
+        NetworkInformation: 'readonly',
+        LockManager: 'readonly',
+        Permissions: 'readonly',
+        Serial: 'readonly',
+        ServiceWorkerContainer: 'readonly',
+        StorageManager: 'readonly',
+        NavigatorUAData: 'readonly',
+        DeprecatedStorageQuota: 'readonly'
       }
     },
     plugins: {
@@ -402,7 +426,6 @@ export default [
     ignores: [
       'dist/**',
       'node_modules/**',
-      '*.d.ts',
       'coverage/**'
     ]
   }
