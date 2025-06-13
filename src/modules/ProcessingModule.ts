@@ -46,14 +46,14 @@ export class ProcessingModule {
       console.log('Initializing ProcessingModule...')
       
       // Check if we're in a test environment
-      if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'test') {
+      if (typeof globalThis.process !== 'undefined' && globalThis.process.env?.NODE_ENV === 'test') {
         console.log('Test environment detected, skipping WASM initialization')
         this.isInitialized = true
         return
       }
 
       // Check if we're in a browser environment
-      if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+      if (typeof globalThis.window === 'undefined' || typeof globalThis.navigator === 'undefined') {
         console.log('Non-browser environment detected, skipping WASM initialization')
         this.isInitialized = true
         return
@@ -216,19 +216,19 @@ export class ProcessingModule {
         const previewHeight = Math.round(imageData.height * scale)
         
         // Check if we can use OffscreenCanvas
-        if (typeof OffscreenCanvas !== 'undefined') {
+        if (typeof globalThis.OffscreenCanvas !== 'undefined') {
           // Create preview using OffscreenCanvas scaling
-          const canvas = new OffscreenCanvas(imageData.width, imageData.height)
+          const canvas = new globalThis.OffscreenCanvas(imageData.width, imageData.height)
           const ctx = canvas.getContext('2d')!
           
-          const canvasImageData = new ImageData(
+          const canvasImageData = new globalThis.ImageData(
             new Uint8ClampedArray(imageData.data),
             imageData.width,
             imageData.height
           )
           ctx.putImageData(canvasImageData, 0, 0)
           
-          const previewCanvas = new OffscreenCanvas(previewWidth, previewHeight)
+          const previewCanvas = new globalThis.OffscreenCanvas(previewWidth, previewHeight)
           const previewCtx = previewCanvas.getContext('2d')!
           previewCtx.drawImage(canvas, 0, 0, previewWidth, previewHeight)
           

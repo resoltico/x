@@ -68,11 +68,11 @@ export class MorphologyProcessor {
     kernelSize: number,
     iterations: number
   ): Promise<ArrayBuffer> {
-    const canvas = new OffscreenCanvas(imageData.width, imageData.height)
+    const canvas = new globalThis.OffscreenCanvas(imageData.width, imageData.height)
     const ctx = canvas.getContext('2d')!
     
     // Create ImageData object for canvas
-    const canvasImageData = new ImageData(
+    const canvasImageData = new globalThis.ImageData(
       new Uint8ClampedArray(imageData.data),
       imageData.width,
       imageData.height
@@ -149,7 +149,7 @@ export class MorphologyProcessor {
       }
     }
     
-    const newData = new ImageData(newPixels, imageData.width, imageData.height)
+    const newData = new globalThis.ImageData(newPixels, imageData.width, imageData.height)
     ctx.putImageData(newData, 0, 0)
   }
 
@@ -195,7 +195,7 @@ export class MorphologyProcessor {
       }
     }
     
-    const newData = new ImageData(newPixels, imageData.width, imageData.height)
+    const newData = new globalThis.ImageData(newPixels, imageData.width, imageData.height)
     ctx.putImageData(newData, 0, 0)
   }
 
