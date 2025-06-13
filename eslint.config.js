@@ -48,12 +48,7 @@ export default [
         createImageBitmap: 'readonly',
         fetch: 'readonly',
         WebAssembly: 'readonly',
-        globalThis: 'readonly',
-        // Browser globals that might be available in workers
-        window: 'readonly',
-        document: 'readonly',
-        navigator: 'readonly',
-        performance: 'readonly'
+        globalThis: 'readonly'
       }
     },
     plugins: {
@@ -73,6 +68,98 @@ export default [
     }
   },
   
+  // Vue files
+  {
+    files: ['**/*.vue'],
+    languageOptions: {
+      parser: vueParser,
+      parserOptions: {
+        parser: tsparser,
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+        extraFileExtensions: ['.vue']
+      },
+      globals: {
+        // Browser globals
+        window: 'readonly',
+        document: 'readonly',
+        navigator: 'readonly',
+        performance: 'readonly',
+        console: 'readonly',
+        setTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearTimeout: 'readonly',
+        clearInterval: 'readonly',
+        URL: 'readonly',
+        URLSearchParams: 'readonly',
+        Blob: 'readonly',
+        File: 'readonly',
+        FileReader: 'readonly',
+        FileList: 'readonly',
+        Image: 'readonly',
+        HTMLElement: 'readonly',
+        HTMLCanvasElement: 'readonly',
+        HTMLInputElement: 'readonly',
+        CanvasRenderingContext2D: 'readonly',
+        OffscreenCanvas: 'readonly',
+        OffscreenCanvasRenderingContext2D: 'readonly',
+        ImageData: 'readonly',
+        Worker: 'readonly',
+        MessageEvent: 'readonly',
+        ErrorEvent: 'readonly',
+        PromiseRejectionEvent: 'readonly',
+        Event: 'readonly',
+        DragEvent: 'readonly',
+        WheelEvent: 'readonly',
+        MouseEvent: 'readonly',
+        TouchEvent: 'readonly',
+        KeyboardEvent: 'readonly',
+        Node: 'readonly',
+        Transferable: 'readonly',
+        fetch: 'readonly',
+        WebAssembly: 'readonly',
+        globalThis: 'readonly',
+        // Vite globals
+        'import.meta': 'readonly'
+      }
+    },
+    plugins: {
+      vue,
+      '@typescript-eslint': tseslint
+    },
+    rules: {
+      ...vue.configs['vue3-recommended'].rules,
+      ...tseslint.configs.recommended.rules,
+      'vue/multi-word-component-names': 'off',
+      'vue/no-unused-vars': 'error',
+      'vue/attributes-order': ['error', {
+        'order': [
+          'DEFINITION',
+          'LIST_RENDERING',
+          'CONDITIONALS',
+          'RENDER_MODIFIERS',
+          'GLOBAL',
+          ['UNIQUE', 'SLOT'],
+          'TWO_WAY_BINDING',
+          'OTHER_DIRECTIVES',
+          'OTHER_ATTR',
+          'EVENTS',
+          'CONTENT'
+        ],
+        'alphabetical': false
+      }],
+      '@typescript-eslint/no-unused-vars': ['error', { 
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_' 
+      }],
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-non-null-assertion': 'off',
+      '@typescript-eslint/no-unsafe-function-type': 'off',
+      'no-case-declarations': 'off',
+      'no-undef': 'error'
+    }
+  },
+
   // Test files
   {
     files: ['src/test/**/*', '**/*.test.*', '**/*.spec.*'],
@@ -144,6 +231,11 @@ export default [
         DOMException: 'readonly',
         Element: 'readonly'
       }
+    },
+    rules: {
+      '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+      'no-undef': 'off'
     }
   },
 
@@ -272,112 +364,52 @@ export default [
     }
   },
 
-  // Config files (Node.js environment)
+  // Worker files - Enhanced configuration with correct globals
   {
-    files: ['*.config.*', 'eslint.config.js'],
+    files: ['src/workers/**/*.ts', 'src/modules/worker/**/*.ts'],
     languageOptions: {
+      parser: tsparser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module'
+      },
       globals: {
-        __dirname: 'readonly',
-        process: 'readonly',
-        console: 'readonly'
-      }
-    }
-  },
-  
-  // Global settings
-  {
-    languageOptions: {
-      ecmaVersion: 'latest',
-      sourceType: 'module'
-    },
-    rules: {
-      'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
-      'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
-      'no-undef': 'error'
-    }
-  },
-  
-  // Ignore patterns
-  {
-    ignores: [
-      'dist/**',
-      'node_modules/**',
-      'coverage/**',
-      '*.json'
-    ]
-  }
-]
-        setInterval: 'readonly',
-        clearTimeout: 'readonly',
-        clearInterval: 'readonly',
-        URL: 'readonly',
-        URLSearchParams: 'readonly',
-        Blob: 'readonly',
-        File: 'readonly',
-        FileReader: 'readonly',
-        FileList: 'readonly',
-        Image: 'readonly',
-        HTMLElement: 'readonly',
-        HTMLCanvasElement: 'readonly',
-        HTMLInputElement: 'readonly',
-        HTMLImageElement: 'readonly',
-        SVGImageElement: 'readonly',
-        HTMLVideoElement: 'readonly',
-        CanvasRenderingContext2D: 'readonly',
+        // Worker globals
+        self: 'readonly',
+        importScripts: 'readonly',
+        WorkerGlobalScope: 'readonly',
+        DedicatedWorkerGlobalScope: 'readonly',
+        MessageEvent: 'readonly',
+        ErrorEvent: 'readonly',
+        PromiseRejectionEvent: 'readonly',
         OffscreenCanvas: 'readonly',
         OffscreenCanvasRenderingContext2D: 'readonly',
         ImageData: 'readonly',
         ImageBitmap: 'readonly',
-        Worker: 'readonly',
-        WorkerOptions: 'readonly',
-        MessageEvent: 'readonly',
-        ErrorEvent: 'readonly',
-        PromiseRejectionEvent: 'readonly',
+        console: 'readonly',
+        setTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearTimeout: 'readonly',
+        clearInterval: 'readonly',
+        URL: 'readonly',
+        Blob: 'readonly',
+        Image: 'readonly',
+        Map: 'readonly',
+        Set: 'readonly',
+        Array: 'readonly',
+        Object: 'readonly',
+        Promise: 'readonly',
+        Error: 'readonly',
+        Math: 'readonly',
+        Number: 'readonly',
+        String: 'readonly',
+        Date: 'readonly',
+        Uint8ClampedArray: 'readonly',
+        ArrayBuffer: 'readonly',
         Event: 'readonly',
-        DragEvent: 'readonly',
-        WheelEvent: 'readonly',
-        MouseEvent: 'readonly',
-        TouchEvent: 'readonly',
-        KeyboardEvent: 'readonly',
-        Node: 'readonly',
-        EventTarget: 'readonly',
-        Transferable: 'readonly',
-        ReadableStream: 'readonly',
-        MediaSource: 'readonly',
-        MessagePort: 'readonly',
-        MessageEventSource: 'readonly',
-        WindowProxy: 'readonly',
-        ServiceWorker: 'readonly',
         createImageBitmap: 'readonly',
-        btoa: 'readonly',
-        Buffer: 'readonly',
         fetch: 'readonly',
-        WebAssembly: 'readonly',
-        globalThis: 'readonly',
-        // Browser API types
-        ImageBitmapSource: 'readonly',
-        ImageBitmapOptions: 'readonly',
-        SVGAnimatedLength: 'readonly',
-        // DOM Event Init types
-        EventInit: 'readonly',
-        MessageEventInit: 'readonly',
-        ErrorEventInit: 'readonly',
-        PromiseRejectionEventInit: 'readonly',
-        DragEventInit: 'readonly',
-        MouseEventInit: 'readonly',
-        // DOM API types
-        DataTransfer: 'readonly',
-        DataTransferItemList: 'readonly',
-        DataTransferItem: 'readonly',
-        AbortSignal: 'readonly',
-        DOMException: 'readonly',
-        Element: 'readonly',
-        FunctionStringCallback: 'readonly',
-        // Node.js globals for config files
-        __dirname: 'readonly',
-        process: 'readonly',
-        // Vite globals
-        'import.meta': 'readonly'
+        WebAssembly: 'readonly'
       }
     },
     plugins: {
@@ -392,98 +424,6 @@ export default [
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-non-null-assertion': 'off',
       '@typescript-eslint/triple-slash-reference': 'off',
-      '@typescript-eslint/no-unsafe-function-type': 'off',
-      'no-case-declarations': 'off',
-      'no-undef': 'error'
-    }
-  },
-  
-  // Vue files
-  {
-    files: ['**/*.vue'],
-    languageOptions: {
-      parser: vueParser,
-      parserOptions: {
-        parser: tsparser,
-        ecmaVersion: 'latest',
-        sourceType: 'module',
-        extraFileExtensions: ['.vue']
-      },
-      globals: {
-        // Browser globals
-        window: 'readonly',
-        document: 'readonly',
-        navigator: 'readonly',
-        performance: 'readonly',
-        console: 'readonly',
-        setTimeout: 'readonly',
-        setInterval: 'readonly',
-        clearTimeout: 'readonly',
-        clearInterval: 'readonly',
-        URL: 'readonly',
-        URLSearchParams: 'readonly',
-        Blob: 'readonly',
-        File: 'readonly',
-        FileReader: 'readonly',
-        FileList: 'readonly',
-        Image: 'readonly',
-        HTMLElement: 'readonly',
-        HTMLCanvasElement: 'readonly',
-        HTMLInputElement: 'readonly',
-        CanvasRenderingContext2D: 'readonly',
-        OffscreenCanvas: 'readonly',
-        OffscreenCanvasRenderingContext2D: 'readonly',
-        ImageData: 'readonly',
-        Worker: 'readonly',
-        MessageEvent: 'readonly',
-        ErrorEvent: 'readonly',
-        PromiseRejectionEvent: 'readonly',
-        Event: 'readonly',
-        DragEvent: 'readonly',
-        WheelEvent: 'readonly',
-        MouseEvent: 'readonly',
-        TouchEvent: 'readonly',
-        KeyboardEvent: 'readonly',
-        Node: 'readonly',
-        Transferable: 'readonly',
-        fetch: 'readonly',
-        WebAssembly: 'readonly',
-        globalThis: 'readonly',
-        // Vite globals
-        'import.meta': 'readonly'
-      }
-    },
-    plugins: {
-      vue,
-      '@typescript-eslint': tseslint
-    },
-    rules: {
-      ...vue.configs['vue3-recommended'].rules,
-      ...tseslint.configs.recommended.rules,
-      'vue/multi-word-component-names': 'off',
-      'vue/no-unused-vars': 'error',
-      'vue/attributes-order': ['error', {
-        'order': [
-          'DEFINITION',
-          'LIST_RENDERING',
-          'CONDITIONALS',
-          'RENDER_MODIFIERS',
-          'GLOBAL',
-          ['UNIQUE', 'SLOT'],
-          'TWO_WAY_BINDING',
-          'OTHER_DIRECTIVES',
-          'OTHER_ATTR',
-          'EVENTS',
-          'CONTENT'
-        ],
-        'alphabetical': false
-      }],
-      '@typescript-eslint/no-unused-vars': ['error', { 
-        argsIgnorePattern: '^_',
-        varsIgnorePattern: '^_' 
-      }],
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-non-null-assertion': 'off',
       '@typescript-eslint/no-unsafe-function-type': 'off',
       'no-case-declarations': 'off',
       'no-undef': 'error'
@@ -546,27 +486,38 @@ export default [
     }
   },
 
-  // Worker files - Enhanced configuration with correct globals
+  // Config files (Node.js environment)
   {
-    files: ['src/workers/**/*.ts', 'src/modules/worker/**/*.ts'],
+    files: ['*.config.*', 'eslint.config.js'],
     languageOptions: {
-      parser: tsparser,
-      parserOptions: {
-        ecmaVersion: 'latest',
-        sourceType: 'module'
-      },
       globals: {
-        // Worker globals
-        self: 'readonly',
-        importScripts: 'readonly',
-        WorkerGlobalScope: 'readonly',
-        DedicatedWorkerGlobalScope: 'readonly',
-        MessageEvent: 'readonly',
-        ErrorEvent: 'readonly',
-        PromiseRejectionEvent: 'readonly',
-        OffscreenCanvas: 'readonly',
-        OffscreenCanvasRenderingContext2D: 'readonly',
-        ImageData: 'readonly',
-        ImageBitmap: 'readonly',
-        console: 'readonly',
-        setTimeout: 'readonly',
+        __dirname: 'readonly',
+        process: 'readonly',
+        console: 'readonly'
+      }
+    }
+  },
+  
+  // Global settings
+  {
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module'
+    },
+    rules: {
+      'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
+      'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
+      'no-undef': 'error'
+    }
+  },
+  
+  // Ignore patterns
+  {
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      'coverage/**',
+      '*.json'
+    ]
+  }
+]

@@ -1,28 +1,137 @@
-[2:15:49 AM] % pnpm build
+[2:20:52 AM] % pnpm build
 
 > engraving-processor-pro@1.0.0 build /Users/erst/Library/CloudStorage/Dropbox/Websites/x
-> echo '🔧 Building Engraving Processor Pro...' && rm -rf dist .vite && vue-tsc --noEmit --skipLibCheck && eslint . --max-warnings 0 && vite build && echo '✅ Build complete'
+> echo '🔧 Building Engraving Processor Pro...' && rm -rf dist .vite && vue-tsc --noEmit --skipLibCheck && eslint . --max-warnings 0 --quiet && vite build && echo '✅ Build complete'
 
 🔧 Building Engraving Processor Pro...
 
-Oops! Something went wrong! :(
+/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/modules/ImageInputModule.ts
+   21:27  error  'File' is not defined       no-undef
+   77:29  error  'FileList' is not defined   no-undef
+   79:27  error  'File' is not defined       no-undef
+   83:33  error  'File' is not defined       no-undef
+  113:33  error  'DragEvent' is not defined  no-undef
+  135:31  error  'DragEvent' is not defined  no-undef
+  140:32  error  'DragEvent' is not defined  no-undef
+  144:32  error  'DragEvent' is not defined  no-undef
+  153:27  error  'DragEvent' is not defined  no-undef
 
-ESLint: 9.28.0
+/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/modules/PreviewRendererModule.ts
+    8:19  error  'HTMLCanvasElement' is not defined         no-undef
+    9:16  error  'CanvasRenderingContext2D' is not defined  no-undef
+   21:38  error  'EventTarget' is not defined               no-undef
+   26:22  error  'HTMLCanvasElement' is not defined         no-undef
+   52:35  error  'EventTarget' is not defined               no-undef
+   79:33  error  'MouseEvent' is not defined                no-undef
+   93:33  error  'MouseEvent' is not defined                no-undef
+  120:33  error  'WheelEvent' is not defined                no-undef
+  145:33  error  'TouchEvent' is not defined                no-undef
+  155:33  error  'TouchEvent' is not defined                no-undef
 
-SyntaxError: Unexpected token ':'
-    at compileSourceTextModule (node:internal/modules/esm/utils:344:16)
-    at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:105:18)
-    at #translate (node:internal/modules/esm/loader:534:12)
-    at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:581:27)
-    at async ModuleJob._link (node:internal/modules/esm/module_job:116:19)
- ELIFECYCLE  Command failed with exit code 2.
-[2:16:29 AM] % 
+/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/modules/ProcessingModule.ts
+   49:45  error  'process' is not defined          no-undef
+  221:30  error  'OffscreenCanvas' is not defined  no-undef
+  231:37  error  'OffscreenCanvas' is not defined  no-undef
 
+/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/modules/WorkerOrchestratorModule.ts
+  288:37  error  'Worker' is not defined        no-undef
+  306:28  error  'Transferable' is not defined  no-undef
+  339:38  error  'MessageEvent' is not defined  no-undef
+  339:76  error  'Worker' is not defined        no-undef
 
+/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/modules/processing/binarization.ts
+   57:24  error  'OffscreenCanvas' is not defined                    no-undef
+  156:10  error  'OffscreenCanvasRenderingContext2D' is not defined  no-undef
+  188:10  error  'OffscreenCanvasRenderingContext2D' is not defined  no-undef
+  241:10  error  'OffscreenCanvasRenderingContext2D' is not defined  no-undef
+  294:10  error  'OffscreenCanvasRenderingContext2D' is not defined  no-undef
 
+/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/modules/processing/morphology.ts
+   71:24  error  'OffscreenCanvas' is not defined                    no-undef
+  114:10  error  'OffscreenCanvasRenderingContext2D' is not defined  no-undef
+  160:10  error  'OffscreenCanvasRenderingContext2D' is not defined  no-undef
 
+/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/modules/processing/noiseReduction.ts
+   57:24  error  'OffscreenCanvas' is not defined                    no-undef
+  160:10  error  'OffscreenCanvasRenderingContext2D' is not defined  no-undef
+  209:10  error  'OffscreenCanvasRenderingContext2D' is not defined  no-undef
+  253:10  error  'OffscreenCanvasRenderingContext2D' is not defined  no-undef
+  297:10  error  'OffscreenCanvasRenderingContext2D' is not defined  no-undef
+  533:24  error  'OffscreenCanvas' is not defined                    no-undef
 
+/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/modules/processing/scaling/bilinear.ts
+  11:30  error  'OffscreenCanvas' is not defined  no-undef
+  12:30  error  'OffscreenCanvas' is not defined  no-undef
 
+/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/modules/processing/scaling/index.ts
+  82:24  error  'OffscreenCanvas' is not defined  no-undef
 
+/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/modules/processing/scaling/lanczos.ts
+  11:30  error  'OffscreenCanvas' is not defined  no-undef
+  19:30  error  'OffscreenCanvas' is not defined  no-undef
 
+/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/modules/processing/scaling/nearest-neighbor.ts
+  11:30  error  'OffscreenCanvas' is not defined  no-undef
+  12:30  error  'OffscreenCanvas' is not defined  no-undef
 
+/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/modules/processing/scaling/pixel-art.ts
+   11:32  error  'OffscreenCanvas' is not defined  no-undef
+   16:30  error  'OffscreenCanvas' is not defined  no-undef
+   55:32  error  'OffscreenCanvas' is not defined  no-undef
+   60:30  error  'OffscreenCanvas' is not defined  no-undef
+  119:32  error  'OffscreenCanvas' is not defined  no-undef
+  129:36  error  'OffscreenCanvas' is not defined  no-undef
+
+/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/modules/processing/scaling/utils.ts
+   89:24  error  'OffscreenCanvas' is not defined  no-undef
+  200:44  error  'OffscreenCanvas' is not defined  no-undef
+
+/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/modules/worker/WorkerFactory.ts
+   31:46  error  'Worker' is not defined         no-undef
+   60:76  error  'Worker' is not defined         no-undef
+   69:22  error  'WorkerOptions' is not defined  no-undef
+   75:26  error  'Worker' is not defined         no-undef
+  243:30  error  'Worker' is not defined         no-undef
+
+/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/modules/worker/WorkerPoolManager.ts
+    9:20  error  'Worker' is not defined  no-undef
+   10:29  error  'Worker' is not defined  no-undef
+   17:58  error  'Worker' is not defined  no-undef
+  109:87  error  'Worker' is not defined  no-undef
+  162:44  error  'Worker' is not defined  no-undef
+  191:46  error  'Worker' is not defined  no-undef
+  197:51  error  'Worker' is not defined  no-undef
+  247:25  error  'Worker' is not defined  no-undef
+  262:24  error  'Worker' is not defined  no-undef
+  274:42  error  'Worker' is not defined  no-undef
+  479:60  error  'Worker' is not defined  no-undef
+  514:36  error  'Worker' is not defined  no-undef
+
+/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/test/setup.ts
+   57:48  error  'MediaSource' is not defined         no-undef
+  269:23  error  'MessagePort' is not defined         no-undef
+  270:15  error  'MessageEventSource' is not defined  no-undef
+
+/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/types/worker-status.ts
+  16:11  error  'Worker' is not defined  no-undef
+
+/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/utils/debugLogger.ts
+   68:30  error  'Worker' is not defined  no-undef
+  242:19  error  'Worker' is not defined  no-undef
+  263:22  error  'Worker' is not defined  no-undef
+
+/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/utils/fileValidation.ts
+  19:41  error  'File' is not defined  no-undef
+  57:38  error  'File' is not defined  no-undef
+
+/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/utils/imageHelpers.ts
+    6:45  error  'File' is not defined               no-undef
+    8:24  error  'FileReader' is not defined         no-undef
+  142:11  error  'HTMLCanvasElement' is not defined  no-undef
+  211:63  error  'HTMLCanvasElement' is not defined  no-undef
+  221:64  error  'HTMLCanvasElement' is not defined  no-undef
+
+✖ 86 problems (86 errors, 0 warnings)
+
+ ELIFECYCLE  Command failed with exit code 1.
+[2:21:18 AM] % 

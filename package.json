@@ -4,14 +4,23 @@
   "description": "Application for processing historical engravings and document scans",
   "type": "module",
   "scripts": {
-    "build": "echo '🔧 Building Engraving Processor Pro...' && rm -rf dist .vite && vue-tsc --noEmit --skipLibCheck && eslint . --max-warnings 0 && vite build && echo '✅ Build complete'",
+    "build": "echo '🔧 Building Engraving Processor Pro...' && rm -rf dist .vite && vue-tsc --noEmit --skipLibCheck && eslint . --max-warnings 0 --quiet && vite build && echo '✅ Build complete'",
+    "build:fast": "echo '🚀 Fast build (skipping checks)...' && rm -rf dist .vite && vite build && echo '✅ Fast build complete'",
     "start": "echo '🚀 Starting Engraving Processor Pro (Preview Mode)...' && vite preview --host --port 4173 --open",
     "serve": "echo '🌐 Serving built application from dist/ on http://localhost:8080' && echo 'Open your browser to: http://localhost:8080' && cd dist && python3 -m http.server 8080",
     "production": "echo '🚀 Building and serving for production...' && pnpm build && pnpm serve",
     "dev": "echo '🛠️ Starting development server...' && vite --host --open",
     "typecheck": "vue-tsc --noEmit --skipLibCheck",
+    "typecheck:worker": "vue-tsc --project tsconfig.worker.json --noEmit --skipLibCheck",
+    "typecheck:all": "npm run typecheck && npm run typecheck:worker",
     "lint": "eslint . --max-warnings 0",
-    "lint:fix": "eslint . --fix --max-warnings 0"
+    "lint:fix": "eslint . --fix --max-warnings 0",
+    "lint:quiet": "eslint . --max-warnings 0 --quiet",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest --coverage",
+    "clean": "rm -rf dist .vite node_modules/.cache",
+    "check": "npm run typecheck:all && npm run lint:quiet && npm run test"
   },
   "dependencies": {
     "vue": "^3.5.0",
