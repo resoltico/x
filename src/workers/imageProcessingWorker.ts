@@ -1,7 +1,8 @@
 // src/workers/imageProcessingWorker.ts
 /// <reference lib="webworker" />
 
-import type { WorkerMessage, WorkerResponse, ProcessingType, ProcessingParameters } from '../types'
+import type { ProcessingType, ProcessingParameters } from '../types'
+import type { WorkerMessage, WorkerResponse } from '../types/worker-messages'
 
 // Import processing modules
 import { BinarizationProcessor } from '../modules/processing/binarization'
@@ -61,9 +62,9 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
  * Send test response for worker validation
  */
 function sendTestResponse(taskId: string) {
-  const response = {
+  const response: WorkerResponse = {
     id: taskId,
-    type: 'test-response' as const
+    type: 'test-response'
   }
   self.postMessage(response)
 }

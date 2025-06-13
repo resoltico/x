@@ -1,15 +1,56 @@
-[8:31:30 AM] % pnpm build
+[1:20:53 PM] % pnpm build
 
 > engraving-processor-pro@1.0.0 build /Users/erst/Library/CloudStorage/Dropbox/Websites/x
 > echo '🔧 Building Engraving Processor Pro...' && rm -rf dist .vite && vue-tsc --noEmit --skipLibCheck && eslint . --quiet && vite build && echo '✅ Build complete'
 
 🔧 Building Engraving Processor Pro...
-src/workers/imageProcessingWorker.ts:38:12 - error TS2678: Type '"test"' is not comparable to type '"process" | "cancel" | "progress"'.
+src/components/processing/ParameterControls.vue:47:32 - error TS2307: Cannot find module './parameters/MorphologyControls.vue' or its corresponding type declarations.
 
-38       case 'test':
-              ~~~~~~
-Found 1 error in src/workers/imageProcessingWorker.ts:38
+47 import MorphologyControls from './parameters/MorphologyControls.vue'
+                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+src/components/processing/ParameterControls.vue:48:36 - error TS2307: Cannot find module './parameters/NoiseReductionControls.vue' or its corresponding type declarations.
+
+48 import NoiseReductionControls from './parameters/NoiseReductionControls.vue'
+                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+src/components/processing/ParameterControls.vue:49:29 - error TS2307: Cannot find module './parameters/ScalingControls.vue' or its corresponding type declarations.
+
+49 import ScalingControls from './parameters/ScalingControls.vue'
+                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+src/components/processing/ProcessingTypeSelector.vue:9:42 - error TS2345: Argument of type 'string' is not assignable to parameter of type '"" | ProcessingType'.
+
+9       @input="$emit('update:modelValue', ($event.target as HTMLSelectElement).value)"
+                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+src/modules/WorkerOrchestratorModule.ts:214:23 - error TS2339: Property 'payload' does not exist on type 'WorkerResponse'.
+
+214     const { id, type, payload } = event.data
+                          ~~~~~~~
+
+src/modules/WorkerOrchestratorModule.ts:307:36 - error TS2769: No overload matches this call.
+  Overload 1 of 4, '(iterable: Iterable<unknown> | ArrayLike<unknown>): unknown[]', gave the following error.
+    Argument of type 'number' is not assignable to parameter of type 'Iterable<unknown> | ArrayLike<unknown>'.
+  Overload 2 of 4, '(arrayLike: ArrayLike<unknown>): unknown[]', gave the following error.
+    Argument of type 'number' is not assignable to parameter of type 'ArrayLike<unknown>'.
+
+307     const activeTasks = Array.from(this.workerPool.getStatus().activeTasks)
+                                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+src/workers/imageProcessingWorker.ts:33:21 - error TS2339: Property 'payload' does not exist on type 'WorkerMessage'.
+
+33   const { id, type, payload } = event.data
+                       ~~~~~~~
+
+
+Found 7 errors in 4 files.
+
+Errors  Files
+     3  src/components/processing/ParameterControls.vue:47
+     1  src/components/processing/ProcessingTypeSelector.vue:9
+     2  src/modules/WorkerOrchestratorModule.ts:214
+     1  src/workers/imageProcessingWorker.ts:33
  ELIFECYCLE  Command failed with exit code 2.
-[8:32:02 AM] % 
-
+[1:21:04 PM] % 

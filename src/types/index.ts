@@ -1,4 +1,6 @@
+// src/types/index.ts
 // Core image processing types
+
 export interface ImageData {
   data: ArrayBuffer
   width: number
@@ -84,7 +86,7 @@ export interface ControlParameter {
 // Worker communication types
 export interface WorkerMessage {
   id: string
-  type: 'process' | 'cancel' | 'progress'
+  type: 'process' | 'cancel' | 'progress' | 'test'
   payload?: {
     imageData?: any
     type?: ProcessingType
@@ -96,7 +98,7 @@ export interface WorkerMessage {
 
 export interface WorkerResponse {
   id: string
-  type: 'result' | 'progress' | 'error'
+  type: 'result' | 'progress' | 'error' | 'test-response' | 'ready'
   payload?: {
     result?: ArrayBuffer
     progress?: number
@@ -182,4 +184,6 @@ export interface WorkerStatus {
   queuedTasks: number
   activeTasks: number
   initialized: boolean
+  initializationError?: string | null
+  environment?: string
 }
