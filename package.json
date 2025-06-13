@@ -4,9 +4,12 @@
   "description": "Application for processing historical engravings and document scans",
   "type": "module",
   "scripts": {
-    "build": "echo '🔧 Building Engraving Processor Pro...' && rm -rf dist .vite && vue-tsc --noEmit --skipLibCheck && eslint . --quiet && vite build && echo '✅ Build complete'",
+    "build": "echo '🔧 Building Engraving Processor Pro...' && rm -rf dist .vite && vue-tsc --noEmit --skipLibCheck && eslint . --quiet --max-warnings 0 && vite build && echo '✅ Build complete'",
     "start": "echo '🚀 Starting Engraving Processor Pro...' && vite preview --host --port 4173",
-    "dev": "echo '🛠️ Starting development server...' && vite --host"
+    "dev": "echo '🛠️ Starting development server...' && vite --host",
+    "typecheck": "vue-tsc --noEmit --skipLibCheck",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix --max-warnings 0"
   },
   "dependencies": {
     "vue": "^3.5.0",

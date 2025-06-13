@@ -37,7 +37,7 @@
           </svg>
           <span>{{ error }}</span>
         </div>
-        <button @click="error = null" class="hover:bg-red-700 px-2 py-1 rounded text-xs">
+        <button class="hover:bg-red-700 px-2 py-1 rounded text-xs" @click="error = null">
           Dismiss
         </button>
       </div>

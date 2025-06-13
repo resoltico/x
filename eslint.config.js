@@ -47,6 +47,7 @@ export default [
         ImageData: 'readonly',
         ImageBitmap: 'readonly',
         Worker: 'readonly',
+        WorkerOptions: 'readonly',
         MessageEvent: 'readonly',
         ErrorEvent: 'readonly',
         PromiseRejectionEvent: 'readonly',
@@ -66,6 +67,8 @@ export default [
         WindowProxy: 'readonly',
         ServiceWorker: 'readonly',
         createImageBitmap: 'readonly',
+        btoa: 'readonly',
+        Buffer: 'readonly',
         // Browser API types
         ImageBitmapSource: 'readonly',
         ImageBitmapOptions: 'readonly',
@@ -87,7 +90,9 @@ export default [
         FunctionStringCallback: 'readonly',
         // Node.js globals for config files
         __dirname: 'readonly',
-        process: 'readonly'
+        process: 'readonly',
+        // Vite globals
+        'import.meta': 'readonly'
       }
     },
     plugins: {
@@ -153,7 +158,9 @@ export default [
         TouchEvent: 'readonly',
         KeyboardEvent: 'readonly',
         Node: 'readonly',
-        Transferable: 'readonly'
+        Transferable: 'readonly',
+        // Vite globals
+        'import.meta': 'readonly'
       }
     },
     plugins: {
@@ -365,6 +372,7 @@ export default [
         ImageBitmapSource: 'readonly',
         ImageBitmapOptions: 'readonly',
         Worker: 'readonly',
+        WorkerOptions: 'readonly',
         WorkerGlobalScope: 'readonly',
         DedicatedWorkerGlobalScope: 'readonly',
         MessageEvent: 'readonly',
@@ -412,6 +420,8 @@ export default [
         StorageManager: 'readonly',
         NavigatorUAData: 'readonly',
         DeprecatedStorageQuota: 'readonly',
+        btoa: 'readonly',
+        Buffer: 'readonly',
         // DOM Event Init types
         EventInit: 'readonly',
         MessageEventInit: 'readonly',

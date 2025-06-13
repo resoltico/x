@@ -104,7 +104,7 @@ const selectedType = ref<ProcessingType | ''>('')
 const currentParameters = ref<ProcessingParameters>({})
 
 // Debug mode
-const showDebugInfo = ref(process.env.NODE_ENV === 'development')
+const showDebugInfo = ref(import.meta.env.DEV)
 
 // Update system status when it changes
 let statusUpdateInterval: number | null = null

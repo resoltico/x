@@ -123,9 +123,20 @@ export class WorkerFactory {
     urls.push('/workers/imageProcessingWorker-*.js')
     
     // Fallback inline worker (always works)
-    urls.push('data:text/javascript;base64,' + btoa(this.getInlineWorkerCode()))
+    urls.push('data:text/javascript;base64,' + this.btoa(this.getInlineWorkerCode()))
     
     return urls
+  }
+
+  /**
+   * Browser-compatible btoa implementation
+   */
+  private btoa(str: string): string {
+    if (typeof globalThis.btoa !== 'undefined') {
+      return globalThis.btoa(str)
+    }
+    // Fallback for environments without btoa
+    return Buffer.from(str, 'binary').toString('base64')
   }
 
   /**
