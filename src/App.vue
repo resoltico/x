@@ -92,21 +92,29 @@
         </div>
       </div>
     </footer>
+
+    <!-- Debug Panel -->
+    <DebugPanel />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAppStore } from '@/stores/app'
+import { debugLogger } from '@/utils/debugLogger'
 import ImageInput from './components/ImageInput.vue'
 import PreviewRenderer from './components/PreviewRenderer.vue'
 import ProcessingControls from './components/ProcessingControls.vue'
 import ProgressDisplay from './components/ProgressDisplay.vue'
+import DebugPanel from './components/DebugPanel.vue'
 
 const version = ref('1.0.0')
 const error = ref<string | null>(null)
 const compatibilityWarning = ref<string | null>(null)
 const store = useAppStore()
+
+// Enhanced logging for initialization
+debugLogger.log('info', 'app', 'Engraving Processor Pro starting...')
 
 // Environment detection
 const environmentInfo = computed(() => {
@@ -118,38 +126,27 @@ const environmentInfo = computed(() => {
   const isPreview = isLocalhost && window.location.port === '4173'
   const isProduction = !isDevelopment && !isPreview && !isFileProtocol
 
-  if (isFileProtocol) {
-    return {
-      label: 'File Protocol',
-      warning: 'Some features may not work properly when served from file:// protocol'
-    }
-  }
-  
-  if (isDevelopment) {
-    return {
-      label: `Development${window.location.port ? ` (${window.location.port})` : ''}`,
-      warning: null
-    }
-  }
-  
-  if (isPreview) {
-    return {
-      label: `Preview${window.location.port ? ` (${window.location.port})` : ''}`,
-      warning: null
-    }
-  }
-  
-  if (isProduction) {
-    return {
-      label: 'Production',
-      warning: null
-    }
-  }
-  
-  return {
+  const info = {
     label: 'Unknown',
-    warning: 'Unable to detect environment'
+    warning: null as string | null
   }
+
+  if (isFileProtocol) {
+    info.label = 'File Protocol'
+    info.warning = 'Some features may not work properly when served from file:// protocol'
+  } else if (isDevelopment) {
+    info.label = `Development${window.location.port ? ` (${window.location.port})` : ''}`
+  } else if (isPreview) {
+    info.label = `Preview${window.location.port ? ` (${window.location.port})` : ''}`
+  } else if (isProduction) {
+    info.label = 'Production'
+  } else {
+    info.label = 'Unknown'
+    info.warning = 'Unable to detect environment'
+  }
+
+  debugLogger.log('info', 'app', 'Environment detected', info)
+  return info
 })
 
 // Browser detection
@@ -181,8 +178,9 @@ const systemStatus = computed(() => {
   return { color: 'bg-green-500', text: 'Ready' }
 })
 
-// Browser compatibility check
+// Enhanced browser compatibility check with logging
 const checkBrowserCompatibility = () => {
+  debugLogger.log('info', 'app', 'Checking browser compatibility...')
   const issues: string[] = []
   
   if (typeof Worker === 'undefined') {
@@ -203,6 +201,9 @@ const checkBrowserCompatibility = () => {
   
   if (issues.length > 0) {
     compatibilityWarning.value = `Browser compatibility issues: ${issues.join(', ')}`
+    debugLogger.log('warn', 'app', 'Compatibility issues detected', issues)
+  } else {
+    debugLogger.log('info', 'app', 'Browser compatibility check passed')
   }
 }
 
@@ -211,24 +212,22 @@ const checkUrlParameters = () => {
   if (typeof window !== 'undefined' && window.URLSearchParams) {
     const urlParams = new window.URLSearchParams(window.location.search)
     if (urlParams.get('fallback') === 'true') {
-      console.warn('🔧 Fallback mode requested via URL parameter')
-      // Set up global fallback flag
+      debugLogger.log('warn', 'app', 'Fallback mode requested via URL parameter')
       ;(window as any).__FORCE_FALLBACK = () => {
-        console.log('🔧 Forcing fallback mode...')
-        // This would be handled by the system status manager
+        debugLogger.log('info', 'app', 'Forcing fallback mode...')
       }
     }
   }
 }
 
-// Global error handlers with better error categorization
+// Enhanced global error handlers with debug logging
 const setupErrorHandlers = () => {
   window.addEventListener('error', (event) => {
     const message = event.message || 'Unknown error'
     const filename = event.filename || 'Unknown file'
     const lineno = event.lineno || 0
     
-    console.error('🔴 Global Error:', { message, filename, lineno, error: event.error })
+    debugLogger.log('error', 'app', 'Global error occurred', { message, filename, lineno, error: event.error })
     
     // Categorize errors
     if (message.includes('Loading') || message.includes('fetch')) {
@@ -244,7 +243,7 @@ const setupErrorHandlers = () => {
 
   window.addEventListener('unhandledrejection', (event) => {
     const reason = event.reason
-    console.error('🔴 Unhandled Promise Rejection:', reason)
+    debugLogger.log('error', 'app', 'Unhandled promise rejection', reason)
     
     if (reason instanceof Error) {
       if (reason.message.includes('Loading') || reason.message.includes('import')) {
@@ -263,7 +262,7 @@ const setupErrorHandlers = () => {
   })
 }
 
-// Performance monitoring
+// Performance monitoring with debug logging
 let performanceInterval: number | null = null
 
 const startPerformanceMonitoring = () => {
@@ -275,29 +274,55 @@ const startPerformanceMonitoring = () => {
       
       // Warn if memory usage is getting high
       if (used > limit * 0.8) {
-        console.warn(`⚠️ High memory usage: ${Math.round(used)}MB / ${Math.round(limit)}MB`)
+        debugLogger.log('warn', 'app', `High memory usage: ${Math.round(used)}MB / ${Math.round(limit)}MB`)
+      }
+      
+      // Debug log every 5 minutes in development
+      if (import.meta.env.DEV && Math.random() < 0.01) { // ~1% chance = ~every 5 minutes at 30s intervals
+        debugLogger.log('debug', 'app', 'Memory usage', {
+          used: Math.round(used),
+          total: Math.round(perf.totalJSHeapSize / 1024 / 1024),
+          limit: Math.round(limit)
+        })
       }
     }
   }, 30000) // Check every 30 seconds
 }
 
-// Lifecycle hooks
-onMounted(() => {
-  console.log('🎛️ App component loaded')
+// Lifecycle hooks with enhanced logging
+onMounted(async () => {
+  debugLogger.log('info', 'app', 'App component mounted, starting initialization...')
   
   checkBrowserCompatibility()
   checkUrlParameters()
   setupErrorHandlers()
   startPerformanceMonitoring()
   
-  // Initialize the store
-  store.initialize().catch((initError) => {
-    console.error('Failed to initialize store:', initError)
-    error.value = `Initialization failed: ${initError.message}`
-  })
+  // Run initial diagnostics in development
+  if (import.meta.env.DEV) {
+    setTimeout(async () => {
+      try {
+        await debugLogger.diagnoseWorkerSupport()
+      } catch (error) {
+        debugLogger.log('error', 'app', 'Initial diagnostics failed', error)
+      }
+    }, 2000)
+  }
+  
+  // Initialize the store with enhanced error handling
+  try {
+    await store.initialize()
+    debugLogger.log('info', 'app', 'Store initialization completed successfully')
+  } catch (initError) {
+    const errorMessage = initError instanceof Error ? initError.message : 'Unknown initialization error'
+    debugLogger.log('error', 'app', 'Store initialization failed', { error: errorMessage, initError })
+    error.value = `Initialization failed: ${errorMessage}`
+  }
 })
 
 onUnmounted(() => {
+  debugLogger.log('info', 'app', 'App component unmounting, cleaning up...')
+  
   if (performanceInterval) {
     clearInterval(performanceInterval)
   }

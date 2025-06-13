@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Worker Debug Test</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .section {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .section h2 {
+            color: #00ffff;
+            margin-top: 0;
+        }
+        .log {
+            background: #000;
+            color: #0f0;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        button {
+            background: #333;
+            color: #0f0;
+            border: 1px solid #555;
+            padding: 8px 16px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #444;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .status.pass { background: #004400; color: #00ff00; }
+        .status.fail { background: #440000; color: #ff0000; }
+        .status.unknown { background: #444400; color: #ffff00; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .test-result {
+            margin: 5px 0;
+            padding: 5px;
+            background: #333;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Engraving Processor Pro - Worker Debug Console</h1>
+        
+        <div class="section">
+            <h2>Environment Information</h2>
+            <div id="environment-info">Loading...</div>
+        </div>
+
+        <div class="grid">
+            <div class="section">
+                <h2>Browser Capabilities</h2>
+                <div id="capabilities">Loading...</div>
+            </div>
+
+            <div class="section">
+                <h2>Worker URL Tests</h2>
+                <button onclick="testWorkerUrls()">Test Worker URLs</button>
+                <div id="worker-url-results">Click the button to test</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Worker Creation Test</h2>
+            <button onclick="testWorkerCreation()">Create Test Worker</button>
+            <button onclick="testInlineWorker()">Test Inline Worker</button>
+            <div id="worker-test-results">Click a button to test</div>
+        </div>
+
+        <div class="section">
+            <h2>System Diagnostics</h2>
+            <button onclick="runFullDiagnostics()">Run Full Diagnostics</button>
+            <div id="diagnostics-results">Click the button to run diagnostics</div>
+        </div>
+
+        <div class="section">
+            <h2>Debug Log</h2>
+            <button onclick="clearLog()">Clear Log</button>
+            <div id="debug-log" class="log">Debug messages will appear here...</div>
+        </div>
+    </div>
+
+    <script>
+        // Debug logger
+        function log(level, message, data = null) {
+            const timestamp = new Date().toISOString().slice(11, 19);
+            const logElement = document.getElementById('debug-log');
+            const dataStr = data ? ' | ' + JSON.stringify(data) : '';
+            logElement.textContent += `[${timestamp}] [${level.toUpperCase()}] ${message}${dataStr}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+            console[level](message, data);
+        }
+
+        function clearLog() {
+            document.getElementById('debug-log').textContent = '';
+        }
+
+        // Initialize environment info
+        function loadEnvironmentInfo() {
+            const isFileProtocol = window.location.protocol === 'file:';
+            const isLocalhost = ['localhost', '127.0.0.1', '0.0.0.0'].includes(window.location.hostname);
+            const isDevelopment = isLocalhost && (window.location.port === '3000' || window.location.port === '5173');
+            const isPreview = isLocalhost && window.location.port === '4173';
+            const isProduction = !isDevelopment && !isPreview && !isFileProtocol;
+
+            const envInfo = {
+                protocol: window.location.protocol,
+                hostname: window.location.hostname,
+                port: window.location.port,
+                pathname: window.location.pathname,
+                isDevelopment,
+                isPreview,
+                isProduction,
+                isFileProtocol,
+                userAgent: navigator.userAgent.slice(0, 100) + '...'
+            };
+
+            document.getElementById('environment-info').innerHTML = 
+                Object.entries(envInfo)
+                    .map(([key, value]) => `<div><strong>${key}:</strong> ${value}</div>`)
+                    .join('');
+
+            log('info', 'Environment info loaded', envInfo);
+        }
+
+        // Check browser capabilities
+        function loadCapabilities() {
+            const capabilities = {
+                'Worker': typeof Worker !== 'undefined',
+                'OffscreenCanvas': typeof OffscreenCanvas !== 'undefined',
+                'ImageBitmap': typeof ImageBitmap !== 'undefined',
+                'createImageBitmap': typeof createImageBitmap !== 'undefined',
+                'WebAssembly': typeof WebAssembly !== 'undefined',
+                'ArrayBuffer': typeof ArrayBuffer !== 'undefined',
+                'Uint8ClampedArray': typeof Uint8ClampedArray !== 'undefined',
+                'SharedArrayBuffer': typeof SharedArrayBuffer !== 'undefined',
+                'Blob': typeof Blob !== 'undefined',
+                'URL.createObjectURL': typeof URL !== 'undefined' && typeof URL.createObjectURL !== 'undefined',
+                'Hardware Concurrency': navigator.hardwareConcurrency || 'unknown'
+            };
+
+            document.getElementById('capabilities').innerHTML = 
+                Object.entries(capabilities)
+                    .map(([key, value]) => {
+                        const status = value === true ? 'pass' : value === false ? 'fail' : 'unknown';
+                        return `<div class="test-result"><strong>${key}:</strong> <span class="status ${status}">${value}</span></div>`;
+                    })
+                    .join('');
+
+            log('info', 'Capabilities checked', capabilities);
+        }
+
+        // Test worker URLs
+        async function testWorkerUrls() {
+            log('info', 'Testing worker URLs...');
+            document.getElementById('worker-url-results').innerHTML = 'Testing...';
+
+            const urls = [
+                '/src/workers/imageProcessingWorker.ts',
+                '/workers/imageProcessingWorker.js',
+                '/assets/imageProcessingWorker.js',
+                '/public/workers/imageProcessingWorker.js',
+                '/workers/vips-es6-CoQywvDx.js',
+                '/assets/vips-es6-CPGz7D-4.js'
+            ];
+
+            const results = {};
+            
+            for (const url of urls) {
+                try {
+                    log('debug', `Testing URL: ${url}`);
+                    const response = await fetch(url, { method: 'HEAD' });
+                    results[url] = {
+                        accessible: response.ok,
+                        status: response.status,
+                        contentType: response.headers.get('content-type') || 'unknown'
+                    };
+                } catch (error) {
+                    results[url] = {
+                        accessible: false,
+                        error: error.message
+                    };
+                }
+            }
+
+            document.getElementById('worker-url-results').innerHTML = 
+                Object.entries(results)
+                    .map(([url, result]) => {
+                        const status = result.accessible ? 'pass' : 'fail';
+                        const details = result.accessible ? 
+                            `${result.status} (${result.contentType})` : 
+                            result.error;
+                        return `<div class="test-result"><strong>${url}:</strong> <span class="status ${status}">${details}</span></div>`;
+                    })
+                    .join('');
+
+            log('info', 'Worker URL tests completed', results);
+        }
+
+        // Test worker creation
+        async function testWorkerCreation() {
+            log('info', 'Testing worker creation...');
+            document.getElementById('worker-test-results').innerHTML = 'Testing...';
+
+            const testUrls = [
+                '/src/workers/imageProcessingWorker.ts',
+                '/workers/imageProcessingWorker.js'
+            ];
+
+            const results = {};
+
+            for (const url of testUrls) {
+                try {
+                    log('debug', `Testing worker creation with: ${url}`);
+                    const worker = new Worker(url, { type: 'module' });
+                    
+                    const testResult = await new Promise((resolve) => {
+                        const timeout = setTimeout(() => resolve(false), 3000);
+                        
+                        worker.onmessage = (event) => {
+                            if (event.data?.type === 'test-response') {
+                                clearTimeout(timeout);
+                                resolve(true);
+                            }
+                        };
+
+                        worker.onerror = () => {
+                            clearTimeout(timeout);
+                            resolve(false);
+                        };
+
+                        worker.postMessage({ id: 'test', type: 'test' });
+                    });
+
+                    worker.terminate();
+                    results[url] = { success: testResult };
+
+                } catch (error) {
+                    results[url] = { success: false, error: error.message };
+                }
+            }
+
+            document.getElementById('worker-test-results').innerHTML = 
+                Object.entries(results)
+                    .map(([url, result]) => {
+                        const status = result.success ? 'pass' : 'fail';
+                        const details = result.success ? 'Worker created and responded' : (result.error || 'Failed to respond');
+                        return `<div class="test-result"><strong>${url}:</strong> <span class="status ${status}">${details}</span></div>`;
+                    })
+                    .join('');
+
+            log('info', 'Worker creation tests completed', results);
+        }
+
+        // Test inline worker
+        async function testInlineWorker() {
+            log('info', 'Testing inline worker...');
+            
+            try {
+                const workerCode = `
+                    self.onmessage = function(event) {
+                        if (event.data.type === 'test') {
+                            self.postMessage({ 
+                                id: event.data.id, 
+                                type: 'test-response', 
+                                message: 'Inline worker works!' 
+                            });
+                        }
+                    };
+                `;
+
+                const blob = new Blob([workerCode], { type: 'application/javascript' });
+                const workerUrl = URL.createObjectURL(blob);
+                const worker = new Worker(workerUrl);
+
+                const testResult = await new Promise((resolve) => {
+                    const timeout = setTimeout(() => resolve(false), 3000);
+                    
+                    worker.onmessage = (event) => {
+                        if (event.data?.type === 'test-response') {
+                            clearTimeout(timeout);
+                            resolve(event.data);
+                        }
+                    };
+
+                    worker.onerror = () => {
+                        clearTimeout(timeout);
+                        resolve(false);
+                    };
+
+                    worker.postMessage({ id: 'inline-test', type: 'test' });
+                });
+
+                worker.terminate();
+                URL.revokeObjectURL(workerUrl);
+
+                const status = testResult ? 'pass' : 'fail';
+                const message = testResult ? testResult.message : 'Failed to respond';
+                
+                document.getElementById('worker-test-results').innerHTML += 
+                    `<div class="test-result"><strong>Inline Worker:</strong> <span class="status ${status}">${message}</span></div>`;
+
+                log('info', 'Inline worker test completed', { success: !!testResult, result: testResult });
+
+            } catch (error) {
+                document.getElementById('worker-test-results').innerHTML += 
+                    `<div class="test-result"><strong>Inline Worker:</strong> <span class="status fail">${error.message}</span></div>`;
+                log('error', 'Inline worker test failed', error);
+            }
+        }
+
+        // Run full diagnostics
+        async function runFullDiagnostics() {
+            log('info', 'Running full diagnostics...');
+            document.getElementById('diagnostics-results').innerHTML = 'Running comprehensive diagnostics...';
+
+            const diagnostics = {
+                timestamp: new Date().toISOString(),
+                environment: {
+                    protocol: window.location.protocol,
+                    hostname: window.location.hostname,
+                    port: window.location.port,
+                    userAgent: navigator.userAgent
+                },
+                capabilities: {},
+                memory: null,
+                performance: {}
+            };
+
+            // Check all capabilities
+            const capabilityTests = [
+                'Worker', 'OffscreenCanvas', 'ImageBitmap', 'createImageBitmap',
+                'WebAssembly', 'ArrayBuffer', 'Uint8ClampedArray', 'SharedArrayBuffer'
+            ];
+
+            capabilityTests.forEach(test => {
+                diagnostics.capabilities[test] = typeof window[test] !== 'undefined';
+            });
+
+            // Memory info
+            if (performance.memory) {
+                diagnostics.memory = {
+                    used: Math.round(performance.memory.usedJSHeapSize / 1024 / 1024),
+                    total: Math.round(performance.memory.totalJSHeapSize / 1024 / 1024),
+                    limit: Math.round(performance.memory.jsHeapSizeLimit / 1024 / 1024)
+                };
+            }
+
+            // Performance metrics
+            diagnostics.performance = {
+                hardwareConcurrency: navigator.hardwareConcurrency,
+                connectionType: navigator.connection?.effectiveType || 'unknown',
+                timeOrigin: performance.timeOrigin
+            };
+
+            // Test WebAssembly
+            try {
+                const wasmCode = new Uint8Array([0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00]);
+                await WebAssembly.instantiate(wasmCode);
+                diagnostics.capabilities.WebAssemblyWorking = true;
+            } catch {
+                diagnostics.capabilities.WebAssemblyWorking = false;
+            }
+
+            // Display results
+            document.getElementById('diagnostics-results').innerHTML = 
+                `<pre style="background: #000; color: #0f0; padding: 10px; border-radius: 4px; overflow: auto;">${JSON.stringify(diagnostics, null, 2)}</pre>`;
+
+            log('info', 'Full diagnostics completed', diagnostics);
+        }
+
+        // Initialize on load
+        window.addEventListener('load', () => {
+            log('info', 'Debug page loaded');
+            loadEnvironmentInfo();
+            loadCapabilities();
+        });
+
+        // Global error handlers
+        window.addEventListener('error', (event) => {
+            log('error', 'Global error', {
+                message: event.message,
+                filename: event.filename,
+                lineno: event.lineno
+            });
+        });
+
+        window.addEventListener('unhandledrejection', (event) => {
+            log('error', 'Unhandled rejection', event.reason);
+        });
+    </script>
+</body>
+</html>
