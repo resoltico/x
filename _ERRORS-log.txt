@@ -1,9 +1,6 @@
-Last login: Fri Jun 13 03:40:29 on ttys000
-Using Node v22.16.0
-[3:48:41 AM] % pnpm install
-Packages: +348
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Progress: resolved 420, reused 348, downloaded 0, added 348, done
+[4:02:11 AM] % pnpm install
+Lockfile is up to date, resolution step is skipped
+Already up to date
 . prepare$ npm run check
 │ > engraving-processor-pro@1.0.0 check
 │ > npm run typecheck:all && npm run lint:quiet && npm run test:run
@@ -11,12 +8,211 @@ Progress: resolved 420, reused 348, downloaded 0, added 348, done
 │ > npm run typecheck && npm run typecheck:worker
 │ > engraving-processor-pro@1.0.0 typecheck
 │ > vue-tsc --noEmit --skipLibCheck
-│ src/modules/ImageInputModule.test.ts(43,25): error TS2352: Conversion of type '{ dataTransfer: { items: { kind: string; type: string; }…
-│   Type '{ dataTransfer: { items: { kind: string; type: string; }[]; }; }' is missing the following properties from type 'DragEvent': al…
-│ src/modules/ImageInputModule.test.ts(60,25): error TS2352: Conversion of type '{ dataTransfer: { items: { kind: string; type: string; }…
-│   Type '{ dataTransfer: { items: { kind: string; type: string; }[]; }; }' is missing the following properties from type 'DragEvent': al…
-└─ Failed in 3.3s at /Users/erst/Library/CloudStorage/Dropbox/Websites/x
- ELIFECYCLE  Command failed with exit code 2.
-[3:49:03 AM] % 
-
-
+│ > engraving-processor-pro@1.0.0 typecheck:worker
+│ > tsc --project tsconfig.worker.json --noEmit --skipLibCheck
+│ > engraving-processor-pro@1.0.0 lint:quiet
+│ > eslint . --quiet
+│ > engraving-processor-pro@1.0.0 test:run
+│ > vitest run --passWithNoTests
+│  RUN  v3.2.3 /Users/erst/Library/CloudStorage/Dropbox/Websites/x
+│  ❯ src/modules/ImageInputModule.test.ts (12 tests | 2 failed) 35ms
+│    ✓ ImageInputModule > getInstance > returns singleton instance 2ms
+│    ✓ ImageInputModule > getSupportedExtensions > returns correct extensions string 1ms
+│    ✓ ImageInputModule > getSupportedFormats > returns correct formats array 1ms
+│    ✓ ImageInputModule > validateDropData > validates drop data correctly 0ms
+│    ✓ ImageInputModule > validateDropData > rejects non-image files 0ms
+│    ✓ ImageInputModule > validateDropData > handles missing dataTransfer 0ms
+│    × ImageInputModule > processFile > processes valid file successfully 22ms
+│      → expected false to be true // Object.is equality
+│    ✓ ImageInputModule > processFile > handles invalid file type 0ms
+│    × ImageInputModule > processFile > handles processing errors 2ms
+│      → expected 'URL.createObjectURL is not a function' to be 'Processing failed' // Object.is equality
+│    ✓ ImageInputModule > createDropHandler > creates drop handler with success callback 0ms
+│    ✓ ImageInputModule > createDropHandler > handles drop with no files 1ms
+│    ✓ ImageInputModule > createDropHandler > handles drop with multiple files 0ms
+│  ❯ src/stores/app.test.ts (6 tests | 1 failed) 14ms
+│    ✓ App Store > initializes with correct default state 3ms
+│    × App Store > sets current image correctly 6ms
+│      → expected { data: , width: 100, …(5) } to be { data: , width: 100, …(5) } // Object.is equality
+│ If it should pass with deep equality, replace "toBe" with "toStrictEqual"
+│ Expected: { data: , width: 100, …(5) }
+│ Received: serializes to the same string
+│    ✓ App Store > adds and updates tasks correctly 1ms
+│    ✓ App Store > updates canvas state correctly 0ms
+│    ✓ App Store > clears completed tasks 1ms
+│    ✓ App Store > resets state correctly 0ms
+│ stdout | src/App.test.ts > App.vue > renders properly
+│ ProcessingControls component mounted, initializing...
+│ Initializing workers...
+│ Initializing 8 workers...
+│ Worker 0 initialized successfully
+│ Worker 1 initialized successfully
+│ Worker 2 initialized successfully
+│ Worker 3 initialized successfully
+│ Worker 4 initialized successfully
+│ Worker 5 initialized successfully
+│ Worker 6 initialized successfully
+│ Worker 7 initialized successfully
+│ Successfully initialized 8 out of 8 requested workers
+│ stderr | src/App.test.ts > App.vue > renders properly
+│ Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+│     at module.exports (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/jsdom@26.1.0/node_modules/jsdom/lib/jsdom…
+│     at HTMLCanvasElementImpl.getContext (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/jsdom@26.1.0/node_modul…
+│     at HTMLCanvasElement.getContext (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/jsdom@26.1.0/node_modules/j…
+│     at PreviewRendererModule.initialize (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/modules/PreviewRendererModule.ts:27:23)
+│     at initializeRenderer (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/components/PreviewRenderer.vue:163:21)
+│     at /Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/components/PreviewRenderer.vue:299:5
+│     at processTicksAndRejections (node:internal/process/task_queues:105:5) undefined
+│ stderr | src/App.test.ts > App.vue > renders properly
+│ [Vue warn]: Unhandled error during execution of mounted hook 
+│   at <PreviewRenderer> 
+│   at <App ref="VTU_COMPONENT" > 
+│   at <VTUROOT>
+│ stdout | src/App.test.ts > App.vue > renders properly
+│ Workers initialized successfully
+│ Initializing ProcessingModule...
+│ stdout | src/App.test.ts > App.vue > displays version
+│ ProcessingControls component mounted, initializing...
+│ Initializing workers...
+│ stdout | src/App.test.ts > App.vue > displays version
+│ Workers initialized successfully
+│ Initializing ProcessingModule...
+│ stderr | src/App.test.ts > App.vue > displays version
+│ Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+│     at module.exports (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/jsdom@26.1.0/node_modules/jsdom/lib/jsdom…
+│     at HTMLCanvasElementImpl.getContext (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/jsdom@26.1.0/node_modul…
+│     at HTMLCanvasElement.getContext (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/jsdom@26.1.0/node_modules/j…
+│     at PreviewRendererModule.initialize (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/modules/PreviewRendererModule.ts:27:23)
+│     at initializeRenderer (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/components/PreviewRenderer.vue:163:21)
+│     at /Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/components/PreviewRenderer.vue:299:5
+│     at processTicksAndRejections (node:internal/process/task_queues:105:5) undefined
+│ stderr | src/App.test.ts > App.vue > displays version
+│ [Vue warn]: Unhandled error during execution of mounted hook 
+│   at <PreviewRenderer> 
+│   at <App ref="VTU_COMPONENT" > 
+│   at <VTUROOT>
+│  ✓ src/App.test.ts (2 tests) 48ms
+│ failed to asynchronously prepare wasm: Error: ENOENT: no such file or directory, open 'https://cdn.jsdelivr.net/npm/wasm-vips@0.0.13/li…
+│ Aborted(Error: ENOENT: no such file or directory, open 'https://cdn.jsdelivr.net/npm/wasm-vips@0.0.13/lib/vips.wasm')
+│ failed to asynchronously prepare wasm: Error: ENOENT: no such file or directory, open 'https://cdn.jsdelivr.net/npm/wasm-vips@0.0.13/li…
+│ Aborted(Error: ENOENT: no such file or directory, open 'https://cdn.jsdelivr.net/npm/wasm-vips@0.0.13/lib/vips.wasm')
+│ stderr | ProcessingModule.initialize (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/modules/ProcessingModule.ts:54:15)
+│ Failed to initialize ProcessingModule with WASM: RuntimeError: Aborted(Error: ENOENT: no such file or directory, open 'https://cdn.jsde…
+│     at ib (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/wasm-vips@0.0.13/node_modules/wasm-vips/lib/vi…
+│     at lb (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/wasm-vips@0.0.13/node_modules/wasm-vips/lib/vi…
+│     at file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/wasm-vips@0.0.13/node_modules/wasm-vips/lib/vips-n…
+│     at Module.<anonymous> (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/wasm-vips@0.0.13/node_modules/…
+│     at ProcessingModule.initialize (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/modules/ProcessingModule.ts:40:19)
+│     at initializeWorkers (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/components/ProcessingControls.vue:452:7)
+│ Failed to initialize ProcessingModule with WASM: RuntimeError: Aborted(Error: ENOENT: no such file or directory, open 'https://cdn.jsde…
+│     at ib (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/wasm-vips@0.0.13/node_modules/wasm-vips/lib/vi…
+│     at lb (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/wasm-vips@0.0.13/node_modules/wasm-vips/lib/vi…
+│     at file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/wasm-vips@0.0.13/node_modules/wasm-vips/lib/vips-n…
+│     at Module.<anonymous> (file:///Users/erst/Library/CloudStorage/Dropbox/Websites/x/node_modules/.pnpm/wasm-vips@0.0.13/node_modules/…
+│     at ProcessingModule.initialize (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/modules/ProcessingModule.ts:40:19)
+│     at initializeWorkers (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/components/ProcessingControls.vue:452:7)
+│ stderr | ProcessingModule.initialize (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/modules/ProcessingModule.ts:56:15)
+│ Falling back to JavaScript-based processing
+│ Falling back to JavaScript-based processing
+│ stdout | initializeWorkers (/Users/erst/Library/CloudStorage/Dropbox/Websites/x/src/components/ProcessingControls.vue:453:15)
+│ Processing module initialized
+│ Processing module initialized
+│  ✓ src/utils/fileValidation.test.ts (19 tests) 626ms
+│    ✓ File Validation Utils > validateImageFile > rejects file that is too large  433ms
+│ ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+│  FAIL  src/stores/app.test.ts > App Store > sets current image correctly
+│ AssertionError: expected { data: , width: 100, …(5) } to be { data: , width: 100, …(5) } // Object.is equality
+│ If it should pass with deep equality, replace "toBe" with "toStrictEqual"
+│ Expected: { data: , width: 100, …(5) }
+│ Received: serializes to the same string
+│ Compared values have no visual difference.
+│  ❯ src/stores/app.test.ts:36:32
+│      34|     store.setCurrentImage(mockImage)
+│      35| 
+│      36|     expect(store.currentImage).toBe(mockImage)
+│        |                                ^
+│      37|     expect(store.hasImage).toBe(true)
+│      38|     expect(store.processedImage).toBe(null) // Should reset processed …
+│ ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+│  FAIL  src/modules/ImageInputModule.test.ts > ImageInputModule > processFile > processes valid file successfully
+│ AssertionError: expected false to be true // Object.is equality
+│ - Expected
+│ + Received
+│ - true
+│ + false
+│  ❯ src/modules/ImageInputModule.test.ts:143:30
+│     141|       const result = await module.processFile(file)
+│     142|       
+│     143|       expect(result.success).toBe(true)
+│        |                              ^
+│     144|       expect(result.validation.isValid).toBe(true)
+│     145|     })
+│ ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+│  FAIL  src/modules/ImageInputModule.test.ts > ImageInputModule > processFile > handles processing errors
+│ AssertionError: expected 'URL.createObjectURL is not a function' to be 'Processing failed' // Object.is equality
+│ Expected: "Processing failed"
+│ Received: "URL.createObjectURL is not a function"
+│  ❯ src/modules/ImageInputModule.test.ts:172:28
+│     170|       
+│     171|       expect(result.success).toBe(false)
+│     172|       expect(result.error).toBe('Processing failed')
+│        |                            ^
+│     173|     })
+│     174|   })
+│ ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+│ ⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+│ Vitest caught 4 unhandled errors during the test run.
+│ This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+│ ⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+│ Error: Failed to get 2D context from canvas
+│  ❯ PreviewRendererModule.initialize src/modules/PreviewRendererModule.ts:30:13
+│      28|     
+│      29|     if (!this.ctx) {
+│      30|       throw new Error('Failed to get 2D context from canvas')
+│        |             ^
+│      31|     }
+│      32| 
+│  ❯ initializeRenderer src/components/PreviewRenderer.vue:163:21
+│  ❯ src/components/PreviewRenderer.vue:299:5
+│  ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+│ This error originated in "src/App.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was run…
+│ ⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+│ Error: Failed to get 2D context from canvas
+│  ❯ PreviewRendererModule.initialize src/modules/PreviewRendererModule.ts:30:13
+│      28|     
+│      29|     if (!this.ctx) {
+│      30|       throw new Error('Failed to get 2D context from canvas')
+│        |             ^
+│      31|     }
+│      32| 
+│  ❯ initializeRenderer src/components/PreviewRenderer.vue:163:21
+│  ❯ src/components/PreviewRenderer.vue:299:5
+│  ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+│ This error originated in "src/App.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was run…
+│ ⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+│ RuntimeError: Aborted(Error: ENOENT: no such file or directory, open 'https://cdn.jsdelivr.net/npm/wasm-vips@0.0.13/lib/vips.wasm'). Bu…
+│  ❯ ib node_modules/.pnpm/wasm-vips@0.0.13/node_modules/wasm-vips/lib/vips-node.mjs:15:149
+│  ❯ lb node_modules/.pnpm/wasm-vips@0.0.13/node_modules/wasm-vips/lib/vips-node.mjs:16:146
+│  ❯ node_modules/.pnpm/wasm-vips@0.0.13/node_modules/wasm-vips/lib/vips-node.mjs:208:34
+│  ❯ Module.<anonymous> node_modules/.pnpm/wasm-vips@0.0.13/node_modules/wasm-vips/lib/vips-node.mjs:207:9
+│  ❯ ProcessingModule.initialize src/modules/ProcessingModule.ts:40:19
+│  ❯ initializeWorkers src/components/ProcessingControls.vue:452:7
+│ This error originated in "src/App.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was run…
+│ ⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+│ RuntimeError: Aborted(Error: ENOENT: no such file or directory, open 'https://cdn.jsdelivr.net/npm/wasm-vips@0.0.13/lib/vips.wasm'). Bu…
+│  ❯ ib node_modules/.pnpm/wasm-vips@0.0.13/node_modules/wasm-vips/lib/vips-node.mjs:15:149
+│  ❯ lb node_modules/.pnpm/wasm-vips@0.0.13/node_modules/wasm-vips/lib/vips-node.mjs:16:146
+│  ❯ node_modules/.pnpm/wasm-vips@0.0.13/node_modules/wasm-vips/lib/vips-node.mjs:208:34
+│  ❯ Module.<anonymous> node_modules/.pnpm/wasm-vips@0.0.13/node_modules/wasm-vips/lib/vips-node.mjs:207:9
+│  ❯ ProcessingModule.initialize src/modules/ProcessingModule.ts:40:19
+│  ❯ initializeWorkers src/components/ProcessingControls.vue:452:7
+│ This error originated in "src/App.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was run…
+│ ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+│  Test Files  2 failed | 2 passed (4)
+│       Tests  3 failed | 36 passed (39)
+│      Errors  4 errors
+│    Start at  04:02:19
+│    Duration  1.65s (transform 435ms, setup 178ms, collect 723ms, tests 723ms, environment 2.17s, prepare 521ms)
+└─ Failed in 8.9s at /Users/erst/Library/CloudStorage/Dropbox/Websites/x
+ ELIFECYCLE  Command failed with exit code 1.
+[4:02:44 AM] % 

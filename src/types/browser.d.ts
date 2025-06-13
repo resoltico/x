@@ -5,6 +5,24 @@
 /// <reference lib="webworker" />
 
 declare global {
+  // Enhanced Mouse Event types
+  interface MouseEventInit {
+    screenX?: number
+    screenY?: number
+    clientX?: number
+    clientY?: number
+    ctrlKey?: boolean
+    shiftKey?: boolean
+    altKey?: boolean
+    metaKey?: boolean
+    button?: number
+    buttons?: number
+    relatedTarget?: EventTarget | null
+    bubbles?: boolean
+    cancelable?: boolean
+    composed?: boolean
+  }
+
   // ImageBitmap related types
   interface ImageBitmap {
     readonly width: number
@@ -138,6 +156,213 @@ declare global {
     readonly vendorSub: string
     readonly webkitPersistentStorage: DeprecatedStorageQuota
     readonly webkitTemporaryStorage: DeprecatedStorageQuota
+  }
+
+  // Enhanced Timer types
+  type TimerHandler = string | ((...args: any[]) => void)
+
+  // Enhanced Structured Clone types
+  interface StructuredSerializeOptions {
+    transfer?: Transferable[]
+  }
+
+  // Network Information API
+  interface NetworkInformation extends EventTarget {
+    readonly downlink: number
+    readonly effectiveType: string
+    readonly rtt: number
+    readonly saveData: boolean
+  }
+
+  // Lock Manager API
+  interface LockManager {
+    request(name: string, callback: LockGrantedCallback): Promise<any>
+    request(name: string, options: LockOptions, callback: LockGrantedCallback): Promise<any>
+    query(): Promise<LockManagerSnapshot>
+  }
+
+  interface LockGrantedCallback {
+    (lock: Lock | null): any
+  }
+
+  interface LockOptions {
+    mode?: LockMode
+    ifAvailable?: boolean
+    steal?: boolean
+    signal?: AbortSignal
+  }
+
+  type LockMode = 'exclusive' | 'shared'
+
+  interface Lock {
+    readonly name: string
+    readonly mode: LockMode
+  }
+
+  interface LockManagerSnapshot {
+    held: LockInfo[]
+    pending: LockInfo[]
+  }
+
+  interface LockInfo {
+    name: string
+    mode: LockMode
+    clientId: string
+  }
+
+  // Permissions API
+  interface Permissions {
+    query(permissionDesc: PermissionDescriptor): Promise<PermissionStatus>
+  }
+
+  interface PermissionDescriptor {
+    name: string
+  }
+
+  interface PermissionStatus extends EventTarget {
+    readonly state: PermissionState
+    onchange: ((this: PermissionStatus, ev: Event) => any) | null
+  }
+
+  type PermissionState = 'granted' | 'denied' | 'prompt'
+
+  // Serial API
+  interface Serial extends EventTarget {
+    onconnect: ((this: Serial, ev: Event) => any) | null
+    ondisconnect: ((this: Serial, ev: Event) => any) | null
+    getPorts(): Promise<SerialPort[]>
+    requestPort(options?: SerialPortRequestOptions): Promise<SerialPort>
+  }
+
+  interface SerialPort extends EventTarget {
+    readonly readable: ReadableStream | null
+    readonly writable: WritableStream | null
+    onconnect: ((this: SerialPort, ev: Event) => any) | null
+    ondisconnect: ((this: SerialPort, ev: Event) => any) | null
+    close(): Promise<void>
+    getInfo(): SerialPortInfo
+    getSignals(): Promise<SerialInputSignals>
+    open(options: SerialOptions): Promise<void>
+    setSignals(signals?: SerialOutputSignals): Promise<void>
+  }
+
+  interface SerialPortRequestOptions {
+    filters?: SerialPortFilter[]
+  }
+
+  interface SerialPortFilter {
+    usbVendorId?: number
+    usbProductId?: number
+  }
+
+  interface SerialPortInfo {
+    usbVendorId?: number
+    usbProductId?: number
+  }
+
+  interface SerialOptions {
+    baudRate: number
+    dataBits?: number
+    stopBits?: number
+    parity?: ParityType
+    bufferSize?: number
+    flowControl?: FlowControlType
+  }
+
+  type ParityType = 'none' | 'even' | 'odd'
+  type FlowControlType = 'none' | 'hardware'
+
+  interface SerialInputSignals {
+    dataCarrierDetect: boolean
+    clearToSend: boolean
+    ringIndicator: boolean
+    dataSetReady: boolean
+  }
+
+  interface SerialOutputSignals {
+    dataTerminalReady?: boolean
+    requestToSend?: boolean
+    break?: boolean
+  }
+
+  // Storage Manager API
+  interface StorageManager {
+    estimate(): Promise<StorageEstimate>
+    persist(): Promise<boolean>
+    persisted(): Promise<boolean>
+  }
+
+  interface StorageEstimate {
+    quota?: number
+    usage?: number
+    usageDetails?: Record<string, number>
+  }
+
+  // Navigator UA Data API
+  interface NavigatorUAData {
+    readonly brands: NavigatorUABrandVersion[]
+    readonly mobile: boolean
+    readonly platform: string
+    getHighEntropyValues(hints: string[]): Promise<UADataValues>
+    toJSON(): UALowEntropyJSON
+  }
+
+  interface NavigatorUABrandVersion {
+    readonly brand: string
+    readonly version: string
+  }
+
+  interface UADataValues {
+    readonly brands?: NavigatorUABrandVersion[]
+    readonly mobile?: boolean
+    readonly platform?: string
+    readonly architecture?: string
+    readonly bitness?: string
+    readonly model?: string
+    readonly platformVersion?: string
+    readonly uaFullVersion?: string
+  }
+
+  interface UALowEntropyJSON {
+    readonly brands: NavigatorUABrandVersion[]
+    readonly mobile: boolean
+    readonly platform: string
+  }
+
+  // Deprecated Storage Quota API
+  interface DeprecatedStorageQuota {
+    queryUsageAndQuota(successCallback: StorageUsageCallback, errorCallback?: StorageErrorCallback): void
+    requestQuota(newQuotaInBytes: number, successCallback?: StorageQuotaCallback, errorCallback?: StorageErrorCallback): void
+  }
+
+  interface StorageUsageCallback {
+    (currentUsageInBytes: number, currentQuotaInBytes: number): void
+  }
+
+  interface StorageQuotaCallback {
+    (grantedQuotaInBytes: number): void
+  }
+
+  interface StorageErrorCallback {
+    (error: DOMException): void
+  }
+
+  // Writeable Stream API
+  interface WritableStream<W = any> {
+    readonly locked: boolean
+    abort(reason?: any): Promise<void>
+    close(): Promise<void>
+    getWriter(): WritableStreamDefaultWriter<W>
+  }
+
+  interface WritableStreamDefaultWriter<W = any> {
+    readonly closed: Promise<undefined>
+    readonly desiredSize: number | null
+    readonly ready: Promise<undefined>
+    abort(reason?: any): Promise<void>
+    close(): Promise<void>
+    releaseLock(): void
+    write(chunk?: W): Promise<void>
   }
 }
 

@@ -25,6 +25,9 @@
     "noImplicitReturns": true,
     "noImplicitOverride": true,
     "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "noImplicitAny": false,
+    "noImplicitThis": true,
 
     /* Paths */
     "baseUrl": ".",
@@ -47,6 +50,11 @@
     "src/**/*.tsx",
     "src/**/*.vue",
     "src/types/**/*.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "coverage"
   ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

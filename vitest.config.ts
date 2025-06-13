@@ -18,7 +18,25 @@ export default defineConfig({
       '**/cypress/**',
       '**/.{idea,git,cache,output,temp}/**',
       '**/workers/**/*.ts'
-    ]
+    ],
+    // Add better error handling and timeout
+    testTimeout: 10000,
+    hookTimeout: 10000,
+    // Enable better stack traces
+    includeSource: ['src/**/*.{js,ts,vue}'],
+    // Coverage configuration
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      exclude: [
+        'node_modules/',
+        'src/test/',
+        'src/workers/',
+        '**/*.d.ts',
+        '**/*.config.*',
+        '**/coverage/**'
+      ]
+    }
   },
   resolve: {
     alias: {
@@ -33,5 +51,9 @@ export default defineConfig({
   },
   esbuild: {
     target: 'node14'
+  },
+  define: {
+    __DEV__: true,
+    __VERSION__: '"1.0.0-test"'
   }
 })

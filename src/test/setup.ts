@@ -24,6 +24,10 @@ beforeAll(() => {
       result: any = null
       onload: ((event: any) => void) | null = null
       onerror: ((event: any) => void) | null = null
+      readonly EMPTY = 0
+      readonly LOADING = 1
+      readonly DONE = 2
+      readonly readyState = 0
       
       readAsArrayBuffer(_file: File) {
         setTimeout(() => {
@@ -64,7 +68,9 @@ beforeAll(() => {
       data: new Uint8ClampedArray(4),
       width: 1,
       height: 1
-    }))
+    })),
+    imageSmoothingEnabled: true,
+    imageSmoothingQuality: 'high' as const
   }
 
   if (typeof globalThis.HTMLCanvasElement === 'undefined') {
@@ -110,6 +116,8 @@ beforeAll(() => {
       onerror: (() => void) | null = null
       width = 100
       height = 100
+      naturalWidth = 100
+      naturalHeight = 100
       
       set src(_value: string) {
         setTimeout(() => {
@@ -130,7 +138,7 @@ beforeAll(() => {
       onerror: ((event: ErrorEvent) => void) | null = null
       onmessageerror: ((event: MessageEvent) => void) | null = null
       
-      constructor(_url: string | URL, _options?: { type?: 'classic' | 'module'; name?: string }) {
+      constructor(_url: string | URL, _options?: WorkerOptions) {
         // Mock worker constructor
       }
       
@@ -158,11 +166,33 @@ beforeAll(() => {
     globalThis.MessageEvent = class MockMessageEvent {
       data: any
       type: string
+      lastEventId = ''
+      origin = 'http://localhost'
+      ports: readonly MessagePort[] = []
+      source: MessageEventSource | null = null
+      bubbles = false
+      cancelable = false
+      composed = false
+      currentTarget = null
+      defaultPrevented = false
+      eventPhase = 0
+      isTrusted = true
+      target = null
+      timeStamp = Date.now()
       
-      constructor(type: string, eventInitDict?: { data?: any }) {
+      constructor(type: string, eventInitDict?: MessageEventInit) {
         this.type = type
         this.data = eventInitDict?.data
+        this.lastEventId = eventInitDict?.lastEventId || ''
+        this.origin = eventInitDict?.origin || 'http://localhost'
+        this.ports = eventInitDict?.ports || []
+        this.source = eventInitDict?.source || null
       }
+      
+      preventDefault() {}
+      stopPropagation() {}
+      stopImmediatePropagation() {}
+      initEvent() {}
     } as any
   }
 
@@ -175,14 +205,17 @@ beforeAll(() => {
       colno?: number
       error?: any
       type: string
+      bubbles = false
+      cancelable = false
+      composed = false
+      currentTarget = null
+      defaultPrevented = false
+      eventPhase = 0
+      isTrusted = true
+      target = null
+      timeStamp = Date.now()
       
-      constructor(type: string, eventInitDict?: { 
-        message?: string
-        filename?: string 
-        lineno?: number
-        colno?: number
-        error?: any
-      }) {
+      constructor(type: string, eventInitDict?: ErrorEventInit) {
         this.type = type
         this.message = eventInitDict?.message || ''
         this.filename = eventInitDict?.filename
@@ -190,6 +223,11 @@ beforeAll(() => {
         this.colno = eventInitDict?.colno
         this.error = eventInitDict?.error
       }
+      
+      preventDefault() {}
+      stopPropagation() {}
+      stopImmediatePropagation() {}
+      initEvent() {}
     } as any
   }
 
@@ -199,15 +237,69 @@ beforeAll(() => {
       promise: Promise<any>
       reason: any
       type: string
+      bubbles = false
+      cancelable = false
+      composed = false
+      currentTarget = null
+      defaultPrevented = false
+      eventPhase = 0
+      isTrusted = true
+      target = null
+      timeStamp = Date.now()
       
-      constructor(type: string, eventInitDict: { 
-        promise: Promise<any>
-        reason?: any
-      }) {
+      constructor(type: string, eventInitDict: PromiseRejectionEventInit) {
         this.type = type
         this.promise = eventInitDict.promise
         this.reason = eventInitDict.reason
       }
+      
+      preventDefault() {}
+      stopPropagation() {}
+      stopImmediatePropagation() {}
+      initEvent() {}
+    } as any
+  }
+
+  // Mock DragEvent (for testing drag and drop)
+  if (typeof globalThis.DragEvent === 'undefined') {
+    globalThis.DragEvent = class MockDragEvent {
+      dataTransfer: DataTransfer | null = null
+      type: string
+      bubbles = false
+      cancelable = false
+      composed = false
+      currentTarget = null
+      defaultPrevented = false
+      eventPhase = 0
+      isTrusted = true
+      target = null
+      timeStamp = Date.now()
+      
+      constructor(type: string, eventInitDict?: DragEventInit) {
+        this.type = type
+        this.dataTransfer = eventInitDict?.dataTransfer || null
+      }
+      
+      preventDefault() {}
+      stopPropagation() {}
+      stopImmediatePropagation() {}
+      initEvent() {}
+    } as any
+  }
+
+  // Mock DataTransfer
+  if (typeof globalThis.DataTransfer === 'undefined') {
+    globalThis.DataTransfer = class MockDataTransfer {
+      dropEffect: 'none' | 'copy' | 'link' | 'move' = 'none'
+      effectAllowed: string = 'uninitialized'
+      files: FileList = [] as any
+      items: DataTransferItemList = [] as any
+      types: readonly string[] = []
+      
+      clearData() {}
+      getData() { return '' }
+      setData() {}
+      setDragImage() {}
     } as any
   }
 

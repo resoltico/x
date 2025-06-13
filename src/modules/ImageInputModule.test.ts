@@ -33,16 +33,28 @@ describe('ImageInputModule', () => {
     it('validates drop data correctly', () => {
       const module = ImageInputModule.getInstance()
       
-      // Mock DataTransfer with image file
-      const mockDataTransfer = {
-        items: [
-          { kind: 'file', type: 'image/png' }
-        ]
-      }
-      
+      // Create a proper mock DragEvent
       const mockEvent = {
-        dataTransfer: mockDataTransfer
-      } as DragEvent
+        dataTransfer: {
+          items: [
+            { kind: 'file', type: 'image/png' }
+          ]
+        },
+        preventDefault: vi.fn(),
+        stopPropagation: vi.fn(),
+        type: 'dragover',
+        bubbles: false,
+        cancelable: true,
+        composed: false,
+        currentTarget: null,
+        defaultPrevented: false,
+        eventPhase: 0,
+        isTrusted: true,
+        target: null,
+        timeStamp: Date.now(),
+        initEvent: vi.fn(),
+        stopImmediatePropagation: vi.fn()
+      } as unknown as DragEvent
       
       const result = module.validateDropData(mockEvent)
       expect(result).toBe(true)
@@ -51,15 +63,27 @@ describe('ImageInputModule', () => {
     it('rejects non-image files', () => {
       const module = ImageInputModule.getInstance()
       
-      const mockDataTransfer = {
-        items: [
-          { kind: 'file', type: 'text/plain' }
-        ]
-      }
-      
       const mockEvent = {
-        dataTransfer: mockDataTransfer
-      } as DragEvent
+        dataTransfer: {
+          items: [
+            { kind: 'file', type: 'text/plain' }
+          ]
+        },
+        preventDefault: vi.fn(),
+        stopPropagation: vi.fn(),
+        type: 'dragover',
+        bubbles: false,
+        cancelable: true,
+        composed: false,
+        currentTarget: null,
+        defaultPrevented: false,
+        eventPhase: 0,
+        isTrusted: true,
+        target: null,
+        timeStamp: Date.now(),
+        initEvent: vi.fn(),
+        stopImmediatePropagation: vi.fn()
+      } as unknown as DragEvent
       
       const result = module.validateDropData(mockEvent)
       expect(result).toBe(false)
@@ -69,8 +93,22 @@ describe('ImageInputModule', () => {
       const module = ImageInputModule.getInstance()
       
       const mockEvent = {
-        dataTransfer: null
-      } as DragEvent
+        dataTransfer: null,
+        preventDefault: vi.fn(),
+        stopPropagation: vi.fn(),
+        type: 'dragover',
+        bubbles: false,
+        cancelable: true,
+        composed: false,
+        currentTarget: null,
+        defaultPrevented: false,
+        eventPhase: 0,
+        isTrusted: true,
+        target: null,
+        timeStamp: Date.now(),
+        initEvent: vi.fn(),
+        stopImmediatePropagation: vi.fn()
+      } as unknown as DragEvent
       
       const result = module.validateDropData(mockEvent)
       expect(result).toBe(false)
@@ -84,7 +122,7 @@ describe('ImageInputModule', () => {
       // Create a mock file
       const file = new File(['test content'], 'test.png', { type: 'image/png' })
       
-      // Mock fileToImageData to avoid actual file processing
+      // Mock the fileToImageData function
       const mockImageData = {
         data: new ArrayBuffer(100),
         width: 100,
@@ -95,7 +133,7 @@ describe('ImageInputModule', () => {
         size: 1024
       }
 
-      // Mock the fileToImageData function
+      // Mock the fileToImageData utility function
       vi.doMock('@/utils/imageHelpers', () => ({
         fileToImageData: vi.fn().mockResolvedValue(mockImageData)
       }))
@@ -159,7 +197,20 @@ describe('ImageInputModule', () => {
       
       const mockEvent = {
         preventDefault: vi.fn(),
-        dataTransfer: { files: [] }
+        dataTransfer: { files: [] },
+        type: 'drop',
+        bubbles: false,
+        cancelable: true,
+        composed: false,
+        currentTarget: null,
+        defaultPrevented: false,
+        eventPhase: 0,
+        isTrusted: true,
+        target: null,
+        timeStamp: Date.now(),
+        initEvent: vi.fn(),
+        stopPropagation: vi.fn(),
+        stopImmediatePropagation: vi.fn()
       } as unknown as DragEvent
       
       await handler.handleDrop(mockEvent)
@@ -180,7 +231,20 @@ describe('ImageInputModule', () => {
       
       const mockEvent = {
         preventDefault: vi.fn(),
-        dataTransfer: { files: [file1, file2] }
+        dataTransfer: { files: [file1, file2] },
+        type: 'drop',
+        bubbles: false,
+        cancelable: true,
+        composed: false,
+        currentTarget: null,
+        defaultPrevented: false,
+        eventPhase: 0,
+        isTrusted: true,
+        target: null,
+        timeStamp: Date.now(),
+        initEvent: vi.fn(),
+        stopPropagation: vi.fn(),
+        stopImmediatePropagation: vi.fn()
       } as unknown as DragEvent
       
       await handler.handleDrop(mockEvent)

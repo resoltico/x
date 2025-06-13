@@ -70,6 +70,21 @@ export default [
         ImageBitmapSource: 'readonly',
         ImageBitmapOptions: 'readonly',
         SVGAnimatedLength: 'readonly',
+        // DOM Event Init types
+        EventInit: 'readonly',
+        MessageEventInit: 'readonly',
+        ErrorEventInit: 'readonly',
+        PromiseRejectionEventInit: 'readonly',
+        DragEventInit: 'readonly',
+        MouseEventInit: 'readonly',
+        // DOM API types
+        DataTransfer: 'readonly',
+        DataTransferItemList: 'readonly',
+        DataTransferItem: 'readonly',
+        AbortSignal: 'readonly',
+        DOMException: 'readonly',
+        Element: 'readonly',
+        FunctionStringCallback: 'readonly',
         // Node.js globals for config files
         __dirname: 'readonly',
         process: 'readonly'
@@ -87,6 +102,7 @@ export default [
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-non-null-assertion': 'off',
       '@typescript-eslint/triple-slash-reference': 'off',
+      '@typescript-eslint/no-unsafe-function-type': 'off',
       'no-case-declarations': 'off'
     }
   },
@@ -171,6 +187,7 @@ export default [
       }],
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-non-null-assertion': 'off',
+      '@typescript-eslint/no-unsafe-function-type': 'off',
       'no-case-declarations': 'off'
     }
   },
@@ -232,6 +249,7 @@ export default [
       }],
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/triple-slash-reference': 'off',
+      '@typescript-eslint/no-unsafe-function-type': 'off',
       'no-case-declarations': 'off'
     }
   },
@@ -288,7 +306,21 @@ export default [
         KeyboardEvent: 'readonly',
         Node: 'readonly',
         Transferable: 'readonly',
-        globalThis: 'writable'
+        globalThis: 'writable',
+        // DOM Event Init types
+        EventInit: 'readonly',
+        MessageEventInit: 'readonly',
+        ErrorEventInit: 'readonly',
+        PromiseRejectionEventInit: 'readonly',
+        DragEventInit: 'readonly',
+        MouseEventInit: 'readonly',
+        // DOM API types
+        DataTransfer: 'readonly',
+        DataTransferItemList: 'readonly',
+        DataTransferItem: 'readonly',
+        AbortSignal: 'readonly',
+        DOMException: 'readonly',
+        Element: 'readonly'
       }
     }
   },
@@ -379,7 +411,22 @@ export default [
         ServiceWorkerContainer: 'readonly',
         StorageManager: 'readonly',
         NavigatorUAData: 'readonly',
-        DeprecatedStorageQuota: 'readonly'
+        DeprecatedStorageQuota: 'readonly',
+        // DOM Event Init types
+        EventInit: 'readonly',
+        MessageEventInit: 'readonly',
+        ErrorEventInit: 'readonly',
+        PromiseRejectionEventInit: 'readonly',
+        DragEventInit: 'readonly',
+        MouseEventInit: 'readonly',
+        // DOM API types
+        DataTransfer: 'readonly',
+        DataTransferItemList: 'readonly',
+        DataTransferItem: 'readonly',
+        AbortSignal: 'readonly',
+        DOMException: 'readonly',
+        Element: 'readonly',
+        FunctionStringCallback: 'readonly'
       }
     },
     plugins: {
@@ -391,6 +438,7 @@ export default [
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-non-null-assertion': 'off',
       '@typescript-eslint/triple-slash-reference': 'off',
+      '@typescript-eslint/no-unsafe-function-type': 'off',
       'no-undef': 'off', // Disable no-undef for type definition files
       'no-case-declarations': 'off'
     }
@@ -426,7 +474,8 @@ export default [
     ignores: [
       'dist/**',
       'node_modules/**',
-      'coverage/**'
+      'coverage/**',
+      '*.json'
     ]
   }
 ]
