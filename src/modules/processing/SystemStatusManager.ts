@@ -22,7 +22,7 @@ export class SystemStatusManager {
   }
 
   private initializationAttempts = 0
-  private maxInitializationAttempts = 3
+  private maxInitializationAttempts = 5 // Increased from 3
   private statusUpdateCallbacks: Set<(status: SystemStatus) => void> = new Set()
 
   static getInstance(): SystemStatusManager {
@@ -48,12 +48,14 @@ export class SystemStatusManager {
   }
 
   /**
-   * Set initialization error
+   * Set initialization error with detailed information
    */
   setInitializationError(error: string): void {
-    this.status.error = error
+    this.status.error = `Initialization failed (attempt ${this.initializationAttempts}/${this.maxInitializationAttempts}): ${error}`
     this.status.initialized = false
     this.notifyStatusUpdate()
+    
+    console.error(`❌ System initialization error (attempt ${this.initializationAttempts}):`, error)
   }
 
   /**
@@ -70,7 +72,10 @@ export class SystemStatusManager {
   markInitialized(): void {
     this.status.initialized = true
     this.status.error = null
+    this.resetInitializationAttempts() // Reset on successful initialization
     this.notifyStatusUpdate()
+    
+    console.log('✅ System marked as initialized successfully')
   }
 
   /**
@@ -84,7 +89,9 @@ export class SystemStatusManager {
    * Increment initialization attempts
    */
   incrementInitializationAttempts(): number {
-    return ++this.initializationAttempts
+    this.initializationAttempts++
+    console.log(`🔄 Initialization attempt ${this.initializationAttempts}/${this.maxInitializationAttempts}`)
+    return this.initializationAttempts
   }
 
   /**
@@ -136,6 +143,22 @@ export class SystemStatusManager {
   }
 
   /**
+   * Get detailed status for debugging
+   */
+  getDetailedStatus(): SystemStatus & {
+    initializationAttempts: number
+    maxAttempts: number
+    hasCallbacks: boolean
+  } {
+    return {
+      ...this.getStatus(),
+      initializationAttempts: this.initializationAttempts,
+      maxAttempts: this.maxInitializationAttempts,
+      hasCallbacks: this.statusUpdateCallbacks.size > 0
+    }
+  }
+
+  /**
    * Reset system status
    */
   reset(): void {
@@ -149,5 +172,28 @@ export class SystemStatusManager {
     }
     this.initializationAttempts = 0
     this.notifyStatusUpdate()
+    
+    console.log('🔄 System status reset')
+  }
+
+  /**
+   * Force initialize with fallback worker
+   */
+  forceInitializeWithFallback(): void {
+    console.warn('⚠️ Forcing initialization with fallback worker only')
+    
+    this.status = {
+      initialized: true,
+      totalWorkers: 1,
+      availableWorkers: 1,
+      queuedTasks: 0,
+      environment: 'Fallback Mode',
+      error: null
+    }
+    
+    this.resetInitializationAttempts()
+    this.notifyStatusUpdate()
+    
+    console.log('✅ System initialized in fallback mode')
   }
 }

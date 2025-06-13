@@ -25,6 +25,14 @@ export default defineConfig({
       'Cross-Origin-Opener-Policy': 'same-origin',
     }
   },
+  preview: {
+    port: 4173,
+    open: true,
+    headers: {
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+      'Cross-Origin-Opener-Policy': 'same-origin',
+    }
+  },
   build: {
     target: 'esnext',
     sourcemap: true,
@@ -53,7 +61,8 @@ export default defineConfig({
     format: 'es',
     rollupOptions: {
       output: {
-        entryFileNames: 'workers/[name]-[hash].js'
+        entryFileNames: 'workers/[name]-[hash].js',
+        assetFileNames: 'workers/[name]-[hash][extname]'
       }
     }
   },
@@ -61,7 +70,8 @@ export default defineConfig({
     exclude: ['wasm-vips']
   },
   define: {
-    __DEV__: JSON.stringify(process.env.NODE_ENV !== 'production')
+    __DEV__: JSON.stringify(process.env.NODE_ENV !== 'production'),
+    __VERSION__: JSON.stringify(process.env.npm_package_version || '1.0.0')
   },
   // Enhanced logging for debugging
   logLevel: 'info',

@@ -1,0 +1,22 @@
+[5:06:17 PM] % pnpm build
+
+> engraving-processor-pro@1.0.0 build /Users/erst/Library/CloudStorage/Dropbox/Websites/x
+> echo '🔧 Building Engraving Processor Pro...' && rm -rf dist .vite && vue-tsc --noEmit --skipLibCheck && eslint . --quiet --max-warnings 0 && vite build && echo '✅ Build complete'
+
+🔧 Building Engraving Processor Pro...
+src/App.vue:290:14 - error TS1109: Expression expected.
+
+290 onUnmounted(()/// <reference types="../node_modules/.vue-global-types/vue_3.5_0_0_0.d.ts" />
+                 ~
+
+src/App.vue:290:15 - error TS1005: ',' expected.
+
+290 onUnmounted(()/// <reference types="../node_modules/.vue-global-types/vue_3.5_0_0_0.d.ts" />
+                  
+
+
+Found 2 errors in the same file, starting at: src/App.vue:290
+
+ ELIFECYCLE  Command failed with exit code 2.
+[5:06:36 PM] % 
+

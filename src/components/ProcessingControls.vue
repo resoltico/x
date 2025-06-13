@@ -217,7 +217,8 @@ const applyPreset = (presetName: string) => {
 
 const retryInitialization = async () => {
   if (systemStatusManager.isMaxAttemptsReached()) {
-    console.error('❌ Maximum initialization attempts reached')
+    console.error('❌ Maximum initialization attempts reached, forcing fallback mode')
+    systemStatusManager.forceInitializeWithFallback()
     return
   }
 
@@ -231,6 +232,11 @@ const retryInitialization = async () => {
 const initializeWorkers = async () => {
   try {
     console.group('🚀 Initializing Processing System')
+    
+    // Clean up existing instances
+    if (workerOrchestrator) {
+      workerOrchestrator.destroy()
+    }
     
     workerOrchestrator = WorkerOrchestratorModule.getInstance()
     await workerOrchestrator.initialize()

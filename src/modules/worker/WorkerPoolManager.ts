@@ -12,6 +12,7 @@ export class WorkerPoolManager {
   private workerFactory: WorkerFactory
   private isInitialized = false
   private initializationError: string | null = null
+  private fallbackWorkerCreated = false
 
   constructor(workerCount?: number) {
     this.workerFactory = WorkerFactory.getInstance()
@@ -19,7 +20,7 @@ export class WorkerPoolManager {
   }
 
   /**
-   * Initialize the worker pool
+   * Initialize the worker pool with enhanced fallback handling
    */
   async initialize(): Promise<void> {
     if (this.isInitialized) return
@@ -34,6 +35,9 @@ export class WorkerPoolManager {
       console.log('Environment:', env)
       console.log('Capabilities:', caps)
 
+      let successfulWorkers = 0
+
+      // Try to create regular workers first
       for (let i = 0; i < this.workerCount; i++) {
         try {
           const worker = await this.workerFactory.createWorker(i)
@@ -41,11 +45,18 @@ export class WorkerPoolManager {
             this.setupWorkerEventHandlers(worker, i)
             this.workers.push(worker)
             this.availableWorkers.push(worker)
+            successfulWorkers++
             console.log(`✅ Worker ${i} initialized successfully`)
           }
         } catch (workerError) {
           console.error(`❌ Failed to create worker ${i}:`, workerError)
         }
+      }
+      
+      // If no workers were created successfully, ensure we have at least a fallback
+      if (successfulWorkers === 0 && !this.fallbackWorkerCreated) {
+        console.warn('⚠️ No regular workers initialized, creating fallback worker...')
+        await this.createFallbackWorker()
       }
       
       if (this.workers.length === 0) {
@@ -58,6 +69,11 @@ export class WorkerPoolManager {
       
       this.isInitialized = true
       console.log(`✅ Successfully initialized ${this.workers.length} out of ${this.workerCount} requested workers`)
+      
+      if (successfulWorkers < this.workerCount) {
+        console.warn(`⚠️ Only ${successfulWorkers}/${this.workerCount} workers initialized successfully`)
+      }
+      
       console.groupEnd()
     } catch (error) {
       this.initializationError = error instanceof Error ? error.message : 'Unknown initialization error'
@@ -65,6 +81,90 @@ export class WorkerPoolManager {
       console.groupEnd()
       throw error
     }
+  }
+
+  /**
+   * Create a fallback inline worker as last resort
+   */
+  private async createFallbackWorker(): Promise<void> {
+    try {
+      console.log('🔧 Creating fallback inline worker...')
+      
+      // Get the inline worker code from WorkerFactory
+      const factory = WorkerFactory.getInstance()
+      const inlineCode = (factory as any).getInlineWorkerCode()
+      const blob = new Blob([inlineCode], { type: 'application/javascript' })
+      const workerUrl = URL.createObjectURL(blob)
+      
+      const fallbackWorker = new Worker(workerUrl, { name: 'fallback-worker' })
+      
+      // Test the fallback worker
+      const testResult = await this.testFallbackWorker(fallbackWorker)
+      if (testResult) {
+        this.setupWorkerEventHandlers(fallbackWorker, 999) // Use 999 as fallback worker index
+        this.workers.push(fallbackWorker)
+        this.availableWorkers.push(fallbackWorker)
+        this.fallbackWorkerCreated = true
+        console.log('✅ Fallback worker created successfully')
+      } else {
+        fallbackWorker.terminate()
+        throw new Error('Fallback worker test failed')
+      }
+      
+      // Clean up blob URL
+      URL.revokeObjectURL(workerUrl)
+      
+    } catch (error) {
+      console.error('❌ Failed to create fallback worker:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Test fallback worker
+   */
+  private testFallbackWorker(worker: Worker, timeout: number = 2000): Promise<boolean> {
+    return new Promise((resolve) => {
+      let resolved = false
+      const testId = `fallback-test-${Date.now()}`
+      
+      const timer = setTimeout(() => {
+        if (!resolved) {
+          resolved = true
+          resolve(false)
+        }
+      }, timeout)
+      
+      const onMessage = (event: MessageEvent) => {
+        if (event.data?.id === testId && !resolved) {
+          resolved = true
+          clearTimeout(timer)
+          worker.removeEventListener('message', onMessage)
+          worker.removeEventListener('error', onError)
+          resolve(true)
+        }
+      }
+      
+      const onError = () => {
+        if (!resolved) {
+          resolved = true
+          clearTimeout(timer)
+          worker.removeEventListener('message', onMessage)
+          worker.removeEventListener('error', onError)
+          resolve(false)
+        }
+      }
+      
+      worker.addEventListener('message', onMessage)
+      worker.addEventListener('error', onError)
+      
+      try {
+        worker.postMessage({ id: testId, type: 'test' })
+      } catch (error) {
+        console.warn('Failed to test fallback worker:', error)
+        onError()
+      }
+    })
   }
 
   /**
@@ -98,7 +198,7 @@ export class WorkerPoolManager {
   }
 
   /**
-   * Handle worker errors
+   * Handle worker errors with better recovery
    */
   private handleWorkerError(event: ErrorEvent, index?: number) {
     console.error(`💥 Worker ${index ?? 'unknown'} error:`, event)
@@ -108,7 +208,7 @@ export class WorkerPoolManager {
   }
 
   /**
-   * Replace a failed worker
+   * Replace a failed worker with enhanced fallback
    */
   private async replaceFailedWorker(failedWorker: Worker, index?: number) {
     try {
@@ -126,14 +226,24 @@ export class WorkerPoolManager {
         this.workers.splice(workerIndex, 1)
         
         // Try to create replacement worker
-        const newWorker = await this.workerFactory.createWorker(Date.now())
-        if (newWorker) {
-          this.setupWorkerEventHandlers(newWorker, Date.now())
-          this.workers.push(newWorker)
-          this.availableWorkers.push(newWorker)
-          console.log(`✅ Successfully replaced failed worker`)
-        } else {
-          console.error(`❌ Failed to create replacement worker`)
+        try {
+          const newWorker = await this.workerFactory.createWorker(Date.now())
+          if (newWorker) {
+            this.setupWorkerEventHandlers(newWorker, Date.now())
+            this.workers.push(newWorker)
+            this.availableWorkers.push(newWorker)
+            console.log(`✅ Successfully replaced failed worker`)
+          } else {
+            throw new Error('Failed to create replacement worker')
+          }
+        } catch (replacementError) {
+          console.error(`❌ Failed to create replacement worker:`, replacementError)
+          
+          // If we have no workers left and haven't created a fallback, create one
+          if (this.workers.length === 0 && !this.fallbackWorkerCreated) {
+            console.warn('⚠️ No workers left, creating emergency fallback...')
+            await this.createFallbackWorker()
+          }
         }
       }
       
@@ -293,6 +403,7 @@ export class WorkerPoolManager {
     this.activeTasksMap.clear()
     this.isInitialized = false
     this.initializationError = null
+    this.fallbackWorkerCreated = false
     
     console.log('✅ Worker pool destroyed')
   }
@@ -315,6 +426,19 @@ export class WorkerPoolManager {
     }
     
     return this.isReady()
+  }
+
+  /**
+   * Get detailed status for debugging
+   */
+  getDetailedStatus() {
+    return {
+      ...this.getStatus(),
+      fallbackWorkerCreated: this.fallbackWorkerCreated,
+      workerTypes: this.workers.map((_, index) => 
+        index === 999 ? 'fallback' : 'regular'
+      )
+    }
   }
 
   private getEnvironmentString(): string {
