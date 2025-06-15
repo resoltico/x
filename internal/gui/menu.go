@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/widget"
 	"github.com/sirupsen/logrus"
@@ -58,12 +59,12 @@ func (m *Menu) createFileMenu() *fyne.Menu {
 	openItem := fyne.NewMenuItem("Open Image...", func() {
 		m.openImageDialog()
 	})
-	openItem.Shortcut = &fyne.ShortcutDesktop{CustomShortcut: fyne.Shortcut{Key: fyne.KeyO, Modifier: fyne.KeyModifierShortcutDefault}}
+	openItem.Shortcut = &desktop.CustomShortcut{KeyName: fyne.KeyO, Modifier: fyne.KeyModifierShortcutDefault}
 
 	saveItem := fyne.NewMenuItem("Save Image...", func() {
 		m.saveImageDialog()
 	})
-	saveItem.Shortcut = &fyne.ShortcutDesktop{CustomShortcut: fyne.Shortcut{Key: fyne.KeyS, Modifier: fyne.KeyModifierShortcutDefault}}
+	saveItem.Shortcut = &desktop.CustomShortcut{KeyName: fyne.KeyS, Modifier: fyne.KeyModifierShortcutDefault}
 
 	return fyne.NewMenu("File",
 		openItem,
@@ -107,7 +108,11 @@ func (m *Menu) createHelpMenu() *fyne.Menu {
 
 // openImageDialog shows the open image dialog
 func (m *Menu) openImageDialog() {
-	fileDialog := dialog.NewFileOpen(func(reader fyne.URIReadCloser) {
+	fileDialog := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
+		if err != nil {
+			m.showErrorDialog("File Error", err)
+			return
+		}
 		if reader == nil {
 			return
 		}
@@ -143,9 +148,9 @@ func (m *Menu) openImageDialog() {
 		m.logger.WithField("filepath", filepath).Info("Image loaded successfully")
 	}, fyne.CurrentApp().Driver().AllWindows()[0])
 
-	// Set file filters
-	supportedFormats := m.loader.GetSupportedFormats()
-	fileDialog.SetFilter(storage.NewExtensionFileFilter(supportedFormats))
+	// Set file filters for image files
+	imageFilter := storage.NewExtensionFileFilter([]string{".jpg", ".jpeg", ".png", ".tiff", ".tif", ".bmp", ".JPG", ".JPEG", ".PNG", ".TIFF", ".TIF", ".BMP"})
+	fileDialog.SetFilter(imageFilter)
 	fileDialog.Show()
 }
 
@@ -156,7 +161,11 @@ func (m *Menu) saveImageDialog() {
 		return
 	}
 
-	fileDialog := dialog.NewFileSave(func(writer fyne.URIWriteCloser) {
+	fileDialog := dialog.NewFileSave(func(writer fyne.URIWriteCloser, err error) {
+		if err != nil {
+			m.showErrorDialog("File Error", err)
+			return
+		}
 		if writer == nil {
 			return
 		}

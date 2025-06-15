@@ -93,7 +93,7 @@ func (il *ImageLoader) isSupportedFormat(filename string) bool {
 
 // GetSupportedFormats returns a list of supported file formats
 func (il *ImageLoader) GetSupportedFormats() []string {
-	return []string{"*.jpg", "*.jpeg", "*.png", "*.tiff", "*.tif", "*.bmp"}
+	return []string{".jpg", ".jpeg", ".png", ".tiff", ".tif", ".bmp", ".JPG", ".JPEG", ".PNG", ".TIFF", ".TIF", ".BMP"}
 }
 
 // ValidateImage performs basic validation on a loaded image

@@ -45,8 +45,8 @@ type MainWindow struct {
 	// Layout containers
 	sidebar      *fyne.Container
 	imageArea    *fyne.Container
-	paramPanel   *fyne.Container
-	mainContent  *fyne.Container
+	paramPanel   *container.Split
+	mainContent  *container.Split
 }
 
 // NewMainWindow creates and initializes the main window
@@ -130,16 +130,14 @@ func (mw *MainWindow) setupLayout() {
 		mw.imageArea,
 		mw.paramPanel,
 	)
-	imageAndParams.SetOffset(0.7) // 70% for image, 30% for parameters
+	imageAndParams.SetOffset(0.75) // 75% for image, 25% for parameters
 	
-	// Create main layout with sidebar
-	mw.mainContent = container.NewBorder(
-		nil, // top
-		nil, // bottom
-		mw.sidebar, // left
-		nil, // right
+	// Create main layout with sidebar - use HSplit to ensure sidebar is visible
+	mw.mainContent = container.NewHSplit(
+		mw.sidebar,
 		imageAndParams,
 	)
+	mw.mainContent.SetOffset(0.25) // 25% for sidebar, 75% for content
 	
 	// Set window content
 	mw.window.SetContent(mw.mainContent)
@@ -151,6 +149,7 @@ func (mw *MainWindow) setupLayout() {
 // createSidebar creates the transformation category sidebar
 func (mw *MainWindow) createSidebar() *fyne.Container {
 	title := widget.NewRichTextFromMarkdown("## Transformations")
+	title.Wrapping = fyne.TextWrapWord
 	
 	// Create category accordions
 	categories := mw.registry.GetByCategory()
@@ -172,28 +171,33 @@ func (mw *MainWindow) createSidebar() *fyne.Container {
 				}
 			}(transformName))
 			
-			btn.Resize(fyne.NewSize(200, 35))
+			// Set minimum button size
+			btn.Resize(fyne.NewSize(180, 32))
 			items = append(items, btn)
 		}
 		
 		// Create accordion item
 		accordion := widget.NewAccordion()
-		accordion.Append(categoryName, container.NewVBox(items...))
+		item := widget.NewAccordionItem(categoryName, container.NewVBox(items...))
+		accordion.Append(item)
+		// Auto-expand the first category
+		if len(accordions) == 0 {
+			accordion.Open(0)
+		}
 		accordions = append(accordions, accordion)
 	}
 	
-	// Create scrollable sidebar
+	// Create scrollable sidebar with fixed width
 	sidebarContent := container.NewVBox(append([]fyne.CanvasObject{title}, accordions...)...)
 	scroll := container.NewScroll(sidebarContent)
-	scroll.Resize(fyne.NewSize(250, 600))
 	
-	return container.NewBorder(
-		nil, // top
-		nil, // bottom
-		nil, // left
-		nil, // right
+	// Create a border container to ensure minimum width
+	sidebar := container.NewBorder(
+		nil, nil, nil, nil,
 		scroll,
 	)
+	
+	return sidebar
 }
 
 // setupCallbacks sets up event callbacks between components

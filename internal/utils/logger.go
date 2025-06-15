@@ -16,16 +16,18 @@ func InitLogger(debugMode bool) *logrus.Logger {
 	// Set output to stdout
 	logger.SetOutput(os.Stdout)
 	
-	// Set format to JSON for structured logging
-	logger.SetFormatter(&logrus.JSONFormatter{
-		TimestampFormat: "2006-01-02 15:04:05",
-	})
-	
-	// Set log level based on debug mode
+	// Use text formatter instead of JSON for better readability in debug mode
 	if debugMode {
+		logger.SetFormatter(&logrus.TextFormatter{
+			FullTimestamp: true,
+			ForceColors:   true,
+		})
 		logger.SetLevel(logrus.DebugLevel)
 		logger.Debug("Debug mode enabled")
 	} else {
+		logger.SetFormatter(&logrus.JSONFormatter{
+			TimestampFormat: "2006-01-02 15:04:05",
+		})
 		logger.SetLevel(logrus.InfoLevel)
 	}
 	

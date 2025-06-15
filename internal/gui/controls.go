@@ -25,7 +25,7 @@ type Controls struct {
 	logger            *logrus.Logger
 	
 	// GUI components
-	container         *fyne.Container
+	container         *container.Split
 	transformList     *widget.List
 	paramContainer    *fyne.Container
 	addButton         *widget.Button
@@ -123,10 +123,10 @@ func (c *Controls) setupLayout() {
 
 // updateListItem updates a single item in the transformation list
 func (c *Controls) updateListItem(id int, obj fyne.CanvasObject) {
-	container := obj.(*container.Horizontal)
-	check := container.Objects[0].(*widget.Check)
-	label := container.Objects[1].(*widget.Label)
-	button := container.Objects[2].(*widget.Button)
+	hbox := obj.(*fyne.Container)
+	check := hbox.Objects[0].(*widget.Check)
+	label := hbox.Objects[1].(*widget.Label)
+	button := hbox.Objects[2].(*widget.Button)
 	
 	sequence := c.pipeline.GetTransformationSequence()
 	steps := sequence.GetSteps()
@@ -450,6 +450,6 @@ func (c *Controls) SetCallbacks(onTransformationChanged func()) {
 }
 
 // GetContainer returns the controls container
-func (c *Controls) GetContainer() *fyne.Container {
+func (c *Controls) GetContainer() *container.Split {
 	return c.container
 }

@@ -25,12 +25,12 @@ type Preview struct {
 	logger         *logrus.Logger
 	
 	// GUI components
-	container      *fyne.Container
+	container      *container.AppTabs
 	originalImage  *canvas.Image
 	processedImage *canvas.Image
 	originalLabel  *widget.Label
 	processedLabel *widget.Label
-	tabs           *container.TabContainer
+	tabs           *container.AppTabs
 	
 	// State
 	hasImage       bool
@@ -87,7 +87,7 @@ func (p *Preview) setupLayout() {
 	)
 	
 	// Create tab container
-	p.tabs = container.NewTabContainer(
+	p.tabs = container.NewAppTabs(
 		container.NewTabItem("Original", originalTab),
 		container.NewTabItem("Processed", processedTab),
 	)
@@ -162,7 +162,7 @@ func (p *Preview) UpdateProcessed(processed gocv.Mat) {
 	
 	// Switch to processed tab to show result
 	if p.hasImage {
-		p.tabs.SetTabIndex(1)
+		p.tabs.SelectIndex(1)
 	}
 	
 	p.logger.Debug("Updated processed image preview")
@@ -213,18 +213,18 @@ func (p *Preview) clearImages() {
 }
 
 // GetContainer returns the preview container
-func (p *Preview) GetContainer() *fyne.Container {
+func (p *Preview) GetContainer() *container.AppTabs {
 	return p.container
 }
 
 // SwitchToOriginal switches the view to the original image
 func (p *Preview) SwitchToOriginal() {
-	p.tabs.SetTabIndex(0)
+	p.tabs.SelectIndex(0)
 }
 
 // SwitchToProcessed switches the view to the processed image
 func (p *Preview) SwitchToProcessed() {
-	p.tabs.SetTabIndex(1)
+	p.tabs.SelectIndex(1)
 }
 
 // HasImage returns true if an image is currently loaded

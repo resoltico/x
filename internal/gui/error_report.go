@@ -111,14 +111,14 @@ Stack Trace:
 	)
 
 	// Create dialog
-	dialog := dialog.NewCustom("Error Details", "", content, fyne.CurrentApp().Driver().AllWindows()[0])
-	dialog.Resize(fyne.NewSize(700, 500))
+	errorDialog := dialog.NewCustom("Error Details", "", content, fyne.CurrentApp().Driver().AllWindows()[0])
+	errorDialog.Resize(fyne.NewSize(700, 500))
 
 	closeButton.OnTapped = func() {
-		dialog.Hide()
+		errorDialog.Hide()
 	}
 
-	dialog.Show()
+	errorDialog.Show()
 }
 
 // showReportDialog shows a dialog for reporting issues
@@ -153,7 +153,7 @@ func (er *ErrorReport) showReportDialog(err error, technicalDetails string) {
 	}
 
 	// Create dialog
-	dialog := dialog.NewCustomConfirm("Report Issue", "Submit", "Cancel",
+	reportDialog := dialog.NewCustomConfirm("Report Issue", "Submit", "Cancel",
 		form,
 		func(submit bool) {
 			if !submit {
@@ -190,7 +190,7 @@ Error: %s
 			clipboard := fyne.CurrentApp().Driver().AllWindows()[0].Clipboard()
 			clipboard.SetContent(report)
 
-			instructionDialog := dialog.ShowInformation("Report Prepared", 
+			dialog.ShowInformation("Report Prepared", 
 				"Bug report has been copied to your clipboard.\n\nPlease paste it into an email and send to:\nsupport@example.com", 
 				fyne.CurrentApp().Driver().AllWindows()[0])
 			
@@ -200,13 +200,11 @@ Error: %s
 				"user_description": descriptionEntry.Text,
 				"error":            err.Error(),
 			}).Info("Bug report generated")
-
-			_ = instructionDialog // Use the variable to avoid unused warning
 		},
 		fyne.CurrentApp().Driver().AllWindows()[0])
 
-	dialog.Resize(fyne.NewSize(500, 600))
-	dialog.Show()
+	reportDialog.Resize(fyne.NewSize(500, 600))
+	reportDialog.Show()
 }
 
 // ShowInfo displays an information message
@@ -226,8 +224,8 @@ func (er *ErrorReport) ShowWarning(title, message string) {
 		widget.NewLabel(message),
 	)
 
-	dialog := dialog.NewCustom(title, "OK", content, fyne.CurrentApp().Driver().AllWindows()[0])
-	dialog.Show()
+	warningDialog := dialog.NewCustom(title, "OK", content, fyne.CurrentApp().Driver().AllWindows()[0])
+	warningDialog.Show()
 
 	er.logger.WithFields(logrus.Fields{
 		"title":   title,
