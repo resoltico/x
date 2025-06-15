@@ -5,6 +5,7 @@ package models
 
 import (
 	"sync"
+	"unsafe"
 
 	"gocv.io/x/gocv"
 )
@@ -20,7 +21,9 @@ type ImageData struct {
 // NewImageData creates a new ImageData instance
 func NewImageData() *ImageData {
 	return &ImageData{
-		hasImage: false,
+		hasImage:  false,
+		original:  gocv.NewMat(),
+		processed: gocv.NewMat(),
 	}
 }
 
@@ -29,10 +32,26 @@ func (img *ImageData) SetOriginal(mat gocv.Mat) {
 	img.mu.Lock()
 	defer img.mu.Unlock()
 
+	// Close existing original if it exists and is valid
 	if !img.original.Empty() {
 		img.original.Close()
 	}
-	
+
+	// Check if the incoming mat has a valid internal pointer
+	// The issue is that sometimes a Mat with nil internal pointer is passed
+	if !isMatPointerValid(mat) {
+		img.original = gocv.NewMat()
+		img.hasImage = false
+		return
+	}
+
+	// Now it's safe to call Empty() since we verified the pointer
+	if mat.Empty() {
+		img.original = gocv.NewMat()
+		img.hasImage = false
+		return
+	}
+
 	img.original = mat.Clone()
 	img.hasImage = true
 }
@@ -42,10 +61,23 @@ func (img *ImageData) SetProcessed(mat gocv.Mat) {
 	img.mu.Lock()
 	defer img.mu.Unlock()
 
+	// Close existing processed if it exists and is valid
 	if !img.processed.Empty() {
 		img.processed.Close()
 	}
-	
+
+	// Check if the incoming mat has a valid internal pointer
+	if !isMatPointerValid(mat) {
+		img.processed = gocv.NewMat()
+		return
+	}
+
+	// Now it's safe to call Empty()
+	if mat.Empty() {
+		img.processed = gocv.NewMat()
+		return
+	}
+
 	img.processed = mat.Clone()
 }
 
@@ -54,7 +86,7 @@ func (img *ImageData) GetOriginal() gocv.Mat {
 	img.mu.RLock()
 	defer img.mu.RUnlock()
 
-	if img.original.Empty() {
+	if !img.hasImage || img.original.Empty() {
 		return gocv.NewMat()
 	}
 	return img.original.Clone()
@@ -89,7 +121,9 @@ func (img *ImageData) Clear() {
 	if !img.processed.Empty() {
 		img.processed.Close()
 	}
-	
+
+	img.original = gocv.NewMat()
+	img.processed = gocv.NewMat()
 	img.hasImage = false
 }
 
@@ -98,8 +132,27 @@ func (img *ImageData) GetDimensions() (int, int) {
 	img.mu.RLock()
 	defer img.mu.RUnlock()
 
-	if img.original.Empty() {
+	if !img.hasImage || img.original.Empty() {
 		return 0, 0
 	}
 	return img.original.Cols(), img.original.Rows()
+}
+
+// isMatPointerValid checks if the Mat's internal C pointer is valid
+// GoCV Mat wraps a C++ cv::Mat pointer, and if this is nil, method calls segfault
+func isMatPointerValid(mat gocv.Mat) bool {
+	// Get the internal pointer using unsafe operations
+	// GoCV Mat struct has a 'p' field that's a C pointer
+	// We need to check if this pointer is nil before calling any methods
+
+	// Use unsafe to access the first field of the Mat struct (the C pointer)
+	matPtr := unsafe.Pointer(&mat)
+	if matPtr == nil {
+		return false
+	}
+
+	// The first field in the GoCV Mat struct is the C pointer 'p'
+	// If this is nil (0x0), then the Mat is invalid
+	cPtr := *(*unsafe.Pointer)(matPtr)
+	return cPtr != nil
 }

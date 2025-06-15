@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"gocv.io/x/gocv"
 	"github.com/sirupsen/logrus"
+	"gocv.io/x/gocv"
 
 	"advanced-image-processing/internal/models"
 	"advanced-image-processing/internal/transforms"
@@ -19,21 +19,21 @@ import (
 
 // Pipeline manages the transformation sequence and processing
 type Pipeline struct {
-	mu         sync.RWMutex
-	registry   *transforms.TransformRegistry
-	sequence   *models.TransformationSequence
-	imageData  *models.ImageData
-	logger     *logrus.Logger
-	debouncer  *utils.Debouncer
-	
+	mu        sync.RWMutex
+	registry  *transforms.TransformRegistry
+	sequence  *models.TransformationSequence
+	imageData *models.ImageData
+	logger    *logrus.Logger
+	debouncer *utils.Debouncer
+
 	// Callbacks
-	onProgress   func(step int, total int, stepName string)
-	onComplete   func(result gocv.Mat)
-	onError      func(error)
-	
+	onProgress func(step int, total int, stepName string)
+	onComplete func(result gocv.Mat)
+	onError    func(error)
+
 	// Processing state
-	processing   bool
-	cancel       context.CancelFunc
+	processing bool
+	cancel     context.CancelFunc
 }
 
 // NewPipeline creates a new transformation pipeline
@@ -51,7 +51,7 @@ func NewPipeline(registry *transforms.TransformRegistry, imageData *models.Image
 func (p *Pipeline) SetCallbacks(onProgress func(int, int, string), onComplete func(gocv.Mat), onError func(error)) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	
+
 	p.onProgress = onProgress
 	p.onComplete = onComplete
 	p.onError = onError
@@ -75,7 +75,7 @@ func (p *Pipeline) AddTransformation(transformType string, params map[string]int
 
 	// Add to sequence
 	p.sequence.AddStep(transformType, params)
-	
+
 	p.logger.WithFields(logrus.Fields{
 		"transform": transformType,
 		"params":    params,
@@ -83,7 +83,7 @@ func (p *Pipeline) AddTransformation(transformType string, params map[string]int
 
 	// Trigger processing
 	p.triggerProcessing()
-	
+
 	return nil
 }
 
@@ -101,7 +101,7 @@ func (p *Pipeline) RemoveTransformation(index int) error {
 
 	// Trigger processing
 	p.triggerProcessing()
-	
+
 	return nil
 }
 
@@ -133,7 +133,7 @@ func (p *Pipeline) UpdateTransformation(index int, params map[string]interface{}
 
 	// Trigger processing
 	p.triggerProcessing()
-	
+
 	return nil
 }
 
@@ -176,17 +176,18 @@ func (p *Pipeline) processImage() {
 
 		// Get original image
 		original := p.imageData.GetOriginal()
+		defer original.Close()
+
 		if original.Empty() {
 			if p.onError != nil {
 				p.onError(fmt.Errorf("no image loaded"))
 			}
 			return
 		}
-		defer original.Close()
 
 		// Get transformation steps
 		steps := p.sequence.GetSteps()
-		
+
 		// Start with original image
 		current := original.Clone()
 		defer current.Close()
@@ -224,9 +225,18 @@ func (p *Pipeline) processImage() {
 					"transform": step.Type,
 					"error":     err,
 				}).Error("Transformation failed")
-				
+
 				if p.onError != nil {
 					p.onError(fmt.Errorf("transformation %s failed: %w", step.Type, err))
+				}
+				return
+			}
+
+			// Validate result before using it
+			if result.Empty() {
+				result.Close()
+				if p.onError != nil {
+					p.onError(fmt.Errorf("transformation %s produced empty result", step.Type))
 				}
 				return
 			}
@@ -241,7 +251,7 @@ func (p *Pipeline) processImage() {
 		// Update processed image
 		p.imageData.SetProcessed(current)
 
-		// Report completion
+		// Report completion - clone the result to avoid double free
 		if p.onComplete != nil {
 			result := current.Clone()
 			p.onComplete(result)
@@ -276,16 +286,24 @@ func (p *Pipeline) ClearSequence() {
 	p.sequence.Clear()
 	p.logger.Debug("Cleared transformation sequence")
 
-	// Reset to original image
+	// Reset to original image - DO NOT manually manage Mat memory here
+	// Let the imageData handle its own memory management
 	if p.imageData.HasImage() {
+		// Get the original image (this returns a clone)
 		original := p.imageData.GetOriginal()
+
+		// Set it as processed (this will clone it again internally)
 		p.imageData.SetProcessed(original)
+
+		// Close our local copy
 		original.Close()
 
+		// Report completion with a fresh clone to avoid double free
 		if p.onComplete != nil {
+			// Get a fresh processed image clone for the callback
 			result := p.imageData.GetProcessed()
 			p.onComplete(result)
-			result.Close()
+			// The callback receiver is responsible for closing this Mat
 		}
 	}
 }

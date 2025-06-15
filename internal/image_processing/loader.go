@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"gocv.io/x/gocv"
 	"github.com/sirupsen/logrus"
+	"gocv.io/x/gocv"
 )
 
 // ImageLoader handles loading and saving of images
@@ -36,7 +36,7 @@ func (il *ImageLoader) LoadImage(filepath string) (gocv.Mat, error) {
 	// Load the image
 	mat := gocv.IMRead(filepath, gocv.IMReadColor)
 	if mat.Empty() {
-		return gocv.NewMat(), fmt.Errorf("failed to load image: %s", filepath)
+		return gocv.NewMat(), fmt.Errorf("failed to load image: %s (file may be corrupted or not exist)", filepath)
 	}
 
 	il.logger.WithFields(logrus.Fields{
@@ -57,9 +57,10 @@ func (il *ImageLoader) SaveImage(mat gocv.Mat, filepath string) error {
 
 	il.logger.WithField("filepath", filepath).Info("Saving image")
 
-	// Ensure the output format is PNG
+	// Ensure the output format is PNG for best compatibility
 	if !strings.HasSuffix(strings.ToLower(filepath), ".png") {
-		filepath = strings.TrimSuffix(filepath, filepath[strings.LastIndex(filepath, "."):]) + ".png"
+		ext := filepath[strings.LastIndex(filepath, "."):]
+		filepath = strings.TrimSuffix(filepath, ext) + ".png"
 	}
 
 	// Save the image
@@ -82,7 +83,7 @@ func (il *ImageLoader) SaveImage(mat gocv.Mat, filepath string) error {
 func (il *ImageLoader) isSupportedFormat(filename string) bool {
 	ext := strings.ToLower(filepath.Ext(filename))
 	supportedFormats := []string{".jpg", ".jpeg", ".png", ".tiff", ".tif", ".bmp"}
-	
+
 	for _, format := range supportedFormats {
 		if ext == format {
 			return true
@@ -119,11 +120,17 @@ func (il *ImageLoader) ValidateImage(mat gocv.Mat) error {
 		return fmt.Errorf("unsupported number of channels: %d", channels)
 	}
 
+	// Check data type
+	matType := mat.Type()
+	if matType != gocv.MatTypeCV8UC1 && matType != gocv.MatTypeCV8UC3 && matType != gocv.MatTypeCV8UC4 {
+		il.logger.WithField("type", matType).Warn("Unusual image data type detected")
+	}
+
 	il.logger.WithFields(logrus.Fields{
 		"width":    mat.Cols(),
 		"height":   mat.Rows(),
 		"channels": channels,
-		"type":     mat.Type(),
+		"type":     matType,
 	}).Debug("Image validation passed")
 
 	return nil

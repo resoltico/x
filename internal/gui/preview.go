@@ -20,10 +20,10 @@ import (
 
 // Preview handles the display of original and processed images
 type Preview struct {
-	mu             sync.RWMutex
-	imageData      *models.ImageData
-	logger         *logrus.Logger
-	
+	mu        sync.RWMutex
+	imageData *models.ImageData
+	logger    *logrus.Logger
+
 	// GUI components
 	container      *container.AppTabs
 	originalImage  *canvas.Image
@@ -31,9 +31,9 @@ type Preview struct {
 	originalLabel  *widget.Label
 	processedLabel *widget.Label
 	tabs           *container.AppTabs
-	
+
 	// State
-	hasImage       bool
+	hasImage bool
 }
 
 // NewPreview creates a new image preview component
@@ -43,10 +43,10 @@ func NewPreview(imageData *models.ImageData, logger *logrus.Logger) *Preview {
 		logger:    logger,
 		hasImage:  false,
 	}
-	
+
 	p.initializeComponents()
 	p.setupLayout()
-	
+
 	return p
 }
 
@@ -56,11 +56,11 @@ func (p *Preview) initializeComponents() {
 	p.originalImage = canvas.NewImageFromResource(nil)
 	p.originalImage.FillMode = canvas.ImageFillContain
 	p.originalImage.SetMinSize(fyne.NewSize(400, 300))
-	
+
 	p.processedImage = canvas.NewImageFromResource(nil)
 	p.processedImage.FillMode = canvas.ImageFillContain
 	p.processedImage.SetMinSize(fyne.NewSize(400, 300))
-	
+
 	// Create labels
 	p.originalLabel = widget.NewLabel("No image loaded")
 	p.processedLabel = widget.NewLabel("No processing applied")
@@ -76,7 +76,7 @@ func (p *Preview) setupLayout() {
 		nil,             // right
 		container.NewScroll(p.originalImage),
 	)
-	
+
 	// Processed image tab
 	processedTab := container.NewBorder(
 		p.processedLabel, // top
@@ -85,13 +85,13 @@ func (p *Preview) setupLayout() {
 		nil,              // right
 		container.NewScroll(p.processedImage),
 	)
-	
+
 	// Create tab container
 	p.tabs = container.NewAppTabs(
 		container.NewTabItem("Original", originalTab),
 		container.NewTabItem("Processed", processedTab),
 	)
-	
+
 	p.container = p.tabs
 }
 
@@ -99,38 +99,38 @@ func (p *Preview) setupLayout() {
 func (p *Preview) UpdateOriginal() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	
+
 	if !p.imageData.HasImage() {
 		p.clearImages()
 		return
 	}
-	
+
 	// Get original image
 	original := p.imageData.GetOriginal()
 	defer original.Close()
-	
+
 	if original.Empty() {
 		p.clearImages()
 		return
 	}
-	
+
 	// Convert to displayable format
 	img, err := p.matToImage(original)
 	if err != nil {
 		p.logger.WithError(err).Error("Failed to convert original image for display")
 		return
 	}
-	
+
 	// Update display
 	p.originalImage.Image = img
 	p.originalImage.Refresh()
-	
+
 	// Update label
 	width, height := p.imageData.GetDimensions()
 	p.originalLabel.SetText(fmt.Sprintf("Original Image (%dx%d)", width, height))
-	
+
 	p.hasImage = true
-	
+
 	p.logger.Debug("Updated original image preview")
 }
 
@@ -138,33 +138,33 @@ func (p *Preview) UpdateOriginal() {
 func (p *Preview) UpdateProcessed(processed gocv.Mat) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	
+
 	if processed.Empty() {
 		p.processedImage.Image = nil
 		p.processedImage.Refresh()
 		p.processedLabel.SetText("Processing failed")
 		return
 	}
-	
+
 	// Convert to displayable format
 	img, err := p.matToImage(processed)
 	if err != nil {
 		p.logger.WithError(err).Error("Failed to convert processed image for display")
 		return
 	}
-	
+
 	// Update display
 	p.processedImage.Image = img
 	p.processedImage.Refresh()
-	
+
 	// Update label
 	p.processedLabel.SetText(fmt.Sprintf("Processed Image (%dx%d)", processed.Cols(), processed.Rows()))
-	
+
 	// Switch to processed tab to show result
 	if p.hasImage {
 		p.tabs.SelectIndex(1)
 	}
-	
+
 	p.logger.Debug("Updated processed image preview")
 }
 
@@ -173,29 +173,33 @@ func (p *Preview) matToImage(mat gocv.Mat) (image.Image, error) {
 	if mat.Empty() {
 		return nil, fmt.Errorf("empty matrix")
 	}
-	
+
 	// Convert to RGB if needed
 	var displayMat gocv.Mat
+	defer func() {
+		if !displayMat.Empty() && displayMat.Ptr() != mat.Ptr() {
+			displayMat.Close()
+		}
+	}()
+
 	if mat.Channels() == 1 {
 		// Grayscale to RGB
 		displayMat = gocv.NewMat()
 		gocv.CvtColor(mat, &displayMat, gocv.ColorGrayToRGB)
-		defer displayMat.Close()
 	} else if mat.Channels() == 3 {
 		// BGR to RGB
 		displayMat = gocv.NewMat()
 		gocv.CvtColor(mat, &displayMat, gocv.ColorBGRToRGB)
-		defer displayMat.Close()
 	} else {
 		displayMat = mat
 	}
-	
+
 	// Convert to Go image
 	img, err := displayMat.ToImage()
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert matrix to image: %w", err)
 	}
-	
+
 	return img, nil
 }
 
@@ -205,10 +209,10 @@ func (p *Preview) clearImages() {
 	p.originalImage.Refresh()
 	p.processedImage.Image = nil
 	p.processedImage.Refresh()
-	
+
 	p.originalLabel.SetText("No image loaded")
 	p.processedLabel.SetText("No processing applied")
-	
+
 	p.hasImage = false
 }
 

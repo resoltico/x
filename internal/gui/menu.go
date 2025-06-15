@@ -21,21 +21,21 @@ import (
 
 // Menu handles menu bar and file operations
 type Menu struct {
-	loader       *image_processing.ImageLoader
-	imageData    *models.ImageData
-	pipeline     *image_processing.Pipeline
-	presetMgr    *presets.Manager
-	logger       *logrus.Logger
-	
+	loader    *image_processing.ImageLoader
+	imageData *models.ImageData
+	pipeline  *image_processing.Pipeline
+	presetMgr *presets.Manager
+	logger    *logrus.Logger
+
 	// Callbacks
 	onImageLoaded  func()
 	onPresetLoaded func()
 }
 
 // NewMenu creates a new menu component
-func NewMenu(loader *image_processing.ImageLoader, imageData *models.ImageData, 
+func NewMenu(loader *image_processing.ImageLoader, imageData *models.ImageData,
 	pipeline *image_processing.Pipeline, presetMgr *presets.Manager, logger *logrus.Logger) *Menu {
-	
+
 	return &Menu{
 		loader:    loader,
 		imageData: imageData,
@@ -120,21 +120,41 @@ func (m *Menu) openImageDialog() {
 
 		// Load the image
 		filepath := reader.URI().Path()
+		m.logger.WithField("filepath", filepath).Info("Attempting to load image")
+
 		mat, err := m.loader.LoadImage(filepath)
 		if err != nil {
 			m.showErrorDialog("Failed to load image", err)
 			return
 		}
 
-		// Validate the image
+		// Ensure we have a valid Mat before proceeding
+		if mat.Empty() {
+			mat.Close()
+			m.showErrorDialog("Invalid image", fmt.Errorf("loaded image is empty: %s", filepath))
+			return
+		}
+
+		// Validate the image before using it
 		if err := m.loader.ValidateImage(mat); err != nil {
 			mat.Close()
 			m.showErrorDialog("Invalid image", err)
 			return
 		}
 
-		// Set the image data
+		// Log successful loading before setting the data
+		m.logger.WithFields(logrus.Fields{
+			"filepath": filepath,
+			"width":    mat.Cols(),
+			"height":   mat.Rows(),
+			"channels": mat.Channels(),
+		}).Info("Image loaded and validated successfully")
+
+		// Set the image data - this is where the crash was occurring
+		// The ImageData.SetOriginal method now has proper validation
 		m.imageData.SetOriginal(mat)
+
+		// Close the original Mat since SetOriginal clones it
 		mat.Close()
 
 		// Clear any existing transformations and reset to original
@@ -145,7 +165,7 @@ func (m *Menu) openImageDialog() {
 			m.onImageLoaded()
 		}
 
-		m.logger.WithField("filepath", filepath).Info("Image loaded successfully")
+		m.logger.WithField("filepath", filepath).Info("Image loading completed successfully")
 	}, fyne.CurrentApp().Driver().AllWindows()[0])
 
 	// Set file filters for image files
@@ -173,11 +193,13 @@ func (m *Menu) saveImageDialog() {
 
 		// Get processed image, or original if no processing applied
 		var imageToSave = m.imageData.GetProcessed()
+		defer imageToSave.Close()
+
 		if imageToSave.Empty() {
 			imageToSave.Close()
 			imageToSave = m.imageData.GetOriginal()
+			defer imageToSave.Close()
 		}
-		defer imageToSave.Close()
 
 		if imageToSave.Empty() {
 			m.showErrorDialog("Save Error", fmt.Errorf("no image to save"))
@@ -310,7 +332,7 @@ func (m *Menu) loadPresetDialog() {
 // managePresetsDialog shows the preset management dialog
 func (m *Menu) managePresetsDialog() {
 	presets := m.presetMgr.ListPresets()
-	
+
 	presetList := widget.NewList(
 		func() int { return len(presets) },
 		func() fyne.CanvasObject {
@@ -332,7 +354,7 @@ func (m *Menu) managePresetsDialog() {
 	deleteButton := widget.NewButton("Delete Selected", func() {
 		if selectedIndex >= 0 && selectedIndex < len(presets) {
 			presetName := presets[selectedIndex].Name
-			confirm := dialog.NewConfirm("Delete Preset", 
+			confirm := dialog.NewConfirm("Delete Preset",
 				fmt.Sprintf("Are you sure you want to delete preset '%s'?", presetName),
 				func(confirmed bool) {
 					if confirmed {
