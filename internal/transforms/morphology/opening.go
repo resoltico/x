@@ -53,8 +53,17 @@ func (o *OpeningTransform) Apply(input gocv.Mat, params map[string]interface{}) 
 	defer kernel.Close()
 
 	// Apply opening (erosion followed by dilation)
+	// Updated function signature - removed extra parameters
 	output := gocv.NewMat()
-	gocv.MorphologyEx(input, &output, gocv.MorphOpen, kernel, image.Pt(-1, -1), iterations, gocv.BorderConstant, image.Black)
+	for i := 0; i < iterations; i++ {
+		if i == 0 {
+			gocv.MorphologyEx(input, &output, gocv.MorphOpen, kernel)
+		} else {
+			temp := output.Clone()
+			gocv.MorphologyEx(temp, &output, gocv.MorphOpen, kernel)
+			temp.Close()
+		}
+	}
 
 	return output, nil
 }

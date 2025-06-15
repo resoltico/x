@@ -1,44 +1,17 @@
-Last login: Sat Jun 14 02:15:35 on ttys000
-[3:23:24 AM] % go mod download
-[3:23:59 AM] % go mod tidy
-go: downloading github.com/rymdport/portal v0.4.1
-go: downloading github.com/fyne-io/oksvg v0.1.0
-go: downloading github.com/hack-pad/go-indexeddb v0.3.2
-go: downloading github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
-go: downloading github.com/jeandeaual/go-locale v0.0.0-20241217141322-fcc2cadd6f08
-go: downloading github.com/nicksnyder/go-i18n/v2 v2.5.1
-go: downloading github.com/go-text/typesetting-utils v0.0.0-20241103174707-87a29e9e6066
-go: downloading gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f
-go: downloading github.com/pkg/profile v1.7.0
-go: downloading github.com/hack-pad/safejs v0.1.0
-go: downloading github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e
-go: downloading github.com/felixge/fgprof v0.9.3
-go: downloading github.com/google/pprof v0.0.0-20211214055906-6f57359322fd
-go: finding module for package github.com/kr/text
-go: downloading github.com/kr/text v0.2.0
-go: found github.com/kr/text in github.com/kr/text v0.2.0
-[3:24:35 AM] % go build -o build/AdvancedImageProcessing ./cmd/app
-# advanced-image-processing/internal/transforms/binarization
-internal/transforms/binarization/niblack.go:69:40: cannot use maxValue (variable of type float64) as float32 value in argument to gocv.AdaptiveThreshold
-internal/transforms/binarization/niblack.go:69:111: cannot use c (variable of type float64) as float32 value in argument to gocv.AdaptiveThreshold
-internal/transforms/binarization/otsu.go:47:35: cannot use maxValue (variable of type float64) as float32 value in argument to gocv.Threshold
-internal/transforms/binarization/sauvola.go:69:40: cannot use maxValue (variable of type float64) as float32 value in argument to gocv.AdaptiveThreshold
-internal/transforms/binarization/sauvola.go:69:115: cannot use c (variable of type float64) as float32 value in argument to gocv.AdaptiveThreshold
-# advanced-image-processing/internal/transforms/morphology
-internal/transforms/morphology/closing.go:57:61: too many arguments in call to gocv.MorphologyEx
-	have (gocv.Mat, *gocv.Mat, gocv.MorphType, gocv.Mat, image.Point, int, gocv.BorderType, *image.Uniform)
-	want (gocv.Mat, *gocv.Mat, gocv.MorphType, gocv.Mat)
-internal/transforms/morphology/dilation.go:57:38: too many arguments in call to gocv.Dilate
-	have (gocv.Mat, *gocv.Mat, gocv.Mat, image.Point, int, gocv.BorderType, *image.Uniform)
-	want (gocv.Mat, *gocv.Mat, gocv.Mat)
-internal/transforms/morphology/erosion.go:57:37: too many arguments in call to gocv.Erode
-	have (gocv.Mat, *gocv.Mat, gocv.Mat, image.Point, int, gocv.BorderType, *image.Uniform)
-	want (gocv.Mat, *gocv.Mat, gocv.Mat)
-internal/transforms/morphology/opening.go:57:60: too many arguments in call to gocv.MorphologyEx
-	have (gocv.Mat, *gocv.Mat, gocv.MorphType, gocv.Mat, image.Point, int, gocv.BorderType, *image.Uniform)
-	want (gocv.Mat, *gocv.Mat, gocv.MorphType, gocv.Mat)
-[3:25:40 AM] % 
-
+[3:53:53 AM] % go build -o build/AdvancedImageProcessing ./cmd/app
+# advanced-image-processing/internal/gui
+internal/gui/preview.go:33:28: undefined: container.TabContainer
+internal/gui/controls.go:117:16: cannot use container.NewVSplit(listSection, paramSection) (value of type *container.Split) as *fyne.Container value in assignment
+internal/gui/controls.go:121:14: c.container.SetOffset undefined (type *fyne.Container has no field or method SetOffset)
+internal/gui/controls.go:126:31: undefined: container.Horizontal
+internal/gui/error_report.go:193:25: dialog.ShowInformation("Report Prepared", "Bug report has been copied to your clipboard.\n\nPlease paste it into an email and send to:\nsupport@example.com", fyne.CurrentApp().Driver().AllWindows()[0]) (no value) used as value
+internal/gui/menu.go:61:28: undefined: fyne.ShortcutDesktop
+internal/gui/menu.go:61:60: invalid composite literal type fyne.Shortcut
+internal/gui/menu.go:66:28: undefined: fyne.ShortcutDesktop
+internal/gui/menu.go:66:60: invalid composite literal type fyne.Shortcut
+internal/gui/menu.go:110:35: cannot use func(reader fyne.URIReadCloser) {…} (value of type func(reader fyne.URIReadCloser)) as func(reader fyne.URIReadCloser, err error) value in argument to dialog.NewFileOpen
+internal/gui/menu.go:110:35: too many errors
+[3:54:09 AM] % 
 
 
 

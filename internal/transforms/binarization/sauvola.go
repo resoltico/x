@@ -65,8 +65,9 @@ func (s *SauvolaTransform) Apply(input gocv.Mat, params map[string]interface{}) 
 	}
 
 	// Apply adaptive thresholding (using Gaussian method as approximation for Sauvola)
+	// Convert float64 to float32 for gocv function
 	output := gocv.NewMat()
-	gocv.AdaptiveThreshold(gray, &output, maxValue, gocv.AdaptiveThresholdGaussian, gocv.ThresholdBinary, blockSize, c)
+	gocv.AdaptiveThreshold(gray, &output, float32(maxValue), gocv.AdaptiveThresholdGaussian, gocv.ThresholdBinary, blockSize, float32(c))
 
 	return output, nil
 }

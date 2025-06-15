@@ -53,8 +53,17 @@ func (d *DilationTransform) Apply(input gocv.Mat, params map[string]interface{})
 	defer kernel.Close()
 
 	// Apply dilation
+	// Updated function signature - removed extra parameters
 	output := gocv.NewMat()
-	gocv.Dilate(input, &output, kernel, image.Pt(-1, -1), iterations, gocv.BorderConstant, image.Black)
+	for i := 0; i < iterations; i++ {
+		if i == 0 {
+			gocv.Dilate(input, &output, kernel)
+		} else {
+			temp := output.Clone()
+			gocv.Dilate(temp, &output, kernel)
+			temp.Close()
+		}
+	}
 
 	return output, nil
 }

@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/widget"
@@ -106,170 +107,7 @@ func (m *Menu) createHelpMenu() *fyne.Menu {
 
 // openImageDialog shows the open image dialog
 func (m *Menu) openImageDialog() {
-	dialog := dialog.NewCustomConfirm("Save Preset", "Save", "Cancel",
-		form,
-		func(save bool) {
-			if !save {
-				return
-			}
-
-			name := nameEntry.Text
-			if name == "" {
-				m.showErrorDialog("Invalid Name", fmt.Errorf("preset name cannot be empty"))
-				return
-			}
-
-			if m.presetMgr.PresetExists(name) {
-				m.showErrorDialog("Preset Exists", fmt.Errorf("a preset with this name already exists"))
-				return
-			}
-
-			description := descEntry.Text
-			preset, err := m.presetMgr.CreatePresetFromSequence(name, description, sequence)
-			if err != nil {
-				m.showErrorDialog("Failed to save preset", err)
-				return
-			}
-
-			m.logger.WithField("preset", preset.Name).Info("Preset saved successfully")
-		},
-		fyne.CurrentApp().Driver().AllWindows()[0])
-
-	dialog.Show()
-}
-
-// loadPresetDialog shows the load preset dialog
-func (m *Menu) loadPresetDialog() {
-	presetNames := m.presetMgr.GetPresetNames()
-	if len(presetNames) == 0 {
-		m.showInfoDialog("No Presets", "No presets available. Create some presets first.")
-		return
-	}
-
-	presetList := widget.NewList(
-		func() int { return len(presetNames) },
-		func() fyne.CanvasObject {
-			return widget.NewLabel("Preset")
-		},
-		func(id int, obj fyne.CanvasObject) {
-			if id < len(presetNames) {
-				obj.(*widget.Label).SetText(presetNames[id])
-			}
-		},
-	)
-
-	var selectedPreset string
-	presetList.OnSelected = func(id int) {
-		if id < len(presetNames) {
-			selectedPreset = presetNames[id]
-		}
-	}
-
-	dialog := dialog.NewCustomConfirm("Load Preset", "Load", "Cancel",
-		presetList,
-		func(load bool) {
-			if !load || selectedPreset == "" {
-				return
-			}
-
-			sequence, err := m.presetMgr.ApplyPreset(selectedPreset)
-			if err != nil {
-				m.showErrorDialog("Failed to load preset", err)
-				return
-			}
-
-			m.pipeline.LoadSequence(sequence)
-
-			// Trigger callback
-			if m.onPresetLoaded != nil {
-				m.onPresetLoaded()
-			}
-
-			m.logger.WithField("preset", selectedPreset).Info("Preset loaded successfully")
-		},
-		fyne.CurrentApp().Driver().AllWindows()[0])
-
-	dialog.Resize(fyne.NewSize(400, 300))
-	dialog.Show()
-}
-
-// managePresetsDialog shows the preset management dialog
-func (m *Menu) managePresetsDialog() {
-	presets := m.presetMgr.ListPresets()
-	
-	presetList := widget.NewList(
-		func() int { return len(presets) },
-		func() fyne.CanvasObject {
-			return widget.NewLabel("Preset")
-		},
-		func(id int, obj fyne.CanvasObject) {
-			if id < len(presets) {
-				preset := presets[id]
-				obj.(*widget.Label).SetText(fmt.Sprintf("%s - %s", preset.Name, preset.GetSummary()))
-			}
-		},
-	)
-
-	deleteButton := widget.NewButton("Delete Selected", func() {
-		// Implementation for delete
-	})
-
-	content := container.NewBorder(
-		nil,
-		deleteButton,
-		nil,
-		nil,
-		presetList,
-	)
-
-	dialog := dialog.NewCustom("Manage Presets", "Close", content, fyne.CurrentApp().Driver().AllWindows()[0])
-	dialog.Resize(fyne.NewSize(500, 400))
-	dialog.Show()
-}
-
-// showAboutDialog shows the about dialog
-func (m *Menu) showAboutDialog() {
-	content := widget.NewRichTextFromMarkdown(`
-# Advanced Image Processing
-
-**Version:** 1.0  
-**Author:** Ervins Strauhmanis  
-**License:** MIT
-
-A powerful image processing application for historical illustrations, engravings, and document scans.
-
-## Features
-- Multiple binarization algorithms (Otsu, Niblack, Sauvola)
-- Morphological operations (Erosion, Dilation)
-- Noise reduction filters
-- Real-time preview
-- Preset management
-- Extensible architecture
-
-Built with Go, Fyne, and OpenCV.
-`)
-
-	dialog := dialog.NewCustom("About", "Close", content, fyne.CurrentApp().Driver().AllWindows()[0])
-	dialog.Resize(fyne.NewSize(400, 500))
-	dialog.Show()
-}
-
-// showErrorDialog shows an error dialog
-func (m *Menu) showErrorDialog(title string, err error) {
-	dialog.ShowError(err, fyne.CurrentApp().Driver().AllWindows()[0])
-	m.logger.WithError(err).Error(title)
-}
-
-// showInfoDialog shows an info dialog
-func (m *Menu) showInfoDialog(title, message string) {
-	dialog.ShowInformation(title, message, fyne.CurrentApp().Driver().AllWindows()[0])
-}
-
-// SetCallbacks sets callback functions
-func (m *Menu) SetCallbacks(onImageLoaded, onPresetLoaded func()) {
-	m.onImageLoaded = onImageLoaded
-	m.onPresetLoaded = onPresetLoaded
-} := dialog.NewFileOpen(func(reader fyne.URIReadCloser) {
+	fileDialog := dialog.NewFileOpen(func(reader fyne.URIReadCloser) {
 		if reader == nil {
 			return
 		}
@@ -307,8 +145,8 @@ func (m *Menu) SetCallbacks(onImageLoaded, onPresetLoaded func()) {
 
 	// Set file filters
 	supportedFormats := m.loader.GetSupportedFormats()
-	dialog.SetFilter(storage.NewExtensionFileFilter(supportedFormats))
-	dialog.Show()
+	fileDialog.SetFilter(storage.NewExtensionFileFilter(supportedFormats))
+	fileDialog.Show()
 }
 
 // saveImageDialog shows the save image dialog
@@ -318,7 +156,7 @@ func (m *Menu) saveImageDialog() {
 		return
 	}
 
-	dialog := dialog.NewFileSave(func(writer fyne.URIWriteCloser) {
+	fileDialog := dialog.NewFileSave(func(writer fyne.URIWriteCloser) {
 		if writer == nil {
 			return
 		}
@@ -347,8 +185,8 @@ func (m *Menu) saveImageDialog() {
 		m.logger.WithField("filepath", filepath).Info("Image saved successfully")
 	}, fyne.CurrentApp().Driver().AllWindows()[0])
 
-	dialog.SetFileName("processed_image.png")
-	dialog.Show()
+	fileDialog.SetFileName("processed_image.png")
+	fileDialog.Show()
 }
 
 // savePresetDialog shows the save preset dialog
@@ -373,4 +211,190 @@ func (m *Menu) savePresetDialog() {
 		},
 	}
 
-	dialog
+	confirmDialog := dialog.NewCustomConfirm("Save Preset", "Save", "Cancel",
+		form,
+		func(save bool) {
+			if !save {
+				return
+			}
+
+			name := nameEntry.Text
+			if name == "" {
+				m.showErrorDialog("Invalid Name", fmt.Errorf("preset name cannot be empty"))
+				return
+			}
+
+			if m.presetMgr.PresetExists(name) {
+				m.showErrorDialog("Preset Exists", fmt.Errorf("a preset with this name already exists"))
+				return
+			}
+
+			description := descEntry.Text
+			preset, err := m.presetMgr.CreatePresetFromSequence(name, description, sequence)
+			if err != nil {
+				m.showErrorDialog("Failed to save preset", err)
+				return
+			}
+
+			m.logger.WithField("preset", preset.Name).Info("Preset saved successfully")
+		},
+		fyne.CurrentApp().Driver().AllWindows()[0])
+
+	confirmDialog.Show()
+}
+
+// loadPresetDialog shows the load preset dialog
+func (m *Menu) loadPresetDialog() {
+	presetNames := m.presetMgr.GetPresetNames()
+	if len(presetNames) == 0 {
+		m.showInfoDialog("No Presets", "No presets available. Create some presets first.")
+		return
+	}
+
+	presetList := widget.NewList(
+		func() int { return len(presetNames) },
+		func() fyne.CanvasObject {
+			return widget.NewLabel("Preset")
+		},
+		func(id int, obj fyne.CanvasObject) {
+			if id < len(presetNames) {
+				obj.(*widget.Label).SetText(presetNames[id])
+			}
+		},
+	)
+
+	var selectedPreset string
+	presetList.OnSelected = func(id int) {
+		if id < len(presetNames) {
+			selectedPreset = presetNames[id]
+		}
+	}
+
+	confirmDialog := dialog.NewCustomConfirm("Load Preset", "Load", "Cancel",
+		presetList,
+		func(load bool) {
+			if !load || selectedPreset == "" {
+				return
+			}
+
+			sequence, err := m.presetMgr.ApplyPreset(selectedPreset)
+			if err != nil {
+				m.showErrorDialog("Failed to load preset", err)
+				return
+			}
+
+			m.pipeline.LoadSequence(sequence)
+
+			// Trigger callback
+			if m.onPresetLoaded != nil {
+				m.onPresetLoaded()
+			}
+
+			m.logger.WithField("preset", selectedPreset).Info("Preset loaded successfully")
+		},
+		fyne.CurrentApp().Driver().AllWindows()[0])
+
+	confirmDialog.Resize(fyne.NewSize(400, 300))
+	confirmDialog.Show()
+}
+
+// managePresetsDialog shows the preset management dialog
+func (m *Menu) managePresetsDialog() {
+	presets := m.presetMgr.ListPresets()
+	
+	presetList := widget.NewList(
+		func() int { return len(presets) },
+		func() fyne.CanvasObject {
+			return widget.NewLabel("Preset")
+		},
+		func(id int, obj fyne.CanvasObject) {
+			if id < len(presets) {
+				preset := presets[id]
+				obj.(*widget.Label).SetText(fmt.Sprintf("%s - %s", preset.Name, preset.GetSummary()))
+			}
+		},
+	)
+
+	var selectedIndex int = -1
+	presetList.OnSelected = func(id int) {
+		selectedIndex = id
+	}
+
+	deleteButton := widget.NewButton("Delete Selected", func() {
+		if selectedIndex >= 0 && selectedIndex < len(presets) {
+			presetName := presets[selectedIndex].Name
+			confirm := dialog.NewConfirm("Delete Preset", 
+				fmt.Sprintf("Are you sure you want to delete preset '%s'?", presetName),
+				func(confirmed bool) {
+					if confirmed {
+						if err := m.presetMgr.DeletePreset(presetName); err != nil {
+							m.showErrorDialog("Failed to delete preset", err)
+						} else {
+							// Refresh the list
+							presets = m.presetMgr.ListPresets()
+							presetList.Refresh()
+							selectedIndex = -1
+						}
+					}
+				},
+				fyne.CurrentApp().Driver().AllWindows()[0])
+			confirm.Show()
+		}
+	})
+
+	content := container.NewBorder(
+		nil,
+		deleteButton,
+		nil,
+		nil,
+		presetList,
+	)
+
+	customDialog := dialog.NewCustom("Manage Presets", "Close", content, fyne.CurrentApp().Driver().AllWindows()[0])
+	customDialog.Resize(fyne.NewSize(500, 400))
+	customDialog.Show()
+}
+
+// showAboutDialog shows the about dialog
+func (m *Menu) showAboutDialog() {
+	content := widget.NewRichTextFromMarkdown(`
+# Advanced Image Processing
+
+**Version:** 1.0  
+**Author:** Ervins Strauhmanis  
+**License:** MIT
+
+A powerful image processing application for historical illustrations, engravings, and document scans.
+
+## Features
+- Multiple binarization algorithms (Otsu, Niblack, Sauvola)
+- Morphological operations (Erosion, Dilation)
+- Noise reduction filters
+- Real-time preview
+- Preset management
+- Extensible architecture
+
+Built with Go, Fyne, and OpenCV.
+`)
+
+	aboutDialog := dialog.NewCustom("About", "Close", content, fyne.CurrentApp().Driver().AllWindows()[0])
+	aboutDialog.Resize(fyne.NewSize(400, 500))
+	aboutDialog.Show()
+}
+
+// showErrorDialog shows an error dialog
+func (m *Menu) showErrorDialog(title string, err error) {
+	dialog.ShowError(err, fyne.CurrentApp().Driver().AllWindows()[0])
+	m.logger.WithError(err).Error(title)
+}
+
+// showInfoDialog shows an info dialog
+func (m *Menu) showInfoDialog(title, message string) {
+	dialog.ShowInformation(title, message, fyne.CurrentApp().Driver().AllWindows()[0])
+}
+
+// SetCallbacks sets callback functions
+func (m *Menu) SetCallbacks(onImageLoaded, onPresetLoaded func()) {
+	m.onImageLoaded = onImageLoaded
+	m.onPresetLoaded = onPresetLoaded
+}

@@ -18,8 +18,6 @@ A powerful image processing application designed for historical illustrations, e
 
 - macOS 10.15+ (Catalina or later)
 - Apple Silicon (M1/M2/M3) or Intel processor
-- At least 4GB RAM
-- 500MB free disk space
 
 ## Installation and Building
 
@@ -78,6 +76,149 @@ A powerful image processing application designed for historical illustrations, e
    ./build/AdvancedImageProcessing --help
    ./build/AdvancedImageProcessing --debug
    ```
+
+### Go Dependency Management
+
+This project uses Go modules for dependency management. Here's how it works:
+
+#### Understanding Go Module Files
+
+- **`go.mod`**: Defines the module name, Go version, and direct dependencies
+- **`go.sum`**: Contains cryptographic checksums for dependency verification
+- Both files should be committed to version control
+
+#### Common Dependency Commands
+
+```bash
+# Download dependencies to local cache (usually silent when successful)
+go mod download
+
+# Add missing dependencies and remove unused ones
+go mod tidy
+
+# View all dependencies (direct and indirect)
+go list -m all
+
+# Check for available updates
+go list -u -m all
+
+# Update only patch versions (safest - bug fixes only)
+go get -u=patch ./...
+
+# Update to latest compatible minor versions (may include new features)
+go get -u ./...
+
+# Manually update to specific major versions (POTENTIALLY BREAKING)
+# You must explicitly specify the new major version
+go get github.com/example/package/v2@latest
+go get github.com/example/package/v3@latest
+
+# Add a new dependency
+go get github.com/example/package
+
+# Add a specific version
+go get github.com/example/package@v1.2.3
+
+# Remove a dependency (run after removing import statements)
+go mod tidy
+```
+
+**⚠️ Warning About Dependency Updates:**
+
+- **Patch updates** (`go get -u=patch`): Generally safe - only bug fixes and security patches
+- **Minor updates** (`go get -u`): Usually safe - new features but backward compatible within the same major version
+- **Major updates**: **POTENTIALLY BREAKING** - Go does NOT automatically update major versions. You must manually specify them (e.g., `/v2`, `/v3`)
+
+**Before updating dependencies:**
+1. Commit your current working code
+2. Review release notes for major version changes
+3. Test thoroughly after updates
+4. Consider updating one dependency at a time for easier troubleshooting
+5. Use `go mod why <module>` to understand impact before updating critical dependencies
+
+**Finding and handling major version updates:**
+```bash
+# Check what major versions are available
+go list -m -versions github.com/example/package
+
+# See which dependencies have newer major versions available
+go list -u -m all | grep -v "indirect"
+
+# Manually upgrade to a new major version (requires code changes)
+go get github.com/example/package/v2@latest
+```
+
+#### Dependency Analysis
+
+```bash
+# See why a dependency is included
+go mod why github.com/example/package
+
+# View dependency graph
+go mod graph
+
+# Verify dependencies match go.sum
+go mod verify
+
+# Show module information
+go mod edit -json
+```
+
+#### Version Selection
+
+Go uses **Minimal Version Selection (MVS)**:
+- Always selects the minimum version that satisfies all requirements
+- Prefers semantic versioning (v1.2.3)
+- Major version changes (v1 to v2) are treated as different modules
+- **Breaking changes** typically occur with major version bumps (v1.x.x → v2.0.0)
+
+**Semantic Versioning in Go:**
+- **MAJOR** version (v1 → v2): Incompatible API changes - **BREAKING**
+- **MINOR** version (v1.1 → v1.2): New functionality, backward compatible
+- **PATCH** version (v1.1.1 → v1.1.2): Bug fixes, backward compatible
+
+**Managing Breaking Changes:**
+```bash
+# List available versions for a specific module
+go list -m -versions github.com/example/package
+
+# Check which dependencies might have major version updates
+go list -u -m all
+
+# Manually upgrade to a specific major version (requires import path changes)
+go get github.com/example/package/v2@latest
+
+# Pin to a specific version to avoid surprises
+go get github.com/example/package@v1.4.2
+```
+
+**Important**: Go treats major versions as separate modules. Upgrading from `v1` to `v2` requires:
+1. Changing import paths in your code from `github.com/example/package` to `github.com/example/package/v2`
+2. Potentially updating your code to match the new API
+3. Testing thoroughly as breaking changes are expected
+
+#### Handling Problem Dependencies
+
+```bash
+# Replace a dependency with a fork or local version
+go mod edit -replace github.com/original/package=github.com/fork/package@v1.0.0
+
+# Replace with local directory
+go mod edit -replace github.com/example/package=../local-package
+
+# Remove a replace directive
+go mod edit -dropreplace github.com/example/package
+```
+
+#### Vendoring (Optional)
+
+```bash
+# Copy dependencies to vendor/ directory
+go mod vendor
+
+# Build using vendored dependencies
+go build -mod=vendor ./cmd/app
+```
 
 ### Creating a macOS App Bundle
 
@@ -194,6 +335,7 @@ advanced-image-processing/
 │   └── utils/                   # Utilities
 ├── tests/                       # Test files
 ├── go.mod                       # Go module definition
+├── go.sum                       # Dependency checksums
 └── README.md                    # This file
 ```
 
@@ -208,6 +350,13 @@ go test -cover ./...
 
 # Run specific test package
 go test ./internal/transforms/binarization
+
+# Run tests with verbose output
+go test -v ./...
+
+# Generate coverage report
+go test -coverprofile=coverage.out ./...
+go tool cover -html=coverage.out
 ```
 
 ### Debug Mode
@@ -265,7 +414,22 @@ Debug mode provides:
    - Run `go mod tidy` to clean up dependencies
    - Check that Xcode command line tools are installed
 
-4. **Performance issues**:
+4. **Dependency issues**:
+   - Run `go mod verify` to check dependency integrity
+   - Use `go clean -modcache` to clear module cache if needed
+   - Check `go mod why <module>` to understand why a dependency is needed
+   - **After dependency updates**: Test thoroughly as updates may introduce breaking changes
+   - If builds break after updates, check release notes and consider reverting to previous versions
+
+5. **Breaking changes from dependency updates**:
+   - **Symptoms**: Build errors, changed function signatures, missing methods
+   - **Solutions**: 
+     - Revert to previous version: `go get github.com/example/package@v1.2.3`
+     - Check migration guides in the dependency's documentation
+     - Update your code to match new API requirements
+     - Use `go mod graph` to see which dependency introduced the breaking change
+
+5. **Performance issues**:
    - Run in debug mode to identify bottlenecks
    - Ensure adequate RAM (4GB+)
    - Try smaller image sizes for testing
@@ -283,7 +447,3 @@ MIT License - see source files for details.
 ## Author
 
 Ervins Strauhmanis
-
----
-
-**Note**: This application is designed for personal use. For distribution through the Mac App Store or to other users, you would need a proper Apple Developer certificate and notarization.

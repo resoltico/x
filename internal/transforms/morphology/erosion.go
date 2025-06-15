@@ -53,8 +53,17 @@ func (e *ErosionTransform) Apply(input gocv.Mat, params map[string]interface{}) 
 	defer kernel.Close()
 
 	// Apply erosion
+	// Updated function signature - removed extra parameters
 	output := gocv.NewMat()
-	gocv.Erode(input, &output, kernel, image.Pt(-1, -1), iterations, gocv.BorderConstant, image.Black)
+	for i := 0; i < iterations; i++ {
+		if i == 0 {
+			gocv.Erode(input, &output, kernel)
+		} else {
+			temp := output.Clone()
+			gocv.Erode(temp, &output, kernel)
+			temp.Close()
+		}
+	}
 
 	return output, nil
 }

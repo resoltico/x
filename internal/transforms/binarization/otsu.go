@@ -43,8 +43,9 @@ func (o *OtsuTransform) Apply(input gocv.Mat, params map[string]interface{}) (go
 	}
 
 	// Apply Otsu thresholding
+	// Convert float64 to float32 for gocv function
 	output := gocv.NewMat()
-	gocv.Threshold(gray, &output, 0, maxValue, gocv.ThresholdBinary+gocv.ThresholdOtsu)
+	gocv.Threshold(gray, &output, 0, float32(maxValue), gocv.ThresholdBinary+gocv.ThresholdOtsu)
 
 	return output, nil
 }

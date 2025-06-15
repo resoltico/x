@@ -65,8 +65,9 @@ func (n *NiblackTransform) Apply(input gocv.Mat, params map[string]interface{}) 
 	}
 
 	// Apply adaptive thresholding (using mean method as approximation for Niblack)
+	// Convert float64 to float32 for gocv function
 	output := gocv.NewMat()
-	gocv.AdaptiveThreshold(gray, &output, maxValue, gocv.AdaptiveThresholdMean, gocv.ThresholdBinary, blockSize, c)
+	gocv.AdaptiveThreshold(gray, &output, float32(maxValue), gocv.AdaptiveThresholdMean, gocv.ThresholdBinary, blockSize, float32(c))
 
 	return output, nil
 }
