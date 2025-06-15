@@ -5,11 +5,11 @@ import (
 	"fmt"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/sirupsen/logrus"
+	"gocv.io/x/gocv"
 
 	"advanced-image-processing/internal/core"
 	"advanced-image-processing/internal/io"
@@ -17,10 +17,10 @@ import (
 
 // Application represents the main application
 type Application struct {
-	app           fyne.App
-	window        fyne.Window
-	logger        *logrus.Logger
-	debugMode     bool
+	app       fyne.App
+	window    fyne.Window
+	logger    *logrus.Logger
+	debugMode bool
 
 	// Core components
 	imageData     *core.ImageData
@@ -29,15 +29,15 @@ type Application struct {
 	loader        *io.ImageLoader
 
 	// GUI components
-	canvas        *ImageCanvas
-	toolbar       *Toolbar
-	properties    *PropertiesPanel
-	metricsPanel  *MetricsPanel
-	menuHandler   *MenuHandler
+	canvas       *ImageCanvas
+	toolbar      *Toolbar
+	properties   *PropertiesPanel
+	metricsPanel *MetricsPanel
+	menuHandler  *MenuHandler
 
 	// Layout containers
-	mainContent   *container.Split
-	rightPanel    *container.Split
+	mainContent *container.Split
+	rightPanel  *container.Split
 }
 
 // NewApplication creates a new application instance
@@ -90,9 +90,9 @@ func (a *Application) setupLayout() {
 	// Create main canvas area
 	canvasContainer := container.NewBorder(
 		toolbarContainer, // top
-		nil,             // bottom
-		nil,             // left
-		nil,             // right
+		nil,              // bottom
+		nil,              // left
+		nil,              // right
 		a.canvas.GetContainer(),
 	)
 
@@ -189,26 +189,26 @@ func (a *Application) setupCallbacks() {
 // ShowAndRun displays the application window and starts the event loop
 func (a *Application) ShowAndRun() {
 	a.logger.Info("Showing main application window")
-	
+
 	// Set up window close handler
 	a.window.SetCloseIntercept(func() {
 		a.cleanup()
 		a.app.Quit()
 	})
-	
+
 	a.window.ShowAndRun()
 }
 
 // cleanup performs cleanup when the application closes
 func (a *Application) cleanup() {
 	a.logger.Info("Cleaning up application resources")
-	
+
 	// Stop any ongoing processing
 	a.pipeline.Stop()
-	
+
 	// Close image data
 	a.imageData.Close()
-	
+
 	// Clear regions
 	a.regionManager.ClearAll()
 }
@@ -216,7 +216,7 @@ func (a *Application) cleanup() {
 // showError displays an error dialog
 func (a *Application) showError(title string, err error) {
 	a.logger.WithError(err).Error(title)
-	
+
 	if a.debugMode {
 		// Show detailed error in debug mode
 		content := container.NewVBox(
@@ -224,36 +224,53 @@ func (a *Application) showError(title string, err error) {
 			widget.NewSeparator(),
 			widget.NewLabel("Check console for detailed logs"),
 		)
-		
+
 		dialog := container.NewBorder(
 			widget.NewLabel(title),
 			widget.NewButton("OK", func() {}),
 			nil, nil,
 			content,
 		)
-		
-		a.window.Canvas().Overlays().Add(dialog)
+
+		popup := widget.NewModalPopUp(dialog, a.window.Canvas())
+		popup.Show()
 	} else {
 		// Simple error dialog for production
-		widget.NewDialog(title, err.Error(), func() {}, a.window).Show()
+		dialog := widget.NewModalPopUp(
+			container.NewVBox(
+				widget.NewLabel(title),
+				widget.NewLabel(err.Error()),
+				widget.NewButton("OK", func() {}),
+			),
+			a.window.Canvas(),
+		)
+		dialog.Show()
 	}
 }
 
 // showInfo displays an information dialog
 func (a *Application) showInfo(title, message string) {
 	a.logger.WithField("message", message).Info(title)
-	widget.NewInformation(title, message, a.window).Show()
+	dialog := widget.NewModalPopUp(
+		container.NewVBox(
+			widget.NewLabel(title),
+			widget.NewLabel(message),
+			widget.NewButton("OK", func() {}),
+		),
+		a.window.Canvas(),
+	)
+	dialog.Show()
 }
 
 // showWarning displays a warning dialog
 func (a *Application) showWarning(title, message string) {
 	a.logger.WithField("message", message).Warn(title)
-	
+
 	content := container.NewVBox(
 		widget.NewIcon(theme.WarningIcon()),
 		widget.NewLabel(message),
 	)
-	
+
 	dialog := widget.NewModalPopUp(
 		container.NewBorder(
 			widget.NewLabel(title),
@@ -263,7 +280,7 @@ func (a *Application) showWarning(title, message string) {
 		),
 		a.window.Canvas(),
 	)
-	
+
 	dialog.Show()
 }
 
@@ -307,7 +324,7 @@ func (a *Application) SetStatus(message string) {
 func (a *Application) ToggleDebugMode() {
 	a.debugMode = !a.debugMode
 	a.logger.WithField("debug_mode", a.debugMode).Info("Debug mode toggled")
-	
+
 	// Update UI elements that depend on debug mode
 	a.RefreshUI()
 }

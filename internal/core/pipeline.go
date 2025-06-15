@@ -195,7 +195,7 @@ func (pp *ProcessingPipeline) ClearSteps() {
 	// Reset to original image
 	if pp.imageData.HasImage() {
 		pp.imageData.ResetToOriginal()
-		
+
 		// Notify completion with original image
 		if pp.onComplete != nil {
 			original := pp.imageData.GetOriginal()
