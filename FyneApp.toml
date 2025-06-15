@@ -1,0 +1,15 @@
+[Details]
+Icon = "icon.png"
+Name = "Advanced Image Processing"
+ID = "com.strauhmanis.advanced-image-processing"
+Version = "1.0.0"
+Build = 1
+
+[Metadata]
+Developer = "Ervins Strauhmanis"
+Category = "Graphics"
+Copyright = "© 2024 Ervins Strauhmanis"
+
+[Migrations]
+# Enable fyne.Do migration for v2.6+ thread safety
+fyneDo = true
