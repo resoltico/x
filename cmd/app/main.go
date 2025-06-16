@@ -1,7 +1,7 @@
 // Advanced Image Processing Application
 // Author: Ervins Strauhmanis
 // License: MIT
-// Version: 2.0.0 - Optimized with Layer Support
+// Version: 2.0.0 - Redesigned with Modern UI Patterns
 
 package main
 
@@ -11,7 +11,6 @@ import (
 	"os"
 
 	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/theme"
 
 	"advanced-image-processing/internal/gui"
 )
@@ -28,14 +27,12 @@ func main() {
 
 	// Initialize logger
 	logger := initLogger(*debugMode)
-	logger.Info("Starting Advanced Image Processing Application with Layer Support",
+	logger.Info("Starting Advanced Image Processing Application with Modern UI Design",
 		"version", AppVersion,
 		"debug_mode", *debugMode)
 
 	// Create Fyne application
 	myApp := app.NewWithID(AppID)
-	myApp.SetIcon(theme.DocumentIcon())
-	myApp.Settings().SetTheme(theme.DefaultTheme())
 
 	// Create and show main application window
 	mainApp := gui.NewApplication(myApp, logger, *debugMode)

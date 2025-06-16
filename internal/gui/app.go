@@ -1,22 +1,22 @@
 // internal/gui/app.go
-// Fixed main application with thread-safe image handling
+// Redesigned main application with modern UI patterns and enhanced UX
 package gui
 
 import (
 	"fmt"
 	"image"
+	"image/color"
 	"log/slog"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/widget"
+	"fyne.io/fyne/v2/theme"
 
 	"advanced-image-processing/internal/core"
 	"advanced-image-processing/internal/io"
 )
 
-// Application represents the main application with enhanced UI
+// Application represents the redesigned main application
 type Application struct {
 	app       fyne.App
 	window    fyne.Window
@@ -30,24 +30,19 @@ type Application struct {
 	loader        *io.ImageLoader
 
 	// GUI components
-	canvas       *ImageCanvas
-	toolbar      *Toolbar
-	properties   *EnhancedPropertiesPanel
-	layerPanel   *LayerPanel
-	metricsPanel *MetricsPanel
-	menuHandler  *MenuHandler
+	toolbar        *ModernToolbar
+	leftPanel      *ControlPanel
+	imageWorkspace *ImageWorkspace
+	rightPanel     *InfoPanel
+	statusManager  *StatusManager
 
-	// Layout containers
-	mainContent *container.Split
-	leftPanels  *container.Split
-	centerPanel *fyne.Container
-	rightPanels *container.Split
-	statusCard  *widget.Card
+	// Layout
+	mainContainer *fyne.Container
 }
 
 func NewApplication(app fyne.App, logger *slog.Logger, debugMode bool) *Application {
-	window := app.NewWindow("🎨 Advanced Image Processing v2.0 - Layer Edition")
-	window.Resize(fyne.NewSize(1800, 1200))
+	window := app.NewWindow("Advanced Image Processing v2.0")
+	window.Resize(fyne.NewSize(1600, 1000))
 	window.CenterOnScreen()
 
 	appInstance := &Application{
@@ -58,9 +53,10 @@ func NewApplication(app fyne.App, logger *slog.Logger, debugMode bool) *Applicat
 	}
 
 	appInstance.initializeCore()
-	appInstance.initializeGUI()
+	appInstance.initializeComponents()
 	appInstance.setupLayout()
 	appInstance.setupCallbacks()
+	appInstance.setupTheme()
 
 	return appInstance
 }
@@ -72,166 +68,126 @@ func (a *Application) initializeCore() {
 	a.loader = io.NewImageLoader(a.logger)
 }
 
-func (a *Application) initializeGUI() {
-	a.canvas = NewImageCanvas(a.imageData, a.regionManager, a.logger)
-	a.toolbar = NewToolbar()
-	a.properties = NewEnhancedPropertiesPanel(a.pipeline, a.logger)
-	a.layerPanel = NewLayerPanel(a.pipeline, a.regionManager, a.logger)
-	a.metricsPanel = NewMetricsPanel()
-	a.menuHandler = NewMenuHandler(a.window, a.imageData, a.loader, a.logger)
+func (a *Application) initializeComponents() {
+	// Initialize modern components
+	a.toolbar = NewModernToolbar(a.imageData, a.loader, a.logger)
+	a.leftPanel = NewControlPanel(a.pipeline, a.regionManager, a.logger)
+	a.imageWorkspace = NewImageWorkspace(a.imageData, a.regionManager, a.logger)
+	a.rightPanel = NewInfoPanel(a.logger)
+	a.statusManager = NewStatusManager()
 }
 
 func (a *Application) setupLayout() {
-	// Create enhanced toolbar with spacing
-	toolbarContainer := container.NewVBox(
-		widget.NewCard("🛠️ Tools", "", a.toolbar.GetContainer()),
-		widget.NewSeparator(),
+	// Modern three-panel layout with proper proportions
+	a.mainContainer = container.NewBorder(
+		a.toolbar.GetContainer(),        // top
+		a.statusManager.GetWidget(),     // bottom
+		a.leftPanel.GetContainer(),      // left (300px)
+		a.rightPanel.GetContainer(),     // right (300px)
+		a.imageWorkspace.GetContainer(), // center (1000px)
 	)
 
-	// Create center panel with image canvas
-	a.centerPanel = container.NewBorder(
-		toolbarContainer, // top
-		nil,              // bottom
-		nil,              // left
-		nil,              // right
-		container.NewPadded(a.canvas.GetContainer()), // center with padding
-	)
-
-	// Create left panel with layer management and properties
-	a.leftPanels = container.NewVSplit(
-		container.NewScroll(a.layerPanel.GetContainer()),
-		container.NewScroll(a.properties.GetContainer()),
-	)
-	a.leftPanels.SetOffset(0.6) // Give more space to layer panel
-
-	// Create status card for tracking
-	a.statusCard = widget.NewCard("📊 Status", "",
-		widget.NewLabel("Application ready for image processing"))
-
-	// Create right panel with metrics and status
-	a.rightPanels = container.NewVSplit(
-		a.statusCard,
-		a.metricsPanel.GetContainer(),
-	)
-	a.rightPanels.SetOffset(0.3) // Give more space to metrics
-
-	// Create main three-panel layout
-	centerAndRight := container.NewHSplit(
-		a.centerPanel,
-		a.rightPanels,
-	)
-	centerAndRight.SetOffset(0.75) // Give most space to center panel
-
-	a.mainContent = container.NewHSplit(
-		a.leftPanels,
-		centerAndRight,
-	)
-	a.mainContent.SetOffset(0.3) // Balanced left panel size
-
-	// Set window properties
-	a.window.SetMainMenu(a.menuHandler.GetMainMenu())
-	a.window.SetContent(a.mainContent)
+	a.window.SetContent(a.mainContainer)
 }
 
 func (a *Application) setupCallbacks() {
 	// Pipeline callbacks for real-time preview
-	// CRITICAL FIX: Callback now receives image.Image instead of gocv.Mat
 	a.pipeline.SetCallbacks(
-		// onPreviewUpdate - now receives image.Image (thread-safe)
+		// onPreviewUpdate - receives thread-safe image.Image
 		func(preview image.Image, metrics map[string]float64) {
-			a.canvas.UpdatePreviewFromImage(preview)
-			a.metricsPanel.UpdateMetrics(metrics)
+			a.imageWorkspace.UpdatePreview(preview)
+			a.rightPanel.UpdateMetrics(metrics)
 		},
 		// onError
 		func(err error) {
-			fyne.Do(func() {
-				a.showError("Processing Error", err)
-			})
-		},
-	)
-
-	// Menu callbacks
-	a.menuHandler.SetCallbacks(
-		// onImageLoaded
-		func(filepath string) {
-			fyne.Do(func() {
-				a.canvas.ClearPreview()
-				a.canvas.UpdateOriginalImage()
-				a.properties.Enable()
-				a.layerPanel.Enable()
-				a.toolbar.Enable()
-				a.metricsPanel.Clear()
-				a.updateStatusMessage(fmt.Sprintf("✅ Loaded: %s", filepath))
-			})
-		},
-		// onImageSaved
-		func(filepath string) {
-			fyne.Do(func() {
-				a.showInfo("💾 Image Saved", fmt.Sprintf("Image successfully saved to:\n%s", filepath))
-				a.updateStatusMessage(fmt.Sprintf("💾 Saved: %s", filepath))
-			})
+			a.statusManager.ShowError(err)
 		},
 	)
 
 	// Toolbar callbacks
 	a.toolbar.SetCallbacks(
+		// onImageLoaded
+		func(filepath string) {
+			a.imageWorkspace.UpdateOriginal()
+			a.leftPanel.Enable()
+			a.statusManager.ShowSuccess(fmt.Sprintf("Loaded: %s", filepath))
+
+			// Show image info in right panel
+			metadata := a.imageData.GetMetadata()
+			a.rightPanel.ShowImageInfo(filepath, metadata.Width, metadata.Height, metadata.Channels)
+		},
+		// onImageSaved
+		func(filepath string) {
+			a.statusManager.ShowSuccess(fmt.Sprintf("Saved: %s", filepath))
+		},
 		// onToolChanged
 		func(tool string) {
-			a.canvas.SetActiveTool(tool)
-			a.updateStatusMessage(fmt.Sprintf("🛠️ Tool: %s", tool))
+			a.imageWorkspace.SetActiveTool(tool)
+			a.statusManager.ShowInfo(fmt.Sprintf("Tool: %s", tool))
 		},
-		// onClearSelection
+		// onResetImage
 		func() {
-			a.regionManager.ClearAll()
-			a.canvas.RefreshSelections()
-			a.layerPanel.Refresh()
-			a.updateStatusMessage("🗑️ Selection cleared")
-		},
-	)
-
-	a.toolbar.SetResetCallback(func() {
-		if a.imageData.HasImage() {
 			a.pipeline.ClearAll()
 			a.imageData.ResetToOriginal()
-			a.canvas.UpdateOriginalImage()
-			a.canvas.ClearPreview()
-			a.metricsPanel.Clear()
-			a.layerPanel.Refresh()
-			a.updateStatusMessage("↻ Reset to original image")
-		}
-	})
-
-	// Canvas callbacks
-	a.canvas.SetCallbacks(
-		// onSelectionChanged
-		func(hasSelection bool) {
-			fyne.Do(func() {
-				a.toolbar.SetSelectionState(hasSelection)
-				a.layerPanel.Refresh()
-				if hasSelection {
-					a.updateStatusMessage("🎯 Region selected")
-				} else {
-					a.updateStatusMessage("📄 No selection")
-				}
-			})
+			a.imageWorkspace.Reset()
+			a.leftPanel.Reset()
+			a.rightPanel.Clear()
+			a.statusManager.ShowInfo("Reset to original")
 		},
 	)
 
-	// Layer panel selection change callback
-	a.layerPanel.SetSelectionChangedCallback(func() {
-		a.layerPanel.Refresh()
+	// Set zoom callback
+	a.toolbar.SetZoomCallback(func(zoom float64) {
+		a.imageWorkspace.SetZoom(zoom)
 	})
+
+	// Set view toggle callback
+	a.toolbar.SetViewCallback(func() {
+		// View toggle functionality would be implemented here
+		a.statusManager.ShowInfo("View toggled")
+	})
+
+	// Left panel callbacks
+	a.leftPanel.SetCallbacks(
+		// onModeChanged
+		func(layerMode bool) {
+			a.pipeline.SetProcessingMode(layerMode)
+			mode := "Sequential"
+			if layerMode {
+				mode = "Layer"
+			}
+			a.statusManager.ShowInfo(fmt.Sprintf("Mode: %s", mode))
+		},
+		// onSelectionChanged
+		func() {
+			a.imageWorkspace.RefreshSelections()
+		},
+	)
+
+	// Image workspace callbacks
+	a.imageWorkspace.SetCallbacks(
+		// onSelectionChanged
+		func(hasSelection bool) {
+			a.leftPanel.UpdateSelectionState(hasSelection)
+			a.toolbar.UpdateSelectionState(hasSelection)
+			if hasSelection {
+				a.statusManager.ShowInfo("Region selected")
+			}
+		},
+		// onZoomChanged
+		func(zoom float64) {
+			a.statusManager.ShowInfo(fmt.Sprintf("Zoom: %.0f%%", zoom*100))
+		},
+	)
 }
 
-func (a *Application) updateStatusMessage(message string) {
-	// Update the status card directly
-	if a.statusCard != nil {
-		a.statusCard.SetContent(widget.NewLabel(message))
-	}
+func (a *Application) setupTheme() {
+	// Apply modern theme with consistent colors
+	a.app.Settings().SetTheme(&ModernTheme{})
 }
 
 func (a *Application) ShowAndRun() {
-	a.logger.Info("Showing main application window with enhanced UI")
+	a.logger.Info("Starting Advanced Image Processing v2.0 with modern UI")
 
 	a.window.SetCloseIntercept(func() {
 		a.cleanup()
@@ -248,27 +204,7 @@ func (a *Application) cleanup() {
 	a.regionManager.ClearAll()
 }
 
-func (a *Application) showError(title string, err error) {
-	a.logger.Error(title, "error", err)
-	dialog.ShowError(err, a.window)
-	a.updateStatusMessage(fmt.Sprintf("❌ Error: %s", err.Error()))
-}
-
-func (a *Application) showInfo(title, message string) {
-	a.logger.Info(title, "message", message)
-	dialog.ShowInformation(title, message, a.window)
-}
-
-func (a *Application) RefreshUI() {
-	fyne.Do(func() {
-		a.canvas.Refresh()
-		a.properties.Refresh()
-		a.layerPanel.Refresh()
-		a.metricsPanel.Refresh()
-		a.toolbar.Refresh()
-	})
-}
-
+// LoadImageFromPath loads an image from the specified file path
 func (a *Application) LoadImageFromPath(filepath string) error {
 	mat, err := a.loader.LoadImage(filepath)
 	if err != nil {
@@ -289,20 +225,19 @@ func (a *Application) LoadImageFromPath(filepath string) error {
 	a.pipeline.ClearAll()
 
 	// Update UI
-	fyne.Do(func() {
-		a.canvas.ClearPreview()
-		a.canvas.UpdateOriginalImage()
-		a.properties.Enable()
-		a.layerPanel.Enable()
-		a.toolbar.Enable()
-		a.metricsPanel.Clear()
-		a.updateStatusMessage(fmt.Sprintf("✅ Image loaded: %s", filepath))
-	})
+	a.imageWorkspace.UpdateOriginal()
+	a.leftPanel.Enable()
+	a.rightPanel.Clear()
+
+	metadata := a.imageData.GetMetadata()
+	a.rightPanel.ShowImageInfo(filepath, metadata.Width, metadata.Height, metadata.Channels)
+	a.statusManager.ShowSuccess(fmt.Sprintf("Image loaded: %s", filepath))
 
 	a.logger.Info("Image loaded successfully", "filepath", filepath)
 	return nil
 }
 
+// SaveProcessedImage saves the currently processed image
 func (a *Application) SaveProcessedImage(filepath string) error {
 	if !a.imageData.HasImage() {
 		return fmt.Errorf("no image to save")
@@ -322,4 +257,83 @@ func (a *Application) SaveProcessedImage(filepath string) error {
 
 	a.logger.Info("Image saved successfully", "filepath", filepath)
 	return nil
+}
+
+// RefreshUI refreshes all UI components
+func (a *Application) RefreshUI() {
+	fyne.Do(func() {
+		a.imageWorkspace.RefreshSelections()
+		a.leftPanel.Reset()
+		a.rightPanel.Clear()
+		a.statusManager.ShowInfo("UI refreshed")
+	})
+}
+
+// ModernTheme implements a custom theme with 2025 design principles
+type ModernTheme struct{}
+
+func (m *ModernTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
+	switch name {
+	case theme.ColorNameBackground:
+		return color.RGBA{R: 248, G: 250, B: 252, A: 255} // Modern light gray
+	case theme.ColorNameForeground:
+		return color.RGBA{R: 15, G: 23, B: 42, A: 255} // Dark slate
+	case theme.ColorNamePrimary:
+		return color.RGBA{R: 59, G: 130, B: 246, A: 255} // Modern blue
+	case theme.ColorNameFocus:
+		return color.RGBA{R: 99, G: 102, B: 241, A: 255} // Indigo focus
+	case theme.ColorNameHover:
+		return color.RGBA{R: 239, G: 246, B: 255, A: 255} // Light blue hover
+	case theme.ColorNameShadow:
+		return color.RGBA{R: 0, G: 0, B: 0, A: 32} // Subtle shadow
+	case theme.ColorNameSuccess:
+		return color.RGBA{R: 34, G: 197, B: 94, A: 255} // Modern green
+	case theme.ColorNameWarning:
+		return color.RGBA{R: 251, G: 146, B: 60, A: 255} // Modern orange
+	case theme.ColorNameError:
+		return color.RGBA{R: 239, G: 68, B: 68, A: 255} // Modern red
+	case theme.ColorNameInputBackground:
+		return color.RGBA{R: 255, G: 255, B: 255, A: 255} // Pure white
+	case theme.ColorNameButton:
+		return color.RGBA{R: 59, G: 130, B: 246, A: 255} // Modern blue
+	case theme.ColorNameDisabledButton:
+		return color.RGBA{R: 156, G: 163, B: 175, A: 255} // Gray
+	case theme.ColorNamePlaceHolder:
+		return color.RGBA{R: 107, G: 114, B: 128, A: 255} // Medium gray
+	case theme.ColorNamePressed:
+		return color.RGBA{R: 37, G: 99, B: 235, A: 255} // Darker blue
+	case theme.ColorNameSelection:
+		return color.RGBA{R: 219, G: 234, B: 254, A: 255} // Light blue selection
+	default:
+		return theme.DefaultTheme().Color(name, variant)
+	}
+}
+
+func (m *ModernTheme) Font(style fyne.TextStyle) fyne.Resource {
+	return theme.DefaultTheme().Font(style)
+}
+
+func (m *ModernTheme) Icon(name fyne.ThemeIconName) fyne.Resource {
+	return theme.DefaultTheme().Icon(name)
+}
+
+func (m *ModernTheme) Size(name fyne.ThemeSizeName) float32 {
+	switch name {
+	case theme.SizeNamePadding:
+		return 8
+	case theme.SizeNameInlineIcon:
+		return 20
+	case theme.SizeNameScrollBar:
+		return 12
+	case theme.SizeNameSeparatorThickness:
+		return 1
+	case theme.SizeNameInputBorder:
+		return 2
+	case theme.SizeNameInputRadius:
+		return 6
+	case theme.SizeNameSelectionRadius:
+		return 4
+	default:
+		return theme.DefaultTheme().Size(name)
+	}
 }
