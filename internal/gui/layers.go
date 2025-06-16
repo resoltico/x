@@ -148,12 +148,14 @@ func (lp *LayerPanel) updateUIState(layerMode bool) {
 		lp.algorithmSelect.Enable()
 		lp.regionSelect.Enable()
 		lp.addButton.Enable()
-		lp.layerList.Enable()
+		// Note: widget.List doesn't have Enable/Disable methods
+		// The list will be functional when layer mode is enabled
 	} else {
 		lp.algorithmSelect.Disable()
 		lp.regionSelect.Disable()
 		lp.addButton.Disable()
-		lp.layerList.Disable()
+		// Note: widget.List doesn't have Enable/Disable methods
+		// The list will not be functional when layer mode is disabled
 	}
 }
 

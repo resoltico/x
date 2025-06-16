@@ -89,7 +89,9 @@ func (ep *EnhancedPipeline) AddLayer(name, algorithm string, params map[string]i
 	layerID := ep.layerStack.AddLayer(name, algorithm, params, regionID)
 	ep.logger.Debug("Added processing layer", "layer_id", layerID, "algorithm", algorithm)
 
+	// Trigger processing immediately when layer is added
 	if ep.realtimeMode && ep.useLayerMode {
+		ep.logger.Debug("Triggering preview processing after adding layer")
 		ep.triggerPreviewProcessing()
 	}
 
@@ -139,6 +141,7 @@ func (ep *EnhancedPipeline) SetCallbacks(
 // triggerPreviewProcessing starts debounced preview processing
 func (ep *EnhancedPipeline) triggerPreviewProcessing() {
 	if !ep.imageData.HasImage() {
+		ep.logger.Debug("No image available for preview processing")
 		return
 	}
 
@@ -146,6 +149,7 @@ func (ep *EnhancedPipeline) triggerPreviewProcessing() {
 		ep.previewTimer.Stop()
 	}
 
+	ep.logger.Debug("Scheduling preview processing", "delay_ms", ep.previewDelay.Milliseconds())
 	ep.previewTimer = time.AfterFunc(ep.previewDelay, func() {
 		ep.processPreview()
 	})
@@ -175,10 +179,13 @@ func (ep *EnhancedPipeline) processPreview() {
 			ep.mu.Unlock()
 		}()
 
+		ep.logger.Debug("Starting preview processing")
+
 		preview := ep.imageData.GetPreview()
 		defer preview.Close()
 
 		if preview.Empty() {
+			ep.logger.Error("Preview image is empty")
 			if ep.onError != nil {
 				fyne.Do(func() {
 					ep.onError(fmt.Errorf("no preview image available"))
@@ -191,13 +198,25 @@ func (ep *EnhancedPipeline) processPreview() {
 		var err error
 
 		// Process based on current mode
-		if ep.useLayerMode {
+		ep.mu.RLock()
+		useLayerMode := ep.useLayerMode
+		ep.mu.RUnlock()
+
+		ep.logger.Debug("Processing preview", "layer_mode", useLayerMode)
+
+		if useLayerMode {
 			result, err = ep.layerStack.ProcessLayers(preview)
+			ep.logger.Debug("Layer processing completed", "success", err == nil)
 		} else {
 			result, _ = ep.processSequential(ctx, preview)
+			ep.logger.Debug("Sequential processing completed")
 		}
 
-		if err != nil || result.Empty() {
+		if err != nil {
+			ep.logger.Error("Processing failed", "error", err)
+			if !result.Empty() {
+				result.Close()
+			}
 			if ep.onError != nil {
 				fyne.Do(func() {
 					ep.onError(fmt.Errorf("processing failed: %w", err))
@@ -206,8 +225,19 @@ func (ep *EnhancedPipeline) processPreview() {
 			return
 		}
 
+		if result.Empty() {
+			ep.logger.Error("Processing returned empty result")
+			if ep.onError != nil {
+				fyne.Do(func() {
+					ep.onError(fmt.Errorf("processing returned empty result"))
+				})
+			}
+			return
+		}
+
 		// Calculate metrics
 		finalMetrics := ep.calculatePreviewMetrics(preview, result)
+		ep.logger.Debug("Metrics calculated", "psnr", finalMetrics["psnr"], "ssim", finalMetrics["ssim"])
 
 		// Update UI
 		if ep.onPreviewUpdate != nil {
@@ -218,6 +248,7 @@ func (ep *EnhancedPipeline) processPreview() {
 		}
 
 		result.Close()
+		ep.logger.Debug("Preview processing completed successfully")
 	}()
 }
 
