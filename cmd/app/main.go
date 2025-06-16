@@ -1,7 +1,7 @@
 // Advanced Image Processing Application
 // Author: Ervins Strauhmanis
 // License: MIT
-// Version: 2.0.0 - Optimized with Standard APIs
+// Version: 2.0.0 - Optimized with Layer Support
 
 package main
 
@@ -28,7 +28,7 @@ func main() {
 
 	// Initialize logger
 	logger := initLogger(*debugMode)
-	logger.Info("Starting Advanced Image Processing Application",
+	logger.Info("Starting Advanced Image Processing Application with Layer Support",
 		"version", AppVersion,
 		"debug_mode", *debugMode)
 

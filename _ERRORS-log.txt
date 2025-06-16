@@ -1,0 +1,7 @@
+[9:09:38 AM] % go build ./cmd/app
+package advanced-image-processing/cmd/app
+	imports advanced-image-processing/internal/gui from main.go
+	imports advanced-image-processing/internal/core from app.go
+	imports advanced-image-processing/internal/layers from enhanced_pipeline.go
+	imports advanced-image-processing/internal/core from interface.go: import cycle not allowed
+[9:09:51 AM] % 

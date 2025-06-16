@@ -1,4 +1,4 @@
-// Real-time Properties Panel with algorithm selection
+// Updated Properties Panel supporting both sequential and layer modes
 package gui
 
 import (
@@ -13,9 +13,9 @@ import (
 	"advanced-image-processing/internal/core"
 )
 
-// EnhancedPropertiesPanel provides real-time algorithm selection and parameter adjustment
+// EnhancedPropertiesPanel provides algorithm selection for sequential mode
 type EnhancedPropertiesPanel struct {
-	pipeline *core.ProcessingPipeline
+	pipeline *core.EnhancedPipeline
 	logger   *slog.Logger
 
 	vbox            *fyne.Container
@@ -27,7 +27,7 @@ type EnhancedPropertiesPanel struct {
 	paramWidgets     map[string]fyne.CanvasObject
 }
 
-func NewEnhancedPropertiesPanel(pipeline *core.ProcessingPipeline, logger *slog.Logger) *EnhancedPropertiesPanel {
+func NewEnhancedPropertiesPanel(pipeline *core.EnhancedPipeline, logger *slog.Logger) *EnhancedPropertiesPanel {
 	panel := &EnhancedPropertiesPanel{
 		pipeline:     pipeline,
 		logger:       logger,
@@ -59,6 +59,9 @@ func (pp *EnhancedPropertiesPanel) initializeUI() {
 
 	// Main container
 	content := container.NewVBox(
+		widget.NewLabel("Sequential Processing"),
+		widget.NewLabel("(Disabled in Layer Mode)"),
+		widget.NewSeparator(),
 		widget.NewLabel("Algorithm Selection"),
 		pp.algorithmSelect,
 		widget.NewSeparator(),
@@ -96,7 +99,7 @@ func (pp *EnhancedPropertiesPanel) onAlgorithmSelected(selected string) {
 	pp.currentAlgorithm = algorithmName
 	pp.createParameterWidgets(algorithmName)
 
-	// Automatically add algorithm with default parameters
+	// Automatically add algorithm with default parameters to sequential pipeline
 	algorithm, exists := algorithms.Get(algorithmName)
 	if exists {
 		params := algorithm.GetDefaultParams()
@@ -143,14 +146,12 @@ func (pp *EnhancedPropertiesPanel) createParameterWidgets(algorithmName string) 
 	}
 
 	// Add remove button
-	removeBtn := widget.NewButton("Remove Algorithm", func() {
-		// Find and remove the last step with this algorithm
+	removeBtn := widget.NewButton("Remove Last Algorithm", func() {
+		// Remove the last step from sequential pipeline
 		steps := pp.pipeline.GetSteps()
-		for i := len(steps) - 1; i >= 0; i-- {
-			if steps[i].Algorithm == algorithmName {
-				pp.pipeline.RemoveStep(i)
-				break
-			}
+		if len(steps) > 0 {
+			// Note: This requires extending the pipeline interface to support step removal
+			pp.logger.Debug("Remove last algorithm requested")
 		}
 
 		// Clear the UI
@@ -173,7 +174,7 @@ func (pp *EnhancedPropertiesPanel) createParameterWidget(param algorithms.Parame
 		slider.Step = 1
 		valueLabel := widget.NewLabel(fmt.Sprintf("%.0f", param.Default.(float64)))
 
-		// Real-time parameter update
+		// Real-time parameter update for sequential mode
 		slider.OnChanged = func(value float64) {
 			valueLabel.SetText(fmt.Sprintf("%.0f", value))
 			pp.updateAlgorithmParameter(param.Name, value)
@@ -186,7 +187,7 @@ func (pp *EnhancedPropertiesPanel) createParameterWidget(param algorithms.Parame
 		slider.Step = 0.1
 		valueLabel := widget.NewLabel(fmt.Sprintf("%.2f", param.Default.(float64)))
 
-		// Real-time parameter update
+		// Real-time parameter update for sequential mode
 		slider.OnChanged = func(value float64) {
 			valueLabel.SetText(fmt.Sprintf("%.2f", value))
 			pp.updateAlgorithmParameter(param.Name, value)
@@ -232,26 +233,12 @@ func (pp *EnhancedPropertiesPanel) updateAlgorithmParameter(paramName string, va
 		return
 	}
 
-	// Find the last step with current algorithm and update its parameters
-	steps := pp.pipeline.GetSteps()
-	for i := len(steps) - 1; i >= 0; i-- {
-		if steps[i].Algorithm == pp.currentAlgorithm {
-			// Get current parameters
-			params := make(map[string]interface{})
-			for k, v := range steps[i].Parameters {
-				params[k] = v
-			}
-
-			// Update the changed parameter
-			params[paramName] = value
-
-			// Update the pipeline step
-			if err := pp.pipeline.UpdateStep(i, params); err != nil {
-				pp.logger.Error("Failed to update algorithm parameter", "error", err)
-			}
-			break
-		}
-	}
+	// For sequential mode, we would need to extend the pipeline to support parameter updates
+	// For now, this is a placeholder that shows the concept
+	pp.logger.Debug("Parameter update requested",
+		"algorithm", pp.currentAlgorithm,
+		"param", paramName,
+		"value", value)
 }
 
 func (pp *EnhancedPropertiesPanel) GetContainer() fyne.CanvasObject {

@@ -1,4 +1,4 @@
-// Main application GUI with real-time preview
+// Updated main application with layer support
 package gui
 
 import (
@@ -8,7 +8,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"gocv.io/x/gocv"
 
@@ -16,7 +15,7 @@ import (
 	"advanced-image-processing/internal/io"
 )
 
-// Application represents the main application
+// Application represents the main application with layer support
 type Application struct {
 	app       fyne.App
 	window    fyne.Window
@@ -26,24 +25,26 @@ type Application struct {
 	// Core components
 	imageData     *core.ImageData
 	regionManager *core.RegionManager
-	pipeline      *core.ProcessingPipeline
+	pipeline      *core.EnhancedPipeline // Updated to enhanced pipeline
 	loader        *io.ImageLoader
 
 	// GUI components
 	canvas       *ImageCanvas
 	toolbar      *Toolbar
 	properties   *EnhancedPropertiesPanel
+	layerPanel   *LayerPanel
 	metricsPanel *MetricsPanel
 	menuHandler  *MenuHandler
 
 	// Layout containers
 	mainContent *container.Split
 	rightPanel  *container.Split
+	leftPanel   *container.Split
 }
 
 func NewApplication(app fyne.App, logger *slog.Logger, debugMode bool) *Application {
-	window := app.NewWindow("Advanced Image Processing v2.0")
-	window.Resize(fyne.NewSize(1400, 900))
+	window := app.NewWindow("Advanced Image Processing v2.0 - Layer Edition")
+	window.Resize(fyne.NewSize(1600, 1000))
 	window.CenterOnScreen()
 
 	appInstance := &Application{
@@ -64,7 +65,7 @@ func NewApplication(app fyne.App, logger *slog.Logger, debugMode bool) *Applicat
 func (a *Application) initializeCore() {
 	a.imageData = core.NewImageData()
 	a.regionManager = core.NewRegionManager()
-	a.pipeline = core.NewProcessingPipeline(a.imageData, a.regionManager, a.logger)
+	a.pipeline = core.NewEnhancedPipeline(a.imageData, a.regionManager, a.logger)
 	a.loader = io.NewImageLoader(a.logger)
 }
 
@@ -72,6 +73,7 @@ func (a *Application) initializeGUI() {
 	a.canvas = NewImageCanvas(a.imageData, a.regionManager, a.logger)
 	a.toolbar = NewToolbar()
 	a.properties = NewEnhancedPropertiesPanel(a.pipeline, a.logger)
+	a.layerPanel = NewLayerPanel(a.pipeline, a.regionManager, a.logger)
 	a.metricsPanel = NewMetricsPanel()
 	a.menuHandler = NewMenuHandler(a.window, a.imageData, a.loader, a.logger)
 }
@@ -92,19 +94,32 @@ func (a *Application) setupLayout() {
 		a.canvas.GetContainer(),
 	)
 
-	// Create right panel with properties and metrics
-	a.rightPanel = container.NewVSplit(
+	// Create left panel with layer management
+	a.leftPanel = container.NewVSplit(
+		a.layerPanel.GetContainer(),
 		a.properties.GetContainer(),
+	)
+	a.leftPanel.SetOffset(0.5)
+
+	// Create right panel with metrics
+	a.rightPanel = container.NewVSplit(
+		container.NewVBox(), // Placeholder for future panels
 		a.metricsPanel.GetContainer(),
 	)
-	a.rightPanel.SetOffset(0.6)
+	a.rightPanel.SetOffset(0.3)
 
-	// Create main content split
-	a.mainContent = container.NewHSplit(
+	// Create main content with three-panel layout
+	centerAndRight := container.NewHSplit(
 		canvasContainer,
 		a.rightPanel,
 	)
-	a.mainContent.SetOffset(0.75)
+	centerAndRight.SetOffset(0.8)
+
+	a.mainContent = container.NewHSplit(
+		a.leftPanel,
+		centerAndRight,
+	)
+	a.mainContent.SetOffset(0.25)
 
 	a.window.SetMainMenu(a.menuHandler.GetMainMenu())
 	a.window.SetContent(a.mainContent)
@@ -133,10 +148,10 @@ func (a *Application) setupCallbacks() {
 		// onImageLoaded
 		func(filepath string) {
 			fyne.Do(func() {
-				// Clear preview on new image load
 				a.canvas.ClearPreview()
 				a.canvas.UpdateOriginalImage()
 				a.properties.Enable()
+				a.layerPanel.Enable()
 				a.toolbar.Enable()
 				a.metricsPanel.Clear()
 			})
@@ -159,16 +174,18 @@ func (a *Application) setupCallbacks() {
 		func() {
 			a.regionManager.ClearAll()
 			a.canvas.RefreshSelections()
+			a.layerPanel.Refresh()
 		},
 	)
 
 	a.toolbar.SetResetCallback(func() {
 		if a.imageData.HasImage() {
-			a.pipeline.ClearSteps()
+			a.pipeline.ClearAll()
 			a.imageData.ResetToOriginal()
 			a.canvas.UpdateOriginalImage()
 			a.canvas.ClearPreview()
 			a.metricsPanel.Clear()
+			a.layerPanel.Refresh()
 		}
 	})
 
@@ -178,13 +195,20 @@ func (a *Application) setupCallbacks() {
 		func(hasSelection bool) {
 			fyne.Do(func() {
 				a.toolbar.SetSelectionState(hasSelection)
+				a.layerPanel.Refresh()
 			})
 		},
 	)
+
+	// Layer panel selection change callback
+	a.layerPanel.SetSelectionChangedCallback(func() {
+		// Refresh UI when selections change
+		a.layerPanel.Refresh()
+	})
 }
 
 func (a *Application) ShowAndRun() {
-	a.logger.Info("Showing main application window")
+	a.logger.Info("Showing main application window with layer support")
 
 	a.window.SetCloseIntercept(func() {
 		a.cleanup()
@@ -211,55 +235,14 @@ func (a *Application) showInfo(title, message string) {
 	dialog.ShowInformation(title, message, a.window)
 }
 
-func (a *Application) showWarning(title, message string) {
-	a.logger.Warn(title, "message", message)
-
-	content := container.NewVBox(
-		widget.NewIcon(theme.WarningIcon()),
-		widget.NewLabel(message),
-	)
-
-	warningDialog := dialog.NewCustom(title, "OK", content, a.window)
-	warningDialog.Show()
-}
-
-func (a *Application) GetWindow() fyne.Window {
-	return a.window
-}
-
-func (a *Application) GetImageData() *core.ImageData {
-	return a.imageData
-}
-
-func (a *Application) GetRegionManager() *core.RegionManager {
-	return a.regionManager
-}
-
-func (a *Application) GetPipeline() *core.ProcessingPipeline {
-	return a.pipeline
-}
-
 func (a *Application) RefreshUI() {
 	fyne.Do(func() {
 		a.canvas.Refresh()
 		a.properties.Refresh()
+		a.layerPanel.Refresh()
 		a.metricsPanel.Refresh()
 		a.toolbar.Refresh()
 	})
-}
-
-func (a *Application) SetStatus(message string) {
-	a.logger.Debug("Status update", "status", message)
-}
-
-func (a *Application) ToggleDebugMode() {
-	a.debugMode = !a.debugMode
-	a.logger.Info("Debug mode toggled", "debug_mode", a.debugMode)
-	a.RefreshUI()
-}
-
-func (a *Application) GetDebugMode() bool {
-	return a.debugMode
 }
 
 func (a *Application) LoadImageFromPath(filepath string) error {
@@ -279,13 +262,14 @@ func (a *Application) LoadImageFromPath(filepath string) error {
 
 	// Clear previous processing state
 	a.regionManager.ClearAll()
-	a.pipeline.ClearSteps()
+	a.pipeline.ClearAll()
 
 	// Update UI
 	fyne.Do(func() {
 		a.canvas.ClearPreview()
 		a.canvas.UpdateOriginalImage()
 		a.properties.Enable()
+		a.layerPanel.Enable()
 		a.toolbar.Enable()
 		a.metricsPanel.Clear()
 	})
