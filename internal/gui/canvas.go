@@ -1,9 +1,10 @@
-// Real-time image canvas with preview support
+// Real-time image canvas with improved UI proportions and forced refresh
 package gui
 
 import (
 	"fmt"
 	"image"
+	"image/color"
 	"log/slog"
 
 	"fyne.io/fyne/v2"
@@ -15,13 +16,13 @@ import (
 	"advanced-image-processing/internal/core"
 )
 
-// ImageCanvas handles image display with real-time preview
+// ImageCanvas handles image display with improved proportions
 type ImageCanvas struct {
 	imageData     *core.ImageData
 	regionManager *core.RegionManager
 	logger        *slog.Logger
 
-	split           *container.Split
+	vbox            *fyne.Container
 	originalView    *widget.Card
 	previewView     *widget.Card
 	interactiveOrig *InteractiveCanvas
@@ -48,22 +49,33 @@ func (ic *ImageCanvas) initializeUI() {
 	ic.interactiveOrig = NewInteractiveCanvas(ic.imageData, ic.regionManager, ic.logger)
 	ic.originalView = widget.NewCard("Original", "", ic.interactiveOrig)
 
-	// Create real-time preview image view
-	ic.previewImage = canvas.NewImageFromImage(image.NewRGBA(image.Rect(0, 0, 1, 1)))
+	// Create real-time preview image view with placeholder
+	placeholderImg := image.NewRGBA(image.Rect(0, 0, 200, 150))
+	// Fill with light gray
+	for y := 0; y < 150; y++ {
+		for x := 0; x < 200; x++ {
+			placeholderImg.Set(x, y, color.RGBA{240, 240, 240, 255})
+		}
+	}
+
+	ic.previewImage = canvas.NewImageFromImage(placeholderImg)
 	ic.previewImage.FillMode = canvas.ImageFillContain
 	ic.previewView = widget.NewCard("Preview", "", ic.previewImage)
 
-	// Create split container
-	ic.split = container.NewHSplit(ic.originalView, ic.previewView)
-	ic.split.SetOffset(0.5)
+	// Create vertical container with better proportions
+	ic.vbox = container.NewVBox(
+		ic.originalView,
+		ic.previewView,
+	)
 }
 
 func (ic *ImageCanvas) GetContainer() fyne.CanvasObject {
-	return ic.split
+	return ic.vbox
 }
 
 func (ic *ImageCanvas) UpdateOriginalImage() {
 	if !ic.imageData.HasImage() {
+		ic.logger.Debug("No image data available for original update")
 		return
 	}
 
@@ -78,15 +90,28 @@ func (ic *ImageCanvas) UpdateOriginalImage() {
 		}
 
 		ic.interactiveOrig.UpdateImage(img)
+		ic.logger.Debug("Updated original image display")
 	}
 }
 
 func (ic *ImageCanvas) UpdatePreview(preview gocv.Mat) {
-	defer preview.Close()
+	// Don't close the preview Mat here - it's managed by the caller
+	ic.logger.Debug("UpdatePreview called", "empty", preview.Empty())
 
 	if preview.Empty() {
-		ic.previewImage.Image = image.NewRGBA(image.Rect(0, 0, 1, 1))
+		ic.logger.Debug("Preview is empty, showing placeholder")
+		placeholderImg := image.NewRGBA(image.Rect(0, 0, 200, 150))
+		// Fill with light gray
+		for y := 0; y < 150; y++ {
+			for x := 0; x < 200; x++ {
+				placeholderImg.Set(x, y, color.RGBA{240, 240, 240, 255})
+			}
+		}
+		ic.previewImage.Image = placeholderImg
 		ic.previewImage.Refresh()
+		// Force parent containers to refresh as well
+		ic.previewView.Refresh()
+		ic.vbox.Refresh()
 		return
 	}
 
@@ -96,13 +121,35 @@ func (ic *ImageCanvas) UpdatePreview(preview gocv.Mat) {
 		return
 	}
 
+	ic.logger.Debug("Successfully converted preview to image",
+		"width", img.Bounds().Dx(),
+		"height", img.Bounds().Dy())
+
+	// Update the image and force multiple levels of refresh
 	ic.previewImage.Image = img
 	ic.previewImage.Refresh()
+
+	// Force refresh of parent containers to ensure the update is visible
+	ic.previewView.Refresh()
+	ic.vbox.Refresh()
+
+	ic.logger.Debug("Preview image updated and all containers refreshed")
 }
 
 func (ic *ImageCanvas) ClearPreview() {
-	ic.previewImage.Image = image.NewRGBA(image.Rect(0, 0, 1, 1))
+	ic.logger.Debug("Clearing preview")
+	placeholderImg := image.NewRGBA(image.Rect(0, 0, 200, 150))
+	// Fill with light gray
+	for y := 0; y < 150; y++ {
+		for x := 0; x < 200; x++ {
+			placeholderImg.Set(x, y, color.RGBA{240, 240, 240, 255})
+		}
+	}
+	ic.previewImage.Image = placeholderImg
 	ic.previewImage.Refresh()
+	// Force parent containers to refresh as well
+	ic.previewView.Refresh()
+	ic.vbox.Refresh()
 }
 
 func (ic *ImageCanvas) SetActiveTool(tool string) {
@@ -122,10 +169,13 @@ func (ic *ImageCanvas) SetCallbacks(onSelectionChanged func(bool)) {
 }
 
 func (ic *ImageCanvas) Refresh() {
-	ic.split.Refresh()
+	ic.vbox.Refresh()
+	ic.originalView.Refresh()
+	ic.previewView.Refresh()
+	ic.previewImage.Refresh()
 }
 
-// Toolbar handles tool selection
+// Toolbar handles tool selection with improved styling
 type Toolbar struct {
 	hbox          *fyne.Container
 	rectangleTool *widget.Button
@@ -145,32 +195,36 @@ func NewToolbar() *Toolbar {
 }
 
 func (t *Toolbar) initializeUI() {
-	t.rectangleTool = widget.NewButton("Rectangle", func() {
+	t.rectangleTool = widget.NewButton("📐 Rectangle", func() {
 		if t.onToolChanged != nil {
 			t.onToolChanged("rectangle")
 		}
 	})
+	t.rectangleTool.Importance = widget.MediumImportance
 
-	t.freehandTool = widget.NewButton("Freehand", func() {
+	t.freehandTool = widget.NewButton("✏️ Freehand", func() {
 		if t.onToolChanged != nil {
 			t.onToolChanged("freehand")
 		}
 	})
+	t.freehandTool.Importance = widget.MediumImportance
 
-	t.clearButton = widget.NewButton("Clear Selection", func() {
+	t.clearButton = widget.NewButton("🗑️ Clear Selection", func() {
 		if t.onClearSelection != nil {
 			t.onClearSelection()
 		}
 	})
+	t.clearButton.Importance = widget.LowImportance
 
-	t.resetButton = widget.NewButton("Reset to Original", func() {
+	t.resetButton = widget.NewButton("↻ Reset to Original", func() {
 		if t.onResetImage != nil {
 			t.onResetImage()
 		}
 	})
+	t.resetButton.Importance = widget.HighImportance
 
 	t.hbox = container.NewHBox(
-		widget.NewLabel("Tools:"),
+		widget.NewLabel("Selection Tools:"),
 		t.rectangleTool,
 		t.freehandTool,
 		widget.NewSeparator(),
@@ -220,7 +274,7 @@ func (t *Toolbar) Refresh() {
 	t.hbox.Refresh()
 }
 
-// MetricsPanel displays quality metrics
+// MetricsPanel displays quality metrics with improved styling
 type MetricsPanel struct {
 	vbox    *fyne.Container
 	metrics map[string]float64
@@ -237,8 +291,8 @@ func NewMetricsPanel() *MetricsPanel {
 
 func (mp *MetricsPanel) initializeUI() {
 	mp.vbox = container.NewVBox(
-		widget.NewCard("Quality Metrics", "",
-			widget.NewLabel("Real-time metrics will appear here")),
+		widget.NewCard("📊 Quality Metrics", "",
+			widget.NewLabel("Real-time quality metrics will appear here during processing.")),
 	)
 }
 
@@ -251,28 +305,50 @@ func (mp *MetricsPanel) UpdateMetrics(metrics map[string]float64) {
 
 	content := container.NewVBox()
 
-	for name, value := range metrics {
-		var displayText string
-		switch name {
-		case "psnr":
-			displayText = fmt.Sprintf("PSNR: %.2f dB", value)
-		case "ssim":
-			displayText = fmt.Sprintf("SSIM: %.3f", value)
-		case "mse":
-			displayText = fmt.Sprintf("MSE: %.2f", value)
-		default:
-			displayText = fmt.Sprintf("%s: %.3f", name, value)
-		}
-
-		label := widget.NewLabel(displayText)
-		content.Add(label)
-	}
-
 	if len(metrics) == 0 {
-		content.Add(widget.NewLabel("No metrics available"))
+		content.Add(widget.NewLabel("🔄 Processing..."))
+	} else {
+		for name, value := range metrics {
+			var displayText string
+			var quality string
+
+			switch name {
+			case "psnr":
+				displayText = fmt.Sprintf("📡 PSNR: %.2f dB", value)
+				if value > 40 {
+					quality = " ✅ Excellent"
+				} else if value > 30 {
+					quality = " ✔️ Good"
+				} else if value > 20 {
+					quality = " ⚠️ Fair"
+				} else {
+					quality = " ❌ Poor"
+				}
+			case "ssim":
+				displayText = fmt.Sprintf("📈 SSIM: %.3f", value)
+				if value > 0.95 {
+					quality = " ✅ Excellent"
+				} else if value > 0.8 {
+					quality = " ✔️ Good"
+				} else if value > 0.6 {
+					quality = " ⚠️ Fair"
+				} else {
+					quality = " ❌ Poor"
+				}
+			case "mse":
+				displayText = fmt.Sprintf("📊 MSE: %.2f", value)
+				quality = ""
+			default:
+				displayText = fmt.Sprintf("📈 %s: %.3f", name, value)
+				quality = ""
+			}
+
+			label := widget.NewLabel(displayText + quality)
+			content.Add(label)
+		}
 	}
 
-	card := widget.NewCard("Quality Metrics", "", content)
+	card := widget.NewCard("📊 Quality Metrics", "", content)
 	mp.vbox.RemoveAll()
 	mp.vbox.Add(card)
 }
@@ -280,8 +356,8 @@ func (mp *MetricsPanel) UpdateMetrics(metrics map[string]float64) {
 func (mp *MetricsPanel) Clear() {
 	mp.metrics = make(map[string]float64)
 	mp.vbox.RemoveAll()
-	mp.vbox.Add(widget.NewCard("Quality Metrics", "",
-		widget.NewLabel("Real-time metrics will appear here")))
+	mp.vbox.Add(widget.NewCard("📊 Quality Metrics", "",
+		widget.NewLabel("Real-time quality metrics will appear here during processing.")))
 }
 
 func (mp *MetricsPanel) Refresh() {

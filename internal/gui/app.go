@@ -1,4 +1,4 @@
-// Updated main application with layer support
+// Updated main application with improved layout and proportions
 package gui
 
 import (
@@ -15,7 +15,7 @@ import (
 	"advanced-image-processing/internal/io"
 )
 
-// Application represents the main application with layer support
+// Application represents the main application with enhanced UI
 type Application struct {
 	app       fyne.App
 	window    fyne.Window
@@ -25,7 +25,7 @@ type Application struct {
 	// Core components
 	imageData     *core.ImageData
 	regionManager *core.RegionManager
-	pipeline      *core.EnhancedPipeline // Updated to enhanced pipeline
+	pipeline      *core.EnhancedPipeline
 	loader        *io.ImageLoader
 
 	// GUI components
@@ -38,13 +38,15 @@ type Application struct {
 
 	// Layout containers
 	mainContent *container.Split
-	rightPanel  *container.Split
-	leftPanel   *container.Split
+	leftPanels  *container.Split
+	centerPanel *fyne.Container
+	rightPanels *container.Split
+	statusCard  *widget.Card
 }
 
 func NewApplication(app fyne.App, logger *slog.Logger, debugMode bool) *Application {
-	window := app.NewWindow("Advanced Image Processing v2.0 - Layer Edition")
-	window.Resize(fyne.NewSize(1600, 1000))
+	window := app.NewWindow("🎨 Advanced Image Processing v2.0 - Layer Edition")
+	window.Resize(fyne.NewSize(1800, 1200))
 	window.CenterOnScreen()
 
 	appInstance := &Application{
@@ -79,48 +81,53 @@ func (a *Application) initializeGUI() {
 }
 
 func (a *Application) setupLayout() {
-	// Create toolbar
+	// Create enhanced toolbar with spacing
 	toolbarContainer := container.NewVBox(
-		a.toolbar.GetContainer(),
+		widget.NewCard("🛠️ Tools", "", a.toolbar.GetContainer()),
 		widget.NewSeparator(),
 	)
 
-	// Create main canvas area
-	canvasContainer := container.NewBorder(
-		toolbarContainer,
-		nil,
-		nil,
-		nil,
-		a.canvas.GetContainer(),
+	// Create center panel with image canvas
+	a.centerPanel = container.NewBorder(
+		toolbarContainer, // top
+		nil,              // bottom
+		nil,              // left
+		nil,              // right
+		container.NewPadded(a.canvas.GetContainer()), // center with padding
 	)
 
-	// Create left panel with layer management
-	a.leftPanel = container.NewVSplit(
-		a.layerPanel.GetContainer(),
-		a.properties.GetContainer(),
+	// Create left panel with layer management and properties
+	a.leftPanels = container.NewVSplit(
+		container.NewScroll(a.layerPanel.GetContainer()),
+		container.NewScroll(a.properties.GetContainer()),
 	)
-	a.leftPanel.SetOffset(0.5)
+	a.leftPanels.SetOffset(0.6) // Give more space to layer panel
 
-	// Create right panel with metrics
-	a.rightPanel = container.NewVSplit(
-		container.NewVBox(), // Placeholder for future panels
+	// Create status card for tracking
+	a.statusCard = widget.NewCard("📊 Status", "",
+		widget.NewLabel("Application ready for image processing"))
+
+	// Create right panel with metrics and status
+	a.rightPanels = container.NewVSplit(
+		a.statusCard,
 		a.metricsPanel.GetContainer(),
 	)
-	a.rightPanel.SetOffset(0.3)
+	a.rightPanels.SetOffset(0.3) // Give more space to metrics
 
-	// Create main content with three-panel layout
+	// Create main three-panel layout
 	centerAndRight := container.NewHSplit(
-		canvasContainer,
-		a.rightPanel,
+		a.centerPanel,
+		a.rightPanels,
 	)
-	centerAndRight.SetOffset(0.8)
+	centerAndRight.SetOffset(0.75) // Give most space to center panel
 
 	a.mainContent = container.NewHSplit(
-		a.leftPanel,
+		a.leftPanels,
 		centerAndRight,
 	)
-	a.mainContent.SetOffset(0.25)
+	a.mainContent.SetOffset(0.3) // Balanced left panel size
 
+	// Set window properties
 	a.window.SetMainMenu(a.menuHandler.GetMainMenu())
 	a.window.SetContent(a.mainContent)
 }
@@ -154,12 +161,14 @@ func (a *Application) setupCallbacks() {
 				a.layerPanel.Enable()
 				a.toolbar.Enable()
 				a.metricsPanel.Clear()
+				a.updateStatusMessage(fmt.Sprintf("✅ Loaded: %s", filepath))
 			})
 		},
 		// onImageSaved
 		func(filepath string) {
 			fyne.Do(func() {
-				a.showInfo("Image Saved", fmt.Sprintf("Image saved to: %s", filepath))
+				a.showInfo("💾 Image Saved", fmt.Sprintf("Image successfully saved to:\n%s", filepath))
+				a.updateStatusMessage(fmt.Sprintf("💾 Saved: %s", filepath))
 			})
 		},
 	)
@@ -169,12 +178,14 @@ func (a *Application) setupCallbacks() {
 		// onToolChanged
 		func(tool string) {
 			a.canvas.SetActiveTool(tool)
+			a.updateStatusMessage(fmt.Sprintf("🛠️ Tool: %s", tool))
 		},
 		// onClearSelection
 		func() {
 			a.regionManager.ClearAll()
 			a.canvas.RefreshSelections()
 			a.layerPanel.Refresh()
+			a.updateStatusMessage("🗑️ Selection cleared")
 		},
 	)
 
@@ -186,6 +197,7 @@ func (a *Application) setupCallbacks() {
 			a.canvas.ClearPreview()
 			a.metricsPanel.Clear()
 			a.layerPanel.Refresh()
+			a.updateStatusMessage("↻ Reset to original image")
 		}
 	})
 
@@ -196,19 +208,30 @@ func (a *Application) setupCallbacks() {
 			fyne.Do(func() {
 				a.toolbar.SetSelectionState(hasSelection)
 				a.layerPanel.Refresh()
+				if hasSelection {
+					a.updateStatusMessage("🎯 Region selected")
+				} else {
+					a.updateStatusMessage("📄 No selection")
+				}
 			})
 		},
 	)
 
 	// Layer panel selection change callback
 	a.layerPanel.SetSelectionChangedCallback(func() {
-		// Refresh UI when selections change
 		a.layerPanel.Refresh()
 	})
 }
 
+func (a *Application) updateStatusMessage(message string) {
+	// Update the status card directly
+	if a.statusCard != nil {
+		a.statusCard.SetContent(widget.NewLabel(message))
+	}
+}
+
 func (a *Application) ShowAndRun() {
-	a.logger.Info("Showing main application window with layer support")
+	a.logger.Info("Showing main application window with enhanced UI")
 
 	a.window.SetCloseIntercept(func() {
 		a.cleanup()
@@ -228,6 +251,7 @@ func (a *Application) cleanup() {
 func (a *Application) showError(title string, err error) {
 	a.logger.Error(title, "error", err)
 	dialog.ShowError(err, a.window)
+	a.updateStatusMessage(fmt.Sprintf("❌ Error: %s", err.Error()))
 }
 
 func (a *Application) showInfo(title, message string) {
@@ -272,6 +296,7 @@ func (a *Application) LoadImageFromPath(filepath string) error {
 		a.layerPanel.Enable()
 		a.toolbar.Enable()
 		a.metricsPanel.Clear()
+		a.updateStatusMessage(fmt.Sprintf("✅ Image loaded: %s", filepath))
 	})
 
 	a.logger.Info("Image loaded successfully", "filepath", filepath)

@@ -1,4 +1,4 @@
-// Updated Properties Panel supporting both sequential and layer modes
+// Updated Properties Panel with improved UX and styling
 package gui
 
 import (
@@ -20,7 +20,7 @@ type EnhancedPropertiesPanel struct {
 
 	vbox            *fyne.Container
 	algorithmSelect *widget.Select
-	paramContainer  *fyne.Container
+	paramContainer  *container.Scroll
 	enabled         bool
 
 	currentAlgorithm string
@@ -40,37 +40,55 @@ func NewEnhancedPropertiesPanel(pipeline *core.EnhancedPipeline, logger *slog.Lo
 }
 
 func (pp *EnhancedPropertiesPanel) initializeUI() {
-	// Algorithm selection dropdown
+	// Algorithm selection dropdown with better organization
 	categories := algorithms.GetAlgorithmsByCategory()
 	var algorithmOptions []string
 
 	for category, algs := range categories {
 		for _, alg := range algs {
-			algorithmOptions = append(algorithmOptions, fmt.Sprintf("%s - %s", category, alg))
+			algorithmOptions = append(algorithmOptions, fmt.Sprintf("%s → %s", category, alg))
 		}
 	}
 
 	pp.algorithmSelect = widget.NewSelect(algorithmOptions, pp.onAlgorithmSelected)
-	pp.algorithmSelect.PlaceHolder = "Select an algorithm..."
+	pp.algorithmSelect.PlaceHolder = "Choose an algorithm..."
 	pp.algorithmSelect.Disable()
 
-	// Parameter container
-	pp.paramContainer = container.NewVBox()
+	// Parameter container with scrolling
+	paramContent := container.NewVBox()
+	pp.paramContainer = container.NewVScroll(paramContent)
+	pp.paramContainer.SetMinSize(fyne.NewSize(300, 200))
+
+	// Mode explanation
+	modeCard := widget.NewCard("📝 Sequential Processing", "",
+		container.NewVBox(
+			widget.NewLabel("Sequential mode processes the entire image step by step."),
+			widget.NewLabel("Each algorithm is applied to the full image in order."),
+			widget.NewSeparator(),
+			widget.NewLabel("💡 Enable Layer Mode for region-specific processing."),
+		))
+
+	// Algorithm selection card
+	algorithmCard := widget.NewCard("🔧 Algorithm Selection", "",
+		container.NewVBox(
+			widget.NewLabel("Choose an algorithm to add to the processing pipeline:"),
+			pp.algorithmSelect,
+		))
+
+	// Parameters card
+	parametersCard := widget.NewCard("⚙️ Real-time Parameters", "",
+		container.NewVBox(
+			widget.NewLabel("Adjust parameters in real-time:"),
+			pp.paramContainer,
+		))
 
 	// Main container
-	content := container.NewVBox(
-		widget.NewLabel("Sequential Processing"),
-		widget.NewLabel("(Disabled in Layer Mode)"),
-		widget.NewSeparator(),
-		widget.NewLabel("Algorithm Selection"),
-		pp.algorithmSelect,
-		widget.NewSeparator(),
-		widget.NewLabel("Parameters (Real-time)"),
-		pp.paramContainer,
-	)
-
 	pp.vbox = container.NewVBox(
-		widget.NewCard("Algorithm Properties", "", content),
+		modeCard,
+		widget.NewSeparator(),
+		algorithmCard,
+		widget.NewSeparator(),
+		parametersCard,
 	)
 }
 
@@ -79,13 +97,13 @@ func (pp *EnhancedPropertiesPanel) onAlgorithmSelected(selected string) {
 		return
 	}
 
-	// Extract algorithm name from "Category - algorithm" format
+	// Extract algorithm name from "Category → algorithm" format
 	var algorithmName string
 	categories := algorithms.GetAlgorithmsByCategory()
 
 	for _, algs := range categories {
 		for _, alg := range algs {
-			if selected == fmt.Sprintf("%s - %s", pp.getCategoryForAlgorithm(alg), alg) {
+			if selected == fmt.Sprintf("%s → %s", pp.getCategoryForAlgorithm(alg), alg) {
 				algorithmName = alg
 				break
 			}
@@ -105,6 +123,8 @@ func (pp *EnhancedPropertiesPanel) onAlgorithmSelected(selected string) {
 		params := algorithm.GetDefaultParams()
 		if err := pp.pipeline.AddStep(algorithmName, params); err != nil {
 			pp.logger.Error("Failed to add algorithm step", "error", err)
+		} else {
+			pp.logger.Info("Added algorithm to sequential pipeline", "algorithm", algorithmName)
 		}
 	}
 }
@@ -130,40 +150,76 @@ func (pp *EnhancedPropertiesPanel) createParameterWidgets(algorithmName string) 
 	}
 
 	// Clear existing parameters
-	pp.paramContainer.RemoveAll()
+	if pp.paramContainer.Content != nil {
+		if paramContent, ok := pp.paramContainer.Content.(*fyne.Container); ok {
+			paramContent.RemoveAll()
+		}
+	}
 	pp.paramWidgets = make(map[string]fyne.CanvasObject)
 
 	// Get parameter info
 	paramInfo := algorithm.GetParameterInfo()
 	if len(paramInfo) == 0 {
-		pp.paramContainer.Add(widget.NewLabel("No parameters available"))
+		pp.addToParamContainer(widget.NewLabel("ℹ️ No configurable parameters for this algorithm"))
 		return
 	}
+
+	// Add algorithm info
+	pp.addToParamContainer(widget.NewLabel(fmt.Sprintf("🔧 %s", algorithm.GetName())))
+	pp.addToParamContainer(widget.NewLabel(fmt.Sprintf("📝 %s", algorithm.GetDescription())))
+	pp.addToParamContainer(widget.NewSeparator())
 
 	// Create widgets for each parameter
 	for _, param := range paramInfo {
 		pp.createParameterWidget(param)
 	}
 
-	// Add remove button
-	removeBtn := widget.NewButton("Remove Last Algorithm", func() {
-		// Remove the last step from sequential pipeline
+	// Add action buttons
+	pp.addToParamContainer(widget.NewSeparator())
+
+	removeBtn := widget.NewButton("🗑️ Remove Last Algorithm", func() {
 		steps := pp.pipeline.GetSteps()
 		if len(steps) > 0 {
-			// Note: This requires extending the pipeline interface to support step removal
 			pp.logger.Debug("Remove last algorithm requested")
 		}
 
 		// Clear the UI
 		pp.algorithmSelect.SetSelected("")
-		pp.paramContainer.RemoveAll()
+		if pp.paramContainer.Content != nil {
+			if paramContent, ok := pp.paramContainer.Content.(*fyne.Container); ok {
+				paramContent.RemoveAll()
+			}
+		}
 		pp.currentAlgorithm = ""
 	})
-	pp.paramContainer.Add(removeBtn)
+	removeBtn.Importance = widget.LowImportance
+
+	clearBtn := widget.NewButton("🗑️ Clear All Steps", func() {
+		pp.pipeline.ClearAll()
+		pp.algorithmSelect.SetSelected("")
+		if pp.paramContainer.Content != nil {
+			if paramContent, ok := pp.paramContainer.Content.(*fyne.Container); ok {
+				paramContent.RemoveAll()
+			}
+		}
+		pp.currentAlgorithm = ""
+	})
+	clearBtn.Importance = widget.DangerImportance
+
+	pp.addToParamContainer(container.NewHBox(removeBtn, clearBtn))
+}
+
+func (pp *EnhancedPropertiesPanel) addToParamContainer(obj fyne.CanvasObject) {
+	if pp.paramContainer.Content != nil {
+		if paramContent, ok := pp.paramContainer.Content.(*fyne.Container); ok {
+			paramContent.Add(obj)
+		}
+	}
 }
 
 func (pp *EnhancedPropertiesPanel) createParameterWidget(param algorithms.ParameterInfo) {
-	label := widget.NewLabel(fmt.Sprintf("%s:", param.Name))
+	label := widget.NewLabel(fmt.Sprintf("🔧 %s:", param.Name))
+	pp.addToParamContainer(label)
 
 	var paramWidget fyne.CanvasObject
 
@@ -179,7 +235,10 @@ func (pp *EnhancedPropertiesPanel) createParameterWidget(param algorithms.Parame
 			valueLabel.SetText(fmt.Sprintf("%.0f", value))
 			pp.updateAlgorithmParameter(param.Name, value)
 		}
-		paramWidget = container.NewHBox(slider, valueLabel)
+		paramWidget = container.NewVBox(
+			container.NewHBox(slider, valueLabel),
+			widget.NewLabel(fmt.Sprintf("📝 %s", param.Description)),
+		)
 
 	case "float":
 		slider := widget.NewSlider(param.Min.(float64), param.Max.(float64))
@@ -192,7 +251,10 @@ func (pp *EnhancedPropertiesPanel) createParameterWidget(param algorithms.Parame
 			valueLabel.SetText(fmt.Sprintf("%.2f", value))
 			pp.updateAlgorithmParameter(param.Name, value)
 		}
-		paramWidget = container.NewHBox(slider, valueLabel)
+		paramWidget = container.NewVBox(
+			container.NewHBox(slider, valueLabel),
+			widget.NewLabel(fmt.Sprintf("📝 %s", param.Description)),
+		)
 
 	case "bool":
 		check := widget.NewCheck("", func(checked bool) {
@@ -201,7 +263,10 @@ func (pp *EnhancedPropertiesPanel) createParameterWidget(param algorithms.Parame
 		if defaultVal, ok := param.Default.(bool); ok {
 			check.SetChecked(defaultVal)
 		}
-		paramWidget = check
+		paramWidget = container.NewVBox(
+			check,
+			widget.NewLabel(fmt.Sprintf("📝 %s", param.Description)),
+		)
 
 	case "enum":
 		selectWidget := widget.NewSelect(param.Options, func(selected string) {
@@ -210,22 +275,18 @@ func (pp *EnhancedPropertiesPanel) createParameterWidget(param algorithms.Parame
 		if defaultVal, ok := param.Default.(string); ok {
 			selectWidget.SetSelected(defaultVal)
 		}
-		paramWidget = selectWidget
+		paramWidget = container.NewVBox(
+			selectWidget,
+			widget.NewLabel(fmt.Sprintf("📝 %s", param.Description)),
+		)
 
 	default:
-		paramWidget = widget.NewLabel("Unsupported parameter type")
+		paramWidget = widget.NewLabel("❌ Unsupported parameter type")
 	}
 
 	pp.paramWidgets[param.Name] = paramWidget
-
-	paramBox := container.NewVBox(
-		label,
-		paramWidget,
-		widget.NewLabel(param.Description),
-		widget.NewSeparator(),
-	)
-
-	pp.paramContainer.Add(paramBox)
+	pp.addToParamContainer(paramWidget)
+	pp.addToParamContainer(widget.NewSeparator())
 }
 
 func (pp *EnhancedPropertiesPanel) updateAlgorithmParameter(paramName string, value interface{}) {

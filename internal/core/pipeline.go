@@ -1,4 +1,4 @@
-// Processing pipeline with sequential and layer-based support
+// Processing pipeline with sequential and layer-based support - Fixed UI thread handling
 package core
 
 import (
@@ -239,11 +239,19 @@ func (ep *EnhancedPipeline) processPreview() {
 		finalMetrics := ep.calculatePreviewMetrics(preview, result)
 		ep.logger.Debug("Metrics calculated", "psnr", finalMetrics["psnr"], "ssim", finalMetrics["ssim"])
 
-		// Update UI
-		if ep.onPreviewUpdate != nil {
-			resultCopy := result.Clone()
+		// Store processed result for reuse
+		processedCopy := result.Clone()
+
+		// Update UI immediately in the main thread
+		ep.mu.RLock()
+		callback := ep.onPreviewUpdate
+		ep.mu.RUnlock()
+
+		if callback != nil {
+			// Use fyne.Do to ensure UI updates happen on main thread
 			fyne.Do(func() {
-				ep.onPreviewUpdate(resultCopy, finalMetrics)
+				ep.logger.Debug("Calling preview update callback in UI thread")
+				callback(processedCopy, finalMetrics)
 			})
 		}
 

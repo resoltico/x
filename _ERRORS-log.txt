@@ -1,5 +1,44 @@
-[9:15:40 AM] % go build ./cmd/app
-# advanced-image-processing/internal/gui
-internal/gui/layers.go:151:16: lp.layerList.Enable undefined (type *"fyne.io/fyne/v2/widget".List has no field or method Enable)
-internal/gui/layers.go:156:16: lp.layerList.Disable undefined (type *"fyne.io/fyne/v2/widget".List has no field or method Disable)
-[9:15:51 AM] % 
+[9:55:55 AM] % ./app --debug
+time=2025-06-16T09:55:56.880+03:00 level=INFO msg="Starting Advanced Image Processing Application with Layer Support" version=2.0.0 debug_mode=true
+time=2025-06-16T09:55:57.094+03:00 level=INFO msg="Showing main application window with enhanced UI"
+time=2025-06-16T09:55:59.969+03:00 level=INFO msg="Opening file dialog for image selection"
+time=2025-06-16T09:56:02.902+03:00 level=INFO msg="Loading selected image" filepath="/Users/erst/Desktop/Ut feritur ferit.png"
+time=2025-06-16T09:56:02.902+03:00 level=DEBUG msg="Loading image" filepath="/Users/erst/Desktop/Ut feritur ferit.png"
+time=2025-06-16T09:56:02.929+03:00 level=INFO msg="Image loaded successfully" filepath="/Users/erst/Desktop/Ut feritur ferit.png" width=1400 height=995 channels=3
+time=2025-06-16T09:56:02.943+03:00 level=INFO msg="Image loaded successfully" filepath="/Users/erst/Desktop/Ut feritur ferit.png"
+time=2025-06-16T09:56:02.948+03:00 level=DEBUG msg="Clearing preview"
+time=2025-06-16T09:56:02.952+03:00 level=DEBUG msg="Updated original image display"
+time=2025-06-16T09:56:06.168+03:00 level=DEBUG msg="Processing mode changed" layer_mode=true
+time=2025-06-16T09:56:06.168+03:00 level=DEBUG msg="Scheduling preview processing" delay_ms=200
+time=2025-06-16T09:56:06.369+03:00 level=DEBUG msg="Starting preview processing"
+time=2025-06-16T09:56:06.369+03:00 level=DEBUG msg="Processing preview" layer_mode=true
+DEBUG: Processing 0 layers
+time=2025-06-16T09:56:06.369+03:00 level=DEBUG msg="Layer processing completed" success=true
+time=2025-06-16T09:56:06.373+03:00 level=DEBUG msg="Metrics calculated" psnr=361.20199909921956 ssim=1
+time=2025-06-16T09:56:06.373+03:00 level=DEBUG msg="Preview processing completed successfully"
+time=2025-06-16T09:56:06.373+03:00 level=DEBUG msg="Calling preview update callback in UI thread"
+time=2025-06-16T09:56:06.373+03:00 level=DEBUG msg="UpdatePreview called" empty=false
+time=2025-06-16T09:56:06.373+03:00 level=DEBUG msg="Successfully converted preview to image" width=400 height=284
+time=2025-06-16T09:56:06.373+03:00 level=DEBUG msg="Preview image updated and all containers refreshed"
+time=2025-06-16T09:56:11.518+03:00 level=DEBUG msg="Added processing layer" layer_id=layer_1 algorithm=otsu_multi
+time=2025-06-16T09:56:11.518+03:00 level=DEBUG msg="Triggering preview processing after adding layer"
+time=2025-06-16T09:56:11.518+03:00 level=DEBUG msg="Scheduling preview processing" delay_ms=200
+time=2025-06-16T09:56:11.518+03:00 level=DEBUG msg="Added layer" layer_id=layer_1 algorithm=otsu_multi
+time=2025-06-16T09:56:11.718+03:00 level=DEBUG msg="Starting preview processing"
+time=2025-06-16T09:56:11.719+03:00 level=DEBUG msg="Processing preview" layer_mode=true
+DEBUG: Processing 1 layers
+DEBUG: Processing layer 0: Layer 1 with algorithm otsu_multi
+DEBUG: Applying algorithm otsu_multi with params map[max_value:255]
+DEBUG: Algorithm applied successfully, result size: 400x284
+DEBUG: Layer processed successfully, blending...
+DEBUG: Blending with opacity=1.00, hasMask=false
+DEBUG: Full replacement (opacity=1.0)
+DEBUG: Layer 0 blending completed
+time=2025-06-16T09:56:11.720+03:00 level=DEBUG msg="Layer processing completed" success=true
+time=2025-06-16T09:56:11.722+03:00 level=DEBUG msg="Metrics calculated" psnr=13.719108281527665 ssim=0.8614685294919259
+time=2025-06-16T09:56:11.722+03:00 level=DEBUG msg="Preview processing completed successfully"
+time=2025-06-16T09:56:11.722+03:00 level=DEBUG msg="Calling preview update callback in UI thread"
+time=2025-06-16T09:56:11.722+03:00 level=DEBUG msg="UpdatePreview called" empty=false
+time=2025-06-16T09:56:11.722+03:00 level=DEBUG msg="Successfully converted preview to image" width=400 height=284
+time=2025-06-16T09:56:11.722+03:00 level=DEBUG msg="Preview image updated and all containers refreshed"
+
