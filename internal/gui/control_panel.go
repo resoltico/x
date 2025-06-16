@@ -1,5 +1,5 @@
 // internal/gui/control_panel.go
-// Modern control panel implementing the perfect UI description
+// Fixed control panel with proper container sizing
 package gui
 
 import (
@@ -16,7 +16,6 @@ import (
 	"advanced-image-processing/internal/core"
 )
 
-// ControlPanel implements the redesigned left control panel
 type ControlPanel struct {
 	pipeline      *core.EnhancedPipeline
 	regionManager *core.RegionManager
@@ -54,7 +53,6 @@ type ControlPanel struct {
 	onSelectionChanged func()
 }
 
-// LayerItem represents a layer in the stack
 type LayerItem struct {
 	ID         string
 	Name       string
@@ -66,7 +64,6 @@ type LayerItem struct {
 	Parameters map[string]interface{}
 }
 
-// SequenceItem represents an algorithm in the sequence
 type SequenceItem struct {
 	Algorithm  string
 	Parameters map[string]interface{}
@@ -89,36 +86,40 @@ func NewControlPanel(pipeline *core.EnhancedPipeline, regionManager *core.Region
 }
 
 func (cp *ControlPanel) initializeUI() {
-	// Initialize main section FIRST
+	// Initialize main section
 	cp.mainSection = container.NewVBox()
 
-	// Processing Mode Toggle - DON'T set callback yet
+	// Processing Mode Toggle - make it more compact
 	cp.modeToggle = widget.NewRadioGroup([]string{"Sequential Mode", "Layer Mode"}, nil)
-	cp.modeToggle.Horizontal = true
+	cp.modeToggle.Horizontal = false
 
 	modeCard := widget.NewCard("Processing Mode", "", cp.modeToggle)
 
-	// Parameters area
-	cp.currentParams = container.NewVBox()
+	// Parameters area with reasonable height
+	cp.currentParams = container.NewVBox(
+		widget.NewLabel("Select an item above to edit parameters"),
+	)
 	cp.parametersArea = container.NewScroll(cp.currentParams)
-	cp.parametersArea.SetMinSize(fyne.NewSize(280, 250))
 
 	parametersCard := widget.NewCard("Parameters", "", cp.parametersArea)
 
-	// Main container with fixed width
-	cp.container = container.NewVBox(
+	// Main content in VBox
+	content := container.NewVBox(
 		modeCard,
 		widget.NewSeparator(),
 		cp.mainSection,
 		widget.NewSeparator(),
 		parametersCard,
 	)
-	cp.container.Resize(fyne.NewSize(300, 950))
+
+	// Create scroll container and wrap it
+	scroll := container.NewScroll(content)
+	cp.container = container.NewBorder(nil, nil, nil, nil, scroll)
 
 	// Update main section first time
 	cp.updateMainSection()
 
-	// NOW set the callback and selected value after everything is initialized
+	// Set callback after initialization
 	cp.modeToggle.OnChanged = func(value string) {
 		cp.isLayerMode = (value == "Layer Mode")
 		cp.updateMainSection()
@@ -128,12 +129,11 @@ func (cp *ControlPanel) initializeUI() {
 	}
 	cp.modeToggle.SetSelected("Sequential Mode")
 
-	cp.Disable() // Start disabled
+	cp.Disable()
 }
 
 func (cp *ControlPanel) updateMainSection() {
 	if cp.mainSection == nil {
-		// Safety check - should not happen after proper initialization
 		cp.mainSection = container.NewVBox()
 		return
 	}
@@ -150,7 +150,7 @@ func (cp *ControlPanel) updateMainSection() {
 }
 
 func (cp *ControlPanel) setupLayerMode() {
-	// Layer stack list
+	// Layer stack list with fixed height
 	cp.layerStack = widget.NewList(
 		func() int { return len(cp.layerData) },
 		cp.createLayerTemplate,
@@ -162,9 +162,8 @@ func (cp *ControlPanel) setupLayerMode() {
 	}
 
 	stackScroll := container.NewScroll(cp.layerStack)
-	stackScroll.SetMinSize(fyne.NewSize(280, 400))
+	stackScroll.SetMinSize(fyne.NewSize(280, 300))
 
-	// Add layer button
 	cp.addLayerBtn = widget.NewButtonWithIcon("Add Layer", theme.ContentAddIcon(), cp.showAddLayerDialog)
 	cp.addLayerBtn.Importance = widget.HighImportance
 
@@ -191,9 +190,7 @@ func (cp *ControlPanel) setupSequentialMode() {
 	}
 
 	sequenceScroll := container.NewScroll(cp.algorithmSequence)
-	sequenceScroll.SetMinSize(fyne.NewSize(280, 400))
 
-	// Add algorithm button
 	cp.addAlgorithmBtn = widget.NewButtonWithIcon("Add Algorithm", theme.ContentAddIcon(), cp.showAddAlgorithmDialog)
 	cp.addAlgorithmBtn.Importance = widget.HighImportance
 
@@ -209,7 +206,7 @@ func (cp *ControlPanel) setupSequentialMode() {
 
 func (cp *ControlPanel) createLayerTemplate() fyne.CanvasObject {
 	nameEntry := widget.NewEntry()
-	nameEntry.Resize(fyne.NewSize(100, 30))
+	nameEntry.Resize(fyne.NewSize(120, 30))
 
 	visToggle := widget.NewCheck("", nil)
 
@@ -251,7 +248,6 @@ func (cp *ControlPanel) updateLayerItem(id widget.ListItemID, item fyne.CanvasOb
 	topRow := vbox.Objects[0].(*fyne.Container)
 	bottomRow := vbox.Objects[1].(*fyne.Container)
 
-	// Update top row
 	visToggle := topRow.Objects[0].(*widget.Check)
 	nameEntry := topRow.Objects[1].(*widget.Entry)
 	expandBtn := topRow.Objects[2].(*widget.Button)
@@ -266,14 +262,12 @@ func (cp *ControlPanel) updateLayerItem(id widget.ListItemID, item fyne.CanvasOb
 		expandBtn.SetIcon(theme.MenuIcon())
 	}
 
-	// Update bottom row
 	algorithmLabel := bottomRow.Objects[0].(*widget.Label)
 	blendSelect := bottomRow.Objects[1].(*widget.Select)
 
 	algorithmLabel.SetText(layer.Algorithm)
 	blendSelect.SetSelected(layer.BlendMode)
 
-	// Set up callbacks
 	visToggle.OnChanged = func(checked bool) {
 		layer.Visible = checked
 		cp.refreshLayers()
@@ -355,7 +349,6 @@ func (cp *ControlPanel) updateSequenceItem(id widget.ListItemID, item fyne.Canva
 }
 
 func (cp *ControlPanel) showAddLayerDialog() {
-	// Get available algorithms
 	categories := algorithms.GetAlgorithmsByCategory()
 	var algorithmOptions []string
 	for category, algs := range categories {
@@ -367,7 +360,6 @@ func (cp *ControlPanel) showAddLayerDialog() {
 	algorithmSelect := widget.NewSelect(algorithmOptions, nil)
 	algorithmSelect.PlaceHolder = "Choose algorithm..."
 
-	// Get available regions
 	regionOptions := []string{"Global (entire image)"}
 	selections := cp.regionManager.GetAllSelections()
 	for _, selection := range selections {
@@ -421,7 +413,6 @@ func (cp *ControlPanel) showAddLayerDialog() {
 }
 
 func (cp *ControlPanel) showAddAlgorithmDialog() {
-	// Get available algorithms
 	categories := algorithms.GetAlgorithmsByCategory()
 	var algorithmOptions []string
 	for category, algs := range categories {
@@ -461,7 +452,6 @@ func (cp *ControlPanel) showAddAlgorithmDialog() {
 }
 
 func (cp *ControlPanel) addLayer(name, algorithmSelection, regionSelection string) {
-	// Parse algorithm from selection
 	var algorithmName string
 	categories := algorithms.GetAlgorithmsByCategory()
 	for _, algs := range categories {
@@ -477,7 +467,6 @@ func (cp *ControlPanel) addLayer(name, algorithmSelection, regionSelection strin
 		return
 	}
 
-	// Get default parameters
 	algorithm, exists := algorithms.Get(algorithmName)
 	if !exists {
 		return
@@ -485,24 +474,20 @@ func (cp *ControlPanel) addLayer(name, algorithmSelection, regionSelection strin
 
 	params := algorithm.GetDefaultParams()
 
-	// Parse region ID
 	var regionID string
 	if regionSelection != "Global (entire image)" {
-		// Extract region ID from formatted string
 		parts := strings.Fields(regionSelection)
 		if len(parts) > 1 {
 			regionID = parts[1]
 		}
 	}
 
-	// Add to pipeline
 	layerID, err := cp.pipeline.AddLayer(name, algorithmName, params, regionID)
 	if err != nil {
 		cp.logger.Error("Failed to add layer", "error", err)
 		return
 	}
 
-	// Add to UI data
 	layer := &LayerItem{
 		ID:         layerID,
 		Name:       name,
@@ -519,7 +504,6 @@ func (cp *ControlPanel) addLayer(name, algorithmSelection, regionSelection strin
 }
 
 func (cp *ControlPanel) addAlgorithm(algorithmSelection string) {
-	// Parse algorithm from selection
 	var algorithmName string
 	categories := algorithms.GetAlgorithmsByCategory()
 	for _, algs := range categories {
@@ -535,7 +519,6 @@ func (cp *ControlPanel) addAlgorithm(algorithmSelection string) {
 		return
 	}
 
-	// Get default parameters
 	algorithm, exists := algorithms.Get(algorithmName)
 	if !exists {
 		return
@@ -543,14 +526,12 @@ func (cp *ControlPanel) addAlgorithm(algorithmSelection string) {
 
 	params := algorithm.GetDefaultParams()
 
-	// Add to pipeline
 	err := cp.pipeline.AddStep(algorithmName, params)
 	if err != nil {
 		cp.logger.Error("Failed to add algorithm", "error", err)
 		return
 	}
 
-	// Add to UI data
 	sequence := &SequenceItem{
 		Algorithm:  algorithmName,
 		Parameters: params,
@@ -566,7 +547,6 @@ func (cp *ControlPanel) deleteLayer(index int) {
 		return
 	}
 
-	// Remove from data
 	cp.layerData = append(cp.layerData[:index], cp.layerData[index+1:]...)
 	cp.layerStack.Refresh()
 	cp.selectedIndex = -1
@@ -578,7 +558,6 @@ func (cp *ControlPanel) deleteSequenceItem(index int) {
 		return
 	}
 
-	// Remove from data
 	cp.sequenceData = append(cp.sequenceData[:index], cp.sequenceData[index+1:]...)
 	cp.algorithmSequence.Refresh()
 	cp.selectedIndex = -1
@@ -587,7 +566,6 @@ func (cp *ControlPanel) deleteSequenceItem(index int) {
 
 func (cp *ControlPanel) updateParametersArea() {
 	if cp.currentParams == nil {
-		// Safety check - initialize if needed
 		cp.currentParams = container.NewVBox()
 	}
 
@@ -636,7 +614,6 @@ func (cp *ControlPanel) updateParametersArea() {
 	cp.currentParams.Add(widget.NewSeparator())
 	cp.currentParams.Add(widget.NewLabel("Parameters:"))
 
-	// Create parameter widgets
 	paramInfo := algorithm.GetParameterInfo()
 	for _, param := range paramInfo {
 		cp.createParameterWidget(param, params)
@@ -720,12 +697,10 @@ func (cp *ControlPanel) getCategoryForAlgorithm(algorithm string) string {
 
 func (cp *ControlPanel) refreshLayers() {
 	// Trigger layer refresh in pipeline
-	// This would require extending the pipeline API
 }
 
 func (cp *ControlPanel) refreshProcessing() {
 	// Trigger processing update
-	// This would be handled by the pipeline automatically in real-time mode
 }
 
 func (cp *ControlPanel) GetContainer() fyne.CanvasObject {
@@ -769,7 +744,6 @@ func (cp *ControlPanel) Reset() {
 }
 
 func (cp *ControlPanel) UpdateSelectionState(hasSelection bool) {
-	// Update UI state based on selection
 	if cp.onSelectionChanged != nil {
 		cp.onSelectionChanged()
 	}

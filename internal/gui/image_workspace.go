@@ -1,5 +1,5 @@
 // internal/gui/image_workspace.go
-// Modern image workspace with enhanced viewing and interaction
+// Fixed image workspace with proper sizing
 package gui
 
 import (
@@ -17,7 +17,6 @@ import (
 	"advanced-image-processing/internal/core"
 )
 
-// ImageWorkspace provides the main image viewing and interaction area
 type ImageWorkspace struct {
 	imageData     *core.ImageData
 	regionManager *core.RegionManager
@@ -61,7 +60,7 @@ func NewImageWorkspace(imageData *core.ImageData, regionManager *core.RegionMana
 }
 
 func (iw *ImageWorkspace) initializeUI() {
-	// Create interactive canvases FIRST
+	// Create interactive canvases
 	iw.originalCanvas = NewInteractiveImageCanvas(iw.imageData, iw.regionManager, iw.logger)
 	iw.previewCanvas = NewStaticImageCanvas(iw.logger)
 
@@ -72,18 +71,18 @@ func (iw *ImageWorkspace) initializeUI() {
 		}
 	})
 
-	// Create view containers
+	// Create view containers with fixed sizing
 	originalCard := widget.NewCard("Original", "", iw.originalCanvas)
 	previewCard := widget.NewCard("Preview", "", iw.previewCanvas)
 
-	// Split view (default)
-	iw.splitView = container.NewVSplit(originalCard, previewCard)
+	// Split view (default) - vertical split for side-by-side display
+	iw.splitView = container.NewHSplit(originalCard, previewCard)
 	iw.splitView.SetOffset(0.5) // Equal split
 
 	// Single view (preview only)
 	iw.singleView = container.NewBorder(nil, nil, nil, nil, previewCard)
 
-	// View mode toggle - DON'T set callback yet
+	// View mode toggle
 	iw.viewToggle = widget.NewRadioGroup([]string{"Split View", "Preview Only"}, nil)
 	iw.viewToggle.Horizontal = true
 
@@ -100,9 +99,8 @@ func (iw *ImageWorkspace) initializeUI() {
 		nil,          // right
 		iw.splitView, // center (initial view)
 	)
-	iw.container.Resize(fyne.NewSize(1000, 950))
 
-	// NOW set the callback and selected value after container is initialized
+	// Set callback after initialization
 	iw.viewToggle.OnChanged = func(value string) {
 		iw.isSplitView = (value == "Split View")
 		iw.updateViewMode()
@@ -360,7 +358,6 @@ func (iic *InteractiveImageCanvas) screenToImageCoords(screenPos fyne.Position) 
 	metadata := iic.imageData.GetMetadata()
 	widgetSize := iic.Size()
 
-	// Calculate scaling and offset for centered image
 	scaleX := float64(widgetSize.Width) / float64(metadata.Width)
 	scaleY := float64(widgetSize.Height) / float64(metadata.Height)
 	scale := math.Min(scaleX, scaleY) * iic.currentZoom
@@ -373,7 +370,6 @@ func (iic *InteractiveImageCanvas) screenToImageCoords(screenPos fyne.Position) 
 	imageX := (float64(screenPos.X) - offsetX) / scale
 	imageY := (float64(screenPos.Y) - offsetY) / scale
 
-	// Clamp to image bounds
 	imageX = math.Max(0, math.Min(imageX, float64(metadata.Width-1)))
 	imageY = math.Max(0, math.Min(imageY, float64(metadata.Height-1)))
 
@@ -383,13 +379,11 @@ func (iic *InteractiveImageCanvas) screenToImageCoords(screenPos fyne.Position) 
 func (iic *InteractiveImageCanvas) createOverlay(w, h int) image.Image {
 	overlay := image.NewRGBA(image.Rect(0, 0, w, h))
 
-	// Draw existing selections
 	selections := iic.regionManager.GetAllSelections()
 	for _, selection := range selections {
 		iic.drawSelection(overlay, selection, w, h)
 	}
 
-	// Draw current selection being drawn
 	if iic.isDrawing && len(iic.currentPoints) > 0 {
 		iic.drawCurrentSelection(overlay, w, h)
 	}
@@ -398,7 +392,7 @@ func (iic *InteractiveImageCanvas) createOverlay(w, h int) image.Image {
 }
 
 func (iic *InteractiveImageCanvas) drawSelection(overlay *image.RGBA, selection *core.Selection, w, h int) {
-	selectionColor := color.RGBA{R: 255, G: 100, B: 0, A: 180} // Modern orange
+	selectionColor := color.RGBA{R: 255, G: 100, B: 0, A: 180}
 
 	switch selection.Type {
 	case core.SelectionRectangle:
@@ -413,7 +407,7 @@ func (iic *InteractiveImageCanvas) drawSelection(overlay *image.RGBA, selection 
 }
 
 func (iic *InteractiveImageCanvas) drawCurrentSelection(overlay *image.RGBA, w, h int) {
-	currentColor := color.RGBA{R: 0, G: 200, B: 255, A: 180} // Modern cyan
+	currentColor := color.RGBA{R: 0, G: 200, B: 255, A: 180}
 
 	switch iic.activeTool {
 	case "rectangle":
@@ -438,10 +432,8 @@ func (iic *InteractiveImageCanvas) drawCurrentSelection(overlay *image.RGBA, w, 
 func (iic *InteractiveImageCanvas) drawRectangleOverlay(overlay *image.RGBA, rect image.Rectangle, col color.RGBA, w, h int) {
 	screenRect := iic.imageToScreenRect(rect, w, h)
 
-	// Draw border with modern thick line
 	thickness := 3
 	for t := 0; t < thickness; t++ {
-		// Top and bottom lines
 		for x := screenRect.Min.X; x <= screenRect.Max.X; x++ {
 			if x >= 0 && x < w {
 				if screenRect.Min.Y+t >= 0 && screenRect.Min.Y+t < h {
@@ -452,7 +444,6 @@ func (iic *InteractiveImageCanvas) drawRectangleOverlay(overlay *image.RGBA, rec
 				}
 			}
 		}
-		// Left and right lines
 		for y := screenRect.Min.Y; y <= screenRect.Max.Y; y++ {
 			if y >= 0 && y < h {
 				if screenRect.Min.X+t >= 0 && screenRect.Min.X+t < w {
@@ -471,14 +462,12 @@ func (iic *InteractiveImageCanvas) drawPolygonOverlay(overlay *image.RGBA, point
 		return
 	}
 
-	// Draw lines between points with modern thick lines
 	for i := 0; i < len(points)-1; i++ {
 		p1 := iic.imageToScreenPoint(points[i], w, h)
 		p2 := iic.imageToScreenPoint(points[i+1], w, h)
 		iic.drawThickLine(overlay, p1, p2, col, w, h, 3)
 	}
 
-	// Close the polygon if we have enough points
 	if len(points) >= 3 {
 		p1 := iic.imageToScreenPoint(points[len(points)-1], w, h)
 		p2 := iic.imageToScreenPoint(points[0], w, h)
@@ -515,7 +504,6 @@ func (iic *InteractiveImageCanvas) imageToScreenPoint(imagePoint image.Point, w,
 }
 
 func (iic *InteractiveImageCanvas) drawThickLine(overlay *image.RGBA, p1, p2 image.Point, col color.RGBA, w, h int, thickness int) {
-	// Bresenham's line algorithm with thickness
 	dx := int(math.Abs(float64(p2.X - p1.X)))
 	dy := int(math.Abs(float64(p2.Y - p1.Y)))
 	sx := -1
@@ -531,7 +519,6 @@ func (iic *InteractiveImageCanvas) drawThickLine(overlay *image.RGBA, p1, p2 ima
 	x, y := p1.X, p1.Y
 
 	for {
-		// Draw thick point
 		for tx := -thickness / 2; tx <= thickness/2; tx++ {
 			for ty := -thickness / 2; ty <= thickness/2; ty++ {
 				px, py := x+tx, y+ty
@@ -584,11 +571,10 @@ func NewStaticImageCanvas(logger *slog.Logger) *StaticImageCanvas {
 }
 
 func (sic *StaticImageCanvas) CreateRenderer() fyne.WidgetRenderer {
-	// Create placeholder image
 	placeholder := image.NewRGBA(image.Rect(0, 0, 400, 300))
 	for y := 0; y < 300; y++ {
 		for x := 0; x < 400; x++ {
-			placeholder.Set(x, y, color.RGBA{248, 250, 252, 255}) // Light background
+			placeholder.Set(x, y, color.RGBA{248, 250, 252, 255})
 		}
 	}
 

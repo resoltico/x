@@ -1,5 +1,5 @@
 // internal/gui/app.go
-// Redesigned main application with modern UI patterns and enhanced UX
+// Simplified main application with working layout
 package gui
 
 import (
@@ -16,7 +16,6 @@ import (
 	"advanced-image-processing/internal/io"
 )
 
-// Application represents the redesigned main application
 type Application struct {
 	app       fyne.App
 	window    fyne.Window
@@ -69,7 +68,6 @@ func (a *Application) initializeCore() {
 }
 
 func (a *Application) initializeComponents() {
-	// Initialize modern components
 	a.toolbar = NewModernToolbar(a.imageData, a.loader, a.logger)
 	a.leftPanel = NewControlPanel(a.pipeline, a.regionManager, a.logger)
 	a.imageWorkspace = NewImageWorkspace(a.imageData, a.regionManager, a.logger)
@@ -78,13 +76,30 @@ func (a *Application) initializeComponents() {
 }
 
 func (a *Application) setupLayout() {
-	// Modern three-panel layout with proper proportions
+	// Create three-panel layout using HSplit containers
+
+	// Left panel with fixed minimum width
+	leftContent := a.leftPanel.GetContainer()
+
+	// Center and right content
+	centerContent := a.imageWorkspace.GetContainer()
+	rightContent := a.rightPanel.GetContainer()
+
+	// Create right split (center + right)
+	rightSplit := container.NewHSplit(centerContent, rightContent)
+	rightSplit.SetOffset(0.75) // 75% for center, 25% for right panel
+
+	// Create main split (left + [center+right])
+	mainSplit := container.NewHSplit(leftContent, rightSplit)
+	mainSplit.SetOffset(0.2) // 20% for left panel, 80% for center+right
+
+	// Main layout with toolbar and status
 	a.mainContainer = container.NewBorder(
-		a.toolbar.GetContainer(),        // top
-		a.statusManager.GetWidget(),     // bottom
-		a.leftPanel.GetContainer(),      // left (300px)
-		a.rightPanel.GetContainer(),     // right (300px)
-		a.imageWorkspace.GetContainer(), // center (1000px)
+		a.toolbar.GetContainer(),    // top
+		a.statusManager.GetWidget(), // bottom
+		nil,                         // left
+		nil,                         // right
+		mainSplit,                   // center
 	)
 
 	a.window.SetContent(a.mainContainer)
@@ -93,12 +108,10 @@ func (a *Application) setupLayout() {
 func (a *Application) setupCallbacks() {
 	// Pipeline callbacks for real-time preview
 	a.pipeline.SetCallbacks(
-		// onPreviewUpdate - receives thread-safe image.Image
 		func(preview image.Image, metrics map[string]float64) {
 			a.imageWorkspace.UpdatePreview(preview)
 			a.rightPanel.UpdateMetrics(metrics)
 		},
-		// onError
 		func(err error) {
 			a.statusManager.ShowError(err)
 		},
@@ -106,26 +119,30 @@ func (a *Application) setupCallbacks() {
 
 	// Toolbar callbacks
 	a.toolbar.SetCallbacks(
-		// onImageLoaded
 		func(filepath string) {
 			a.imageWorkspace.UpdateOriginal()
 			a.leftPanel.Enable()
 			a.statusManager.ShowSuccess(fmt.Sprintf("Loaded: %s", filepath))
 
-			// Show image info in right panel
 			metadata := a.imageData.GetMetadata()
 			a.rightPanel.ShowImageInfo(filepath, metadata.Width, metadata.Height, metadata.Channels)
+
+			// Show original image in preview initially
+			original := a.imageData.GetOriginal()
+			if !original.Empty() {
+				if img, err := original.ToImage(); err == nil {
+					a.imageWorkspace.UpdatePreview(img)
+				}
+			}
+			original.Close()
 		},
-		// onImageSaved
 		func(filepath string) {
 			a.statusManager.ShowSuccess(fmt.Sprintf("Saved: %s", filepath))
 		},
-		// onToolChanged
 		func(tool string) {
 			a.imageWorkspace.SetActiveTool(tool)
 			a.statusManager.ShowInfo(fmt.Sprintf("Tool: %s", tool))
 		},
-		// onResetImage
 		func() {
 			a.pipeline.ClearAll()
 			a.imageData.ResetToOriginal()
@@ -136,20 +153,16 @@ func (a *Application) setupCallbacks() {
 		},
 	)
 
-	// Set zoom callback
 	a.toolbar.SetZoomCallback(func(zoom float64) {
 		a.imageWorkspace.SetZoom(zoom)
 	})
 
-	// Set view toggle callback
 	a.toolbar.SetViewCallback(func() {
-		// View toggle functionality would be implemented here
 		a.statusManager.ShowInfo("View toggled")
 	})
 
 	// Left panel callbacks
 	a.leftPanel.SetCallbacks(
-		// onModeChanged
 		func(layerMode bool) {
 			a.pipeline.SetProcessingMode(layerMode)
 			mode := "Sequential"
@@ -158,7 +171,6 @@ func (a *Application) setupCallbacks() {
 			}
 			a.statusManager.ShowInfo(fmt.Sprintf("Mode: %s", mode))
 		},
-		// onSelectionChanged
 		func() {
 			a.imageWorkspace.RefreshSelections()
 		},
@@ -166,7 +178,6 @@ func (a *Application) setupCallbacks() {
 
 	// Image workspace callbacks
 	a.imageWorkspace.SetCallbacks(
-		// onSelectionChanged
 		func(hasSelection bool) {
 			a.leftPanel.UpdateSelectionState(hasSelection)
 			a.toolbar.UpdateSelectionState(hasSelection)
@@ -174,7 +185,6 @@ func (a *Application) setupCallbacks() {
 				a.statusManager.ShowInfo("Region selected")
 			}
 		},
-		// onZoomChanged
 		func(zoom float64) {
 			a.statusManager.ShowInfo(fmt.Sprintf("Zoom: %.0f%%", zoom*100))
 		},
@@ -182,12 +192,11 @@ func (a *Application) setupCallbacks() {
 }
 
 func (a *Application) setupTheme() {
-	// Apply modern theme with consistent colors
 	a.app.Settings().SetTheme(&ModernTheme{})
 }
 
 func (a *Application) ShowAndRun() {
-	a.logger.Info("Starting Advanced Image Processing v2.0 with modern UI")
+	a.logger.Info("Starting Advanced Image Processing v2.0")
 
 	a.window.SetCloseIntercept(func() {
 		a.cleanup()
@@ -204,7 +213,6 @@ func (a *Application) cleanup() {
 	a.regionManager.ClearAll()
 }
 
-// LoadImageFromPath loads an image from the specified file path
 func (a *Application) LoadImageFromPath(filepath string) error {
 	mat, err := a.loader.LoadImage(filepath)
 	if err != nil {
@@ -220,11 +228,9 @@ func (a *Application) LoadImageFromPath(filepath string) error {
 		return fmt.Errorf("failed to set image: %w", err)
 	}
 
-	// Clear previous processing state
 	a.regionManager.ClearAll()
 	a.pipeline.ClearAll()
 
-	// Update UI
 	a.imageWorkspace.UpdateOriginal()
 	a.leftPanel.Enable()
 	a.rightPanel.Clear()
@@ -237,16 +243,13 @@ func (a *Application) LoadImageFromPath(filepath string) error {
 	return nil
 }
 
-// SaveProcessedImage saves the currently processed image
 func (a *Application) SaveProcessedImage(filepath string) error {
 	if !a.imageData.HasImage() {
 		return fmt.Errorf("no image to save")
 	}
 
-	// Process full resolution
 	processed, err := a.pipeline.ProcessFullResolution()
 	if err != nil {
-		// Fall back to original if processing fails
 		processed = a.imageData.GetOriginal()
 	}
 	defer processed.Close()
@@ -259,7 +262,6 @@ func (a *Application) SaveProcessedImage(filepath string) error {
 	return nil
 }
 
-// RefreshUI refreshes all UI components
 func (a *Application) RefreshUI() {
 	fyne.Do(func() {
 		a.imageWorkspace.RefreshSelections()
@@ -269,41 +271,41 @@ func (a *Application) RefreshUI() {
 	})
 }
 
-// ModernTheme implements a custom theme with 2025 design principles
+// ModernTheme implements a custom theme
 type ModernTheme struct{}
 
 func (m *ModernTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
 	switch name {
 	case theme.ColorNameBackground:
-		return color.RGBA{R: 248, G: 250, B: 252, A: 255} // Modern light gray
+		return color.RGBA{R: 248, G: 250, B: 252, A: 255}
 	case theme.ColorNameForeground:
-		return color.RGBA{R: 15, G: 23, B: 42, A: 255} // Dark slate
+		return color.RGBA{R: 15, G: 23, B: 42, A: 255}
 	case theme.ColorNamePrimary:
-		return color.RGBA{R: 59, G: 130, B: 246, A: 255} // Modern blue
+		return color.RGBA{R: 59, G: 130, B: 246, A: 255}
 	case theme.ColorNameFocus:
-		return color.RGBA{R: 99, G: 102, B: 241, A: 255} // Indigo focus
+		return color.RGBA{R: 99, G: 102, B: 241, A: 255}
 	case theme.ColorNameHover:
-		return color.RGBA{R: 239, G: 246, B: 255, A: 255} // Light blue hover
+		return color.RGBA{R: 239, G: 246, B: 255, A: 255}
 	case theme.ColorNameShadow:
-		return color.RGBA{R: 0, G: 0, B: 0, A: 32} // Subtle shadow
+		return color.RGBA{R: 0, G: 0, B: 0, A: 32}
 	case theme.ColorNameSuccess:
-		return color.RGBA{R: 34, G: 197, B: 94, A: 255} // Modern green
+		return color.RGBA{R: 34, G: 197, B: 94, A: 255}
 	case theme.ColorNameWarning:
-		return color.RGBA{R: 251, G: 146, B: 60, A: 255} // Modern orange
+		return color.RGBA{R: 251, G: 146, B: 60, A: 255}
 	case theme.ColorNameError:
-		return color.RGBA{R: 239, G: 68, B: 68, A: 255} // Modern red
+		return color.RGBA{R: 239, G: 68, B: 68, A: 255}
 	case theme.ColorNameInputBackground:
-		return color.RGBA{R: 255, G: 255, B: 255, A: 255} // Pure white
+		return color.RGBA{R: 255, G: 255, B: 255, A: 255}
 	case theme.ColorNameButton:
-		return color.RGBA{R: 59, G: 130, B: 246, A: 255} // Modern blue
+		return color.RGBA{R: 59, G: 130, B: 246, A: 255}
 	case theme.ColorNameDisabledButton:
-		return color.RGBA{R: 156, G: 163, B: 175, A: 255} // Gray
+		return color.RGBA{R: 156, G: 163, B: 175, A: 255}
 	case theme.ColorNamePlaceHolder:
-		return color.RGBA{R: 107, G: 114, B: 128, A: 255} // Medium gray
+		return color.RGBA{R: 107, G: 114, B: 128, A: 255}
 	case theme.ColorNamePressed:
-		return color.RGBA{R: 37, G: 99, B: 235, A: 255} // Darker blue
+		return color.RGBA{R: 37, G: 99, B: 235, A: 255}
 	case theme.ColorNameSelection:
-		return color.RGBA{R: 219, G: 234, B: 254, A: 255} // Light blue selection
+		return color.RGBA{R: 219, G: 234, B: 254, A: 255}
 	default:
 		return theme.DefaultTheme().Color(name, variant)
 	}

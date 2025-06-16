@@ -1,5 +1,5 @@
 // internal/gui/info_panel.go
-// Modern info panel with metrics and additional tools
+// Fixed info panel with proper sizing
 package gui
 
 import (
@@ -12,7 +12,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-// InfoPanel provides the right panel with metrics and analysis tools
 type InfoPanel struct {
 	logger *slog.Logger
 
@@ -78,8 +77,8 @@ func (ip *InfoPanel) initializeUI() {
 	)
 	ip.histogramCard = widget.NewCard("📊 Analysis", "", ip.histogramContent)
 
-	// Main container with fixed width and scrollable content
-	scrollContent := container.NewVBox(
+	// Main content
+	content := container.NewVBox(
 		ip.metricsCard,
 		widget.NewSeparator(),
 		ip.toolsCard,
@@ -87,9 +86,8 @@ func (ip *InfoPanel) initializeUI() {
 		ip.histogramCard,
 	)
 
-	scroll := container.NewScroll(scrollContent)
-	scroll.SetMinSize(fyne.NewSize(300, 950))
-
+	// Create scroll container and wrap it
+	scroll := container.NewScroll(content)
 	ip.container = container.NewBorder(nil, nil, nil, nil, scroll)
 }
 
@@ -111,7 +109,6 @@ func (ip *InfoPanel) refreshMetricsDisplay() {
 		return
 	}
 
-	// Create modern metric displays with color coding
 	for name, value := range ip.currentMetrics {
 		metricWidget := ip.createMetricWidget(name, value)
 		ip.metricsContent.Add(metricWidget)
@@ -180,18 +177,17 @@ func (ip *InfoPanel) createMetricWidget(name string, value float64) fyne.CanvasO
 		qualityColor = theme.InfoIcon()
 	}
 
-	// Create modern metric card
 	metricLabel := widget.NewLabel(displayText)
-	
+
 	if qualityText != "" {
 		qualityIcon := widget.NewIcon(qualityColor)
 		qualityLabel := widget.NewLabel(qualityText)
-		
+
 		qualityRow := container.NewHBox(
 			qualityIcon,
 			qualityLabel,
 		)
-		
+
 		return container.NewVBox(
 			metricLabel,
 			qualityRow,
@@ -213,47 +209,42 @@ func (ip *InfoPanel) Clear() {
 }
 
 func (ip *InfoPanel) ShowImageInfo(filepath string, width, height, channels int) {
-	// Update tools section with image information
 	ip.toolsContent.RemoveAll()
-	
+
 	// Image information
 	ip.toolsContent.Add(widget.NewLabel("📄 Image Information"))
 	ip.toolsContent.Add(widget.NewLabel(fmt.Sprintf("Path: %s", filepath)))
 	ip.toolsContent.Add(widget.NewLabel(fmt.Sprintf("Size: %dx%d", width, height)))
 	ip.toolsContent.Add(widget.NewLabel(fmt.Sprintf("Channels: %d", channels)))
 	ip.toolsContent.Add(widget.NewSeparator())
-	
+
 	// Color picker tool
 	ip.toolsContent.Add(widget.NewLabel("🎨 Color Picker"))
 	colorPickerBtn := widget.NewButton("Sample Color", func() {
-		// TODO: Implement color picker functionality
 		ip.logger.Info("Color picker activated")
 	})
 	ip.toolsContent.Add(colorPickerBtn)
 	ip.toolsContent.Add(widget.NewSeparator())
-	
+
 	// Measurement tools
 	ip.toolsContent.Add(widget.NewLabel("📏 Measurements"))
 	measureBtn := widget.NewButton("Measure Distance", func() {
-		// TODO: Implement measurement tool
 		ip.logger.Info("Measurement tool activated")
 	})
 	ip.toolsContent.Add(measureBtn)
 	ip.toolsContent.Add(widget.NewSeparator())
-	
+
 	// Export options
 	ip.toolsContent.Add(widget.NewLabel("💾 Export Options"))
 	exportRegionsBtn := widget.NewButton("Export Regions", func() {
-		// TODO: Implement region export
 		ip.logger.Info("Region export requested")
 	})
 	exportMetricsBtn := widget.NewButton("Export Metrics", func() {
-		// TODO: Implement metrics export
 		ip.logger.Info("Metrics export requested")
 	})
 	ip.toolsContent.Add(exportRegionsBtn)
 	ip.toolsContent.Add(exportMetricsBtn)
-	
+
 	ip.toolsContent.Refresh()
 }
 
