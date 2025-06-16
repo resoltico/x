@@ -1,44 +1,405 @@
-[9:55:55 AM] % ./app --debug
-time=2025-06-16T09:55:56.880+03:00 level=INFO msg="Starting Advanced Image Processing Application with Layer Support" version=2.0.0 debug_mode=true
-time=2025-06-16T09:55:57.094+03:00 level=INFO msg="Showing main application window with enhanced UI"
-time=2025-06-16T09:55:59.969+03:00 level=INFO msg="Opening file dialog for image selection"
-time=2025-06-16T09:56:02.902+03:00 level=INFO msg="Loading selected image" filepath="/Users/erst/Desktop/Ut feritur ferit.png"
-time=2025-06-16T09:56:02.902+03:00 level=DEBUG msg="Loading image" filepath="/Users/erst/Desktop/Ut feritur ferit.png"
-time=2025-06-16T09:56:02.929+03:00 level=INFO msg="Image loaded successfully" filepath="/Users/erst/Desktop/Ut feritur ferit.png" width=1400 height=995 channels=3
-time=2025-06-16T09:56:02.943+03:00 level=INFO msg="Image loaded successfully" filepath="/Users/erst/Desktop/Ut feritur ferit.png"
-time=2025-06-16T09:56:02.948+03:00 level=DEBUG msg="Clearing preview"
-time=2025-06-16T09:56:02.952+03:00 level=DEBUG msg="Updated original image display"
-time=2025-06-16T09:56:06.168+03:00 level=DEBUG msg="Processing mode changed" layer_mode=true
-time=2025-06-16T09:56:06.168+03:00 level=DEBUG msg="Scheduling preview processing" delay_ms=200
-time=2025-06-16T09:56:06.369+03:00 level=DEBUG msg="Starting preview processing"
-time=2025-06-16T09:56:06.369+03:00 level=DEBUG msg="Processing preview" layer_mode=true
+[2:31:07 PM] % ./app --debug
+time=2025-06-16T14:31:08.868+03:00 level=INFO msg="Starting Advanced Image Processing Application with Layer Support" version=2.0.0 debug_mode=true
+time=2025-06-16T14:31:09.083+03:00 level=INFO msg="Showing main application window with enhanced UI"
+time=2025-06-16T14:31:12.414+03:00 level=INFO msg="Opening file dialog for image selection"
+time=2025-06-16T14:31:18.041+03:00 level=INFO msg="Loading selected image" filepath="/Users/erst/Desktop/Ut feritur ferit.png"
+time=2025-06-16T14:31:18.041+03:00 level=DEBUG msg="Loading image" filepath="/Users/erst/Desktop/Ut feritur ferit.png"
+time=2025-06-16T14:31:18.066+03:00 level=INFO msg="Image loaded successfully" filepath="/Users/erst/Desktop/Ut feritur ferit.png" width=1400 height=995 channels=3
+time=2025-06-16T14:31:18.082+03:00 level=INFO msg="Image loaded successfully" filepath="/Users/erst/Desktop/Ut feritur ferit.png"
+time=2025-06-16T14:31:18.086+03:00 level=DEBUG msg="Clearing preview"
+time=2025-06-16T14:31:18.091+03:00 level=DEBUG msg="Updated original image display"
+time=2025-06-16T14:31:19.591+03:00 level=DEBUG msg="Processing mode changed" layer_mode=true
+time=2025-06-16T14:31:19.591+03:00 level=DEBUG msg="Scheduling preview processing" delay_ms=200
+time=2025-06-16T14:31:19.792+03:00 level=DEBUG msg="Starting preview processing"
+time=2025-06-16T14:31:19.792+03:00 level=DEBUG msg="Processing preview" layer_mode=true
+DEBUG: ProcessLayers called with input empty=false, rows=284, cols=400
 DEBUG: Processing 0 layers
-time=2025-06-16T09:56:06.369+03:00 level=DEBUG msg="Layer processing completed" success=true
-time=2025-06-16T09:56:06.373+03:00 level=DEBUG msg="Metrics calculated" psnr=361.20199909921956 ssim=1
-time=2025-06-16T09:56:06.373+03:00 level=DEBUG msg="Preview processing completed successfully"
-time=2025-06-16T09:56:06.373+03:00 level=DEBUG msg="Calling preview update callback in UI thread"
-time=2025-06-16T09:56:06.373+03:00 level=DEBUG msg="UpdatePreview called" empty=false
-time=2025-06-16T09:56:06.373+03:00 level=DEBUG msg="Successfully converted preview to image" width=400 height=284
-time=2025-06-16T09:56:06.373+03:00 level=DEBUG msg="Preview image updated and all containers refreshed"
-time=2025-06-16T09:56:11.518+03:00 level=DEBUG msg="Added processing layer" layer_id=layer_1 algorithm=otsu_multi
-time=2025-06-16T09:56:11.518+03:00 level=DEBUG msg="Triggering preview processing after adding layer"
-time=2025-06-16T09:56:11.518+03:00 level=DEBUG msg="Scheduling preview processing" delay_ms=200
-time=2025-06-16T09:56:11.518+03:00 level=DEBUG msg="Added layer" layer_id=layer_1 algorithm=otsu_multi
-time=2025-06-16T09:56:11.718+03:00 level=DEBUG msg="Starting preview processing"
-time=2025-06-16T09:56:11.719+03:00 level=DEBUG msg="Processing preview" layer_mode=true
-DEBUG: Processing 1 layers
-DEBUG: Processing layer 0: Layer 1 with algorithm otsu_multi
-DEBUG: Applying algorithm otsu_multi with params map[max_value:255]
-DEBUG: Algorithm applied successfully, result size: 400x284
-DEBUG: Layer processed successfully, blending...
-DEBUG: Blending with opacity=1.00, hasMask=false
-DEBUG: Full replacement (opacity=1.0)
-DEBUG: Layer 0 blending completed
-time=2025-06-16T09:56:11.720+03:00 level=DEBUG msg="Layer processing completed" success=true
-time=2025-06-16T09:56:11.722+03:00 level=DEBUG msg="Metrics calculated" psnr=13.719108281527665 ssim=0.8614685294919259
-time=2025-06-16T09:56:11.722+03:00 level=DEBUG msg="Preview processing completed successfully"
-time=2025-06-16T09:56:11.722+03:00 level=DEBUG msg="Calling preview update callback in UI thread"
-time=2025-06-16T09:56:11.722+03:00 level=DEBUG msg="UpdatePreview called" empty=false
-time=2025-06-16T09:56:11.722+03:00 level=DEBUG msg="Successfully converted preview to image" width=400 height=284
-time=2025-06-16T09:56:11.722+03:00 level=DEBUG msg="Preview image updated and all containers refreshed"
+DEBUG: No layers, cloning input
+DEBUG: Clone result: empty=false, rows=284, cols=400
+time=2025-06-16T14:31:19.792+03:00 level=DEBUG msg="Layer processing completed" success=true
+time=2025-06-16T14:31:19.798+03:00 level=DEBUG msg="Metrics calculated" psnr=361.20199909921956 ssim=1
+time=2025-06-16T14:31:19.799+03:00 level=DEBUG msg="Preview processing completed successfully"
+time=2025-06-16T14:31:19.799+03:00 level=DEBUG msg="Calling preview update callback in UI thread"
+SIGSEGV: segmentation violation
+PC=0x107640154 m=0 sigcode=2 addr=0x10
+signal arrived during cgo execution
 
+goroutine 1 gp=0x140000021c0 m=0 mp=0x10439ef00 [syscall, locked to thread]:
+runtime.cgocall(0x103461c2c, 0x1400042ba88)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/cgocall.go:167 +0x44 fp=0x1400042ba50 sp=0x1400042ba10 pc=0x102eae074
+gocv.io/x/gocv._Cfunc_Mat_Empty(0x0)
+	_cgo_gotypes.go:6649 +0x34 fp=0x1400042ba80 sp=0x1400042ba50 pc=0x1033f6264
+gocv.io/x/gocv.(*Mat).Empty.func1(...)
+	/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/core.go:403
+gocv.io/x/gocv.(*Mat).Empty(0x0?)
+	/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/core.go:403 +0x44 fp=0x1400042bac0 sp=0x1400042ba80 pc=0x1033f8c34
+advanced-image-processing/internal/gui.(*ImageCanvas).UpdatePreview(0x14000200120, {0x0, {0x0, 0x0, 0x0}})
+	/Users/erst/Library/CloudStorage/Dropbox/Websites/x/internal/gui/canvas.go:99 +0x3c fp=0x1400042bbc0 sp=0x1400042bac0 pc=0x10340d02c
+advanced-image-processing/internal/gui.(*Application).setupCallbacks.func1({0x0?, {0x0?, 0x1043c5c40?, 0xfffffffffffffffc?}}, 0x140024292c0)
+	/Users/erst/Library/CloudStorage/Dropbox/Websites/x/internal/gui/app.go:142 +0x48 fp=0x1400042bc00 sp=0x1400042bbc0 pc=0x10340c3b8
+advanced-image-processing/internal/core.(*EnhancedPipeline).processPreview.func1.5()
+	/Users/erst/Library/CloudStorage/Dropbox/Websites/x/internal/core/pipeline.go:257 +0x8c fp=0x1400042bc70 sp=0x1400042bc00 pc=0x10340713c
+fyne.io/fyne/v2/internal/driver/glfw.(*gLDriver).runGL(0x14000390000)
+	/Users/erst/go/pkg/mod/fyne.io/fyne/v2@v2.6.1/internal/driver/glfw/loop.go:145 +0x1a8 fp=0x1400042bd50 sp=0x1400042bc70 pc=0x1033aea88
+fyne.io/fyne/v2/internal/driver/glfw.(*gLDriver).Run(0x14000390000)
+	/Users/erst/go/pkg/mod/fyne.io/fyne/v2@v2.6.1/internal/driver/glfw/driver.go:162 +0x7c fp=0x1400042bda0 sp=0x1400042bd50 pc=0x1033ad31c
+fyne.io/fyne/v2/app.(*fyneApp).Run(0x140003900b0)
+	/Users/erst/go/pkg/mod/fyne.io/fyne/v2@v2.6.1/app/app.go:77 +0x10c fp=0x1400042bde0 sp=0x1400042bda0 pc=0x1033e3a0c
+fyne.io/fyne/v2/internal/driver/glfw.(*window).ShowAndRun(0x140003a61a0)
+	/Users/erst/go/pkg/mod/fyne.io/fyne/v2@v2.6.1/internal/driver/glfw/window.go:222 +0x70 fp=0x1400042be10 sp=0x1400042bde0 pc=0x1033b1670
+advanced-image-processing/internal/gui.(*Application).ShowAndRun(0x14000232000)
+	/Users/erst/Library/CloudStorage/Dropbox/Websites/x/internal/gui/app.go:242 +0xb8 fp=0x1400042be70 sp=0x1400042be10 pc=0x10340c5d8
+main.main()
+	/Users/erst/Library/CloudStorage/Dropbox/Websites/x/cmd/app/main.go:42 +0x238 fp=0x1400042bf40 sp=0x1400042be70 pc=0x10341a158
+runtime.main()
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/proc.go:283 +0x284 fp=0x1400042bfd0 sp=0x1400042bf40 pc=0x102e7df84
+runtime.goexit({})
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/asm_arm64.s:1223 +0x4 fp=0x1400042bfd0 sp=0x1400042bfd0 pc=0x102eb9284
+
+goroutine 2 gp=0x14000002c40 m=nil [force gc (idle)]:
+runtime.gopark(0x0?, 0x0?, 0x0?, 0x0?, 0x0?)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/proc.go:435 +0xc8 fp=0x14000072f90 sp=0x14000072f70 pc=0x102eb1218
+runtime.goparkunlock(...)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/proc.go:441
+runtime.forcegchelper()
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/proc.go:348 +0xb8 fp=0x14000072fd0 sp=0x14000072f90 pc=0x102e7e2d8
+runtime.goexit({})
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/asm_arm64.s:1223 +0x4 fp=0x14000072fd0 sp=0x14000072fd0 pc=0x102eb9284
+created by runtime.init.7 in goroutine 1
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/proc.go:336 +0x24
+
+goroutine 18 gp=0x140000aa380 m=nil [GC sweep wait]:
+runtime.gopark(0x1?, 0x0?, 0x0?, 0x0?, 0x0?)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/proc.go:435 +0xc8 fp=0x1400006e760 sp=0x1400006e740 pc=0x102eb1218
+runtime.goparkunlock(...)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/proc.go:441
+runtime.bgsweep(0x140000b8000)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgcsweep.go:316 +0x108 fp=0x1400006e7b0 sp=0x1400006e760 pc=0x102e69408
+runtime.gcenable.gowrap1()
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgc.go:204 +0x28 fp=0x1400006e7d0 sp=0x1400006e7b0 pc=0x102e5d218
+runtime.goexit({})
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/asm_arm64.s:1223 +0x4 fp=0x1400006e7d0 sp=0x1400006e7d0 pc=0x102eb9284
+created by runtime.gcenable in goroutine 1
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgc.go:204 +0x6c
+
+goroutine 19 gp=0x140000aa540 m=nil [GC scavenge wait]:
+runtime.gopark(0x10000?, 0x1035c7b30?, 0x0?, 0x0?, 0x0?)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/proc.go:435 +0xc8 fp=0x1400006ef60 sp=0x1400006ef40 pc=0x102eb1218
+runtime.goparkunlock(...)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/proc.go:441
+runtime.(*scavengerState).park(0x10439dda0)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgcscavenge.go:425 +0x5c fp=0x1400006ef90 sp=0x1400006ef60 pc=0x102e66eac
+runtime.bgscavenge(0x140000b8000)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgcscavenge.go:658 +0xac fp=0x1400006efb0 sp=0x1400006ef90 pc=0x102e6744c
+runtime.gcenable.gowrap2()
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgc.go:205 +0x28 fp=0x1400006efd0 sp=0x1400006efb0 pc=0x102e5d1b8
+runtime.goexit({})
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/asm_arm64.s:1223 +0x4 fp=0x1400006efd0 sp=0x1400006efd0 pc=0x102eb9284
+created by runtime.gcenable in goroutine 1
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgc.go:205 +0xac
+
+goroutine 20 gp=0x140000aaa80 m=nil [finalizer wait]:
+runtime.gopark(0x0?, 0x103777b68?, 0x0?, 0xa1?, 0x2000000020?)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/proc.go:435 +0xc8 fp=0x14000072590 sp=0x14000072570 pc=0x102eb1218
+runtime.runfinq()
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mfinal.go:196 +0x108 fp=0x140000727d0 sp=0x14000072590 pc=0x102e5c218
+runtime.goexit({})
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/asm_arm64.s:1223 +0x4 fp=0x140000727d0 sp=0x140000727d0 pc=0x102eb9284
+created by runtime.createfing in goroutine 1
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mfinal.go:166 +0x80
+
+goroutine 21 gp=0x140000aac40 m=nil [chan receive]:
+runtime.gopark(0x140000db0e0?, 0x14003175218?, 0x48?, 0xf7?, 0x102fd6c38?)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/proc.go:435 +0xc8 fp=0x1400006f6f0 sp=0x1400006f6d0 pc=0x102eb1218
+runtime.chanrecv(0x140000c00e0, 0x0, 0x1)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/chan.go:664 +0x42c fp=0x1400006f770 sp=0x1400006f6f0 pc=0x102e4ef8c
+runtime.chanrecv1(0x0?, 0x0?)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/chan.go:506 +0x14 fp=0x1400006f7a0 sp=0x1400006f770 pc=0x102e4eb24
+runtime.unique_runtime_registerUniqueMapCleanup.func2(...)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgc.go:1796
+runtime.unique_runtime_registerUniqueMapCleanup.gowrap1()
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgc.go:1799 +0x3c fp=0x1400006f7d0 sp=0x1400006f7a0 pc=0x102e6043c
+runtime.goexit({})
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/asm_arm64.s:1223 +0x4 fp=0x1400006f7d0 sp=0x1400006f7d0 pc=0x102eb9284
+created by unique.runtime_registerUniqueMapCleanup in goroutine 1
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgc.go:1794 +0x78
+
+goroutine 3 gp=0x140000aae00 m=nil [select]:
+runtime.gopark(0x1400006ff58?, 0x2?, 0xc0?, 0x70?, 0x1400006fedc?)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/proc.go:435 +0xc8 fp=0x1400006fd40 sp=0x1400006fd20 pc=0x102eb1218
+runtime.selectgo(0x1400006ff58, 0x1400006fed8, 0x0?, 0x0, 0x0?, 0x1)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/select.go:351 +0x6c4 fp=0x1400006fe70 sp=0x1400006fd40 pc=0x102e915f4
+fyne.io/fyne/v2/internal/async.(*UnboundedChan[...]).processing(0x10378cde0)
+	/Users/erst/go/pkg/mod/fyne.io/fyne/v2@v2.6.1/internal/async/chan.go:43 +0xb0 fp=0x1400006ffb0 sp=0x1400006fe70 pc=0x1033ba7c0
+fyne.io/fyne/v2/internal/async.NewUnboundedChan[...].gowrap1()
+	/Users/erst/go/pkg/mod/fyne.io/fyne/v2@v2.6.1/internal/async/chan.go:20 +0x2c fp=0x1400006ffd0 sp=0x1400006ffb0 pc=0x1033ba6dc
+runtime.goexit({})
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/asm_arm64.s:1223 +0x4 fp=0x1400006ffd0 sp=0x1400006ffd0 pc=0x102eb9284
+created by fyne.io/fyne/v2/internal/async.NewUnboundedChan[...] in goroutine 1
+	/Users/erst/go/pkg/mod/fyne.io/fyne/v2@v2.6.1/internal/async/chan.go:20 +0x104
+
+goroutine 4 gp=0x14000003500 m=3 mp=0x14000079008 [syscall]:
+syscall.syscall6(0x0?, 0x9000000?, 0x0?, 0x2?, 0x2?, 0x1033df6d8?, 0x0?)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/sys_darwin.go:60 +0x50 fp=0x14000218b00 sp=0x14000218a40 pc=0x102eb4e60
+golang.org/x/sys/unix.kevent(0x1000000000003?, 0x14000218c60?, 0x1400003c0c0?, 0x14000003500?, 0x14000218bf8?, 0x140003840e0?)
+	/Users/erst/go/pkg/mod/golang.org/x/sys@v0.33.0/unix/zsyscall_darwin_arm64.go:275 +0x54 fp=0x14000218b70 sp=0x14000218b00 pc=0x1033dddd4
+golang.org/x/sys/unix.Kevent(0x12?, {0x0?, 0x14000218f80?, 0x2?}, {0x14000218d68?, 0x14000218c60?, 0x2?}, 0x2?)
+	/Users/erst/go/pkg/mod/golang.org/x/sys@v0.33.0/unix/syscall_bsd.go:397 +0x40 fp=0x14000218bb0 sp=0x14000218b70 pc=0x1033ddcb0
+github.com/fsnotify/fsnotify.(*kqueue).read(0x14000218f80?, {0x14000218d68, 0x0?, 0xa})
+	/Users/erst/go/pkg/mod/github.com/fsnotify/fsnotify@v1.9.0/backend_kqueue.go:689 +0x44 fp=0x14000218c00 sp=0x14000218bb0 pc=0x1033e22f4
+github.com/fsnotify/fsnotify.(*kqueue).readEvents(0x14000050140)
+	/Users/erst/go/pkg/mod/github.com/fsnotify/fsnotify@v1.9.0/backend_kqueue.go:439 +0x84 fp=0x14000218fb0 sp=0x14000218c00 pc=0x1033e1214
+github.com/fsnotify/fsnotify.newBackend.gowrap1()
+	/Users/erst/go/pkg/mod/github.com/fsnotify/fsnotify@v1.9.0/backend_kqueue.go:202 +0x28 fp=0x14000218fd0 sp=0x14000218fb0 pc=0x1033e0438
+runtime.goexit({})
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/asm_arm64.s:1223 +0x4 fp=0x14000218fd0 sp=0x14000218fd0 pc=0x102eb9284
+created by github.com/fsnotify/fsnotify.newBackend in goroutine 1
+	/Users/erst/go/pkg/mod/github.com/fsnotify/fsnotify@v1.9.0/backend_kqueue.go:202 +0x214
+
+goroutine 5 gp=0x140000036c0 m=nil [chan receive]:
+runtime.gopark(0x140000be000?, 0x0?, 0x0?, 0x0?, 0x0?)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/proc.go:435 +0xc8 fp=0x14000073e70 sp=0x14000073e50 pc=0x102eb1218
+runtime.chanrecv(0x140003840e0, 0x14000073f98, 0x1)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/chan.go:664 +0x42c fp=0x14000073ef0 sp=0x14000073e70 pc=0x102e4ef8c
+runtime.chanrecv2(0x14000044050?, 0x0?)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/chan.go:511 +0x14 fp=0x14000073f20 sp=0x14000073ef0 pc=0x102e4eb44
+fyne.io/fyne/v2/app.watchFile.func1()
+	/Users/erst/go/pkg/mod/fyne.io/fyne/v2@v2.6.1/app/settings_desktop.go:42 +0x68 fp=0x14000073fd0 sp=0x14000073f20 pc=0x1033e6fb8
+runtime.goexit({})
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/asm_arm64.s:1223 +0x4 fp=0x14000073fd0 sp=0x14000073fd0 pc=0x102eb9284
+created by fyne.io/fyne/v2/app.watchFile in goroutine 1
+	/Users/erst/go/pkg/mod/fyne.io/fyne/v2@v2.6.1/app/settings_desktop.go:41 +0xe0
+
+goroutine 6 gp=0x14000003880 m=nil [select]:
+runtime.gopark(0x14000074770?, 0x2?, 0xc0?, 0x70?, 0x140000746f4?)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/proc.go:435 +0xc8 fp=0x14000214d60 sp=0x14000214d40 pc=0x102eb1218
+runtime.selectgo(0x14000214f70, 0x140000746f0, 0x0?, 0x0, 0x0?, 0x1)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/select.go:351 +0x6c4 fp=0x14000214e90 sp=0x14000214d60 pc=0x102e915f4
+fyne.io/fyne/v2/internal/async.(*UnboundedChan[...]).processing(0x10378cd40)
+	/Users/erst/go/pkg/mod/fyne.io/fyne/v2@v2.6.1/internal/async/chan.go:43 +0xb0 fp=0x14000214fb0 sp=0x14000214e90 pc=0x1031115e0
+fyne.io/fyne/v2/internal/async.NewUnboundedChan[...].gowrap1()
+	/Users/erst/go/pkg/mod/fyne.io/fyne/v2@v2.6.1/internal/async/chan.go:20 +0x2c fp=0x14000214fd0 sp=0x14000214fb0 pc=0x103111d9c
+runtime.goexit({})
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/asm_arm64.s:1223 +0x4 fp=0x14000214fd0 sp=0x14000214fd0 pc=0x102eb9284
+created by fyne.io/fyne/v2/internal/async.NewUnboundedChan[...] in goroutine 1
+	/Users/erst/go/pkg/mod/fyne.io/fyne/v2@v2.6.1/internal/async/chan.go:20 +0x104
+
+goroutine 34 gp=0x1400021e380 m=nil [GC worker (idle)]:
+runtime.gopark(0x0?, 0x0?, 0x0?, 0x0?, 0x0?)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/proc.go:435 +0xc8 fp=0x14000073710 sp=0x140000736f0 pc=0x102eb1218
+runtime.gcBgMarkWorker(0x140004a22a0)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgc.go:1423 +0xdc fp=0x140000737b0 sp=0x14000073710 pc=0x102e5f6ac
+runtime.gcBgMarkStartWorkers.gowrap1()
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgc.go:1339 +0x28 fp=0x140000737d0 sp=0x140000737b0 pc=0x102e5f598
+runtime.goexit({})
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/asm_arm64.s:1223 +0x4 fp=0x140000737d0 sp=0x140000737d0 pc=0x102eb9284
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgc.go:1339 +0x140
+
+goroutine 50 gp=0x14000414000 m=nil [GC worker (idle)]:
+runtime.gopark(0x701278d832327?, 0x1?, 0xbc?, 0x63?, 0x0?)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/proc.go:435 +0xc8 fp=0x14000074710 sp=0x140000746f0 pc=0x102eb1218
+runtime.gcBgMarkWorker(0x140004a22a0)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgc.go:1423 +0xdc fp=0x140000747b0 sp=0x14000074710 pc=0x102e5f6ac
+runtime.gcBgMarkStartWorkers.gowrap1()
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgc.go:1339 +0x28 fp=0x140000747d0 sp=0x140000747b0 pc=0x102e5f598
+runtime.goexit({})
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/asm_arm64.s:1223 +0x4 fp=0x140000747d0 sp=0x140000747d0 pc=0x102eb9284
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgc.go:1339 +0x140
+
+goroutine 7 gp=0x14000003a40 m=nil [GC worker (idle)]:
+runtime.gopark(0x701278d8fb7b1?, 0x1?, 0xe5?, 0xbb?, 0x0?)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/proc.go:435 +0xc8 fp=0x14000074f10 sp=0x14000074ef0 pc=0x102eb1218
+runtime.gcBgMarkWorker(0x140004a22a0)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgc.go:1423 +0xdc fp=0x14000074fb0 sp=0x14000074f10 pc=0x102e5f6ac
+runtime.gcBgMarkStartWorkers.gowrap1()
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgc.go:1339 +0x28 fp=0x14000074fd0 sp=0x14000074fb0 pc=0x102e5f598
+runtime.goexit({})
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/asm_arm64.s:1223 +0x4 fp=0x14000074fd0 sp=0x14000074fd0 pc=0x102eb9284
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgc.go:1339 +0x140
+
+goroutine 35 gp=0x1400021e540 m=nil [GC worker (idle)]:
+runtime.gopark(0x1043c70c0?, 0x3?, 0xf1?, 0x33?, 0x0?)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/proc.go:435 +0xc8 fp=0x140004ea710 sp=0x140004ea6f0 pc=0x102eb1218
+runtime.gcBgMarkWorker(0x140004a22a0)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgc.go:1423 +0xdc fp=0x140004ea7b0 sp=0x140004ea710 pc=0x102e5f6ac
+runtime.gcBgMarkStartWorkers.gowrap1()
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgc.go:1339 +0x28 fp=0x140004ea7d0 sp=0x140004ea7b0 pc=0x102e5f598
+runtime.goexit({})
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/asm_arm64.s:1223 +0x4 fp=0x140004ea7d0 sp=0x140004ea7d0 pc=0x102eb9284
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgc.go:1339 +0x140
+
+goroutine 51 gp=0x140004141c0 m=nil [GC worker (idle)]:
+runtime.gopark(0x701278d909dac?, 0x3?, 0x3e?, 0xac?, 0x0?)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/proc.go:435 +0xc8 fp=0x140004e6710 sp=0x140004e66f0 pc=0x102eb1218
+runtime.gcBgMarkWorker(0x140004a22a0)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgc.go:1423 +0xdc fp=0x140004e67b0 sp=0x140004e6710 pc=0x102e5f6ac
+runtime.gcBgMarkStartWorkers.gowrap1()
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgc.go:1339 +0x28 fp=0x140004e67d0 sp=0x140004e67b0 pc=0x102e5f598
+runtime.goexit({})
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/asm_arm64.s:1223 +0x4 fp=0x140004e67d0 sp=0x140004e67d0 pc=0x102eb9284
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgc.go:1339 +0x140
+
+goroutine 8 gp=0x14000003c00 m=nil [GC worker (idle)]:
+runtime.gopark(0x701278d8ffcb4?, 0x140004981c0?, 0x1b?, 0xa?, 0x0?)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/proc.go:435 +0xc8 fp=0x1400008ef10 sp=0x1400008eef0 pc=0x102eb1218
+runtime.gcBgMarkWorker(0x140004a22a0)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgc.go:1423 +0xdc fp=0x1400008efb0 sp=0x1400008ef10 pc=0x102e5f6ac
+runtime.gcBgMarkStartWorkers.gowrap1()
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgc.go:1339 +0x28 fp=0x1400008efd0 sp=0x1400008efb0 pc=0x102e5f598
+runtime.goexit({})
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/asm_arm64.s:1223 +0x4 fp=0x1400008efd0 sp=0x1400008efd0 pc=0x102eb9284
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgc.go:1339 +0x140
+
+goroutine 36 gp=0x1400021e700 m=nil [GC worker (idle)]:
+runtime.gopark(0x701278d9097d0?, 0x3?, 0x6b?, 0x72?, 0x0?)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/proc.go:435 +0xc8 fp=0x140004eaf10 sp=0x140004eaef0 pc=0x102eb1218
+runtime.gcBgMarkWorker(0x140004a22a0)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgc.go:1423 +0xdc fp=0x140004eafb0 sp=0x140004eaf10 pc=0x102e5f6ac
+runtime.gcBgMarkStartWorkers.gowrap1()
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgc.go:1339 +0x28 fp=0x140004eafd0 sp=0x140004eafb0 pc=0x102e5f598
+runtime.goexit({})
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/asm_arm64.s:1223 +0x4 fp=0x140004eafd0 sp=0x140004eafd0 pc=0x102eb9284
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgc.go:1339 +0x140
+
+goroutine 52 gp=0x14000414380 m=nil [GC worker (idle)]:
+runtime.gopark(0x701278d90a747?, 0x3?, 0xd0?, 0xe?, 0x0?)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/proc.go:435 +0xc8 fp=0x140004e6f10 sp=0x140004e6ef0 pc=0x102eb1218
+runtime.gcBgMarkWorker(0x140004a22a0)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgc.go:1423 +0xdc fp=0x140004e6fb0 sp=0x140004e6f10 pc=0x102e5f6ac
+runtime.gcBgMarkStartWorkers.gowrap1()
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgc.go:1339 +0x28 fp=0x140004e6fd0 sp=0x140004e6fb0 pc=0x102e5f598
+runtime.goexit({})
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/asm_arm64.s:1223 +0x4 fp=0x140004e6fd0 sp=0x140004e6fd0 pc=0x102eb9284
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/mgc.go:1339 +0x140
+
+goroutine 10 gp=0x140003d0e00 m=nil [chan receive]:
+runtime.gopark(0x0?, 0x0?, 0x0?, 0x0?, 0x0?)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/proc.go:435 +0xc8 fp=0x140004e76e0 sp=0x140004e76c0 pc=0x102eb1218
+runtime.chanrecv(0x14000380150, 0x140004e77b0, 0x1)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/chan.go:664 +0x42c fp=0x140004e7760 sp=0x140004e76e0 pc=0x102e4ef8c
+runtime.chanrecv2(0x0?, 0x0?)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/chan.go:511 +0x14 fp=0x140004e7790 sp=0x140004e7760 pc=0x102e4eb44
+fyne.io/fyne/v2/internal/app.(*Lifecycle).RunEventQueue(...)
+	/Users/erst/go/pkg/mod/fyne.io/fyne/v2@v2.6.1/internal/app/lifecycle.go:110
+fyne.io/fyne/v2/app.(*fyneApp).Run.gowrap1()
+	/Users/erst/go/pkg/mod/fyne.io/fyne/v2@v2.6.1/app/app.go:71 +0x64 fp=0x140004e77d0 sp=0x140004e7790 pc=0x1033e3a94
+runtime.goexit({})
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/asm_arm64.s:1223 +0x4 fp=0x140004e77d0 sp=0x140004e77d0 pc=0x102eb9284
+created by fyne.io/fyne/v2/app.(*fyneApp).Run in goroutine 1
+	/Users/erst/go/pkg/mod/fyne.io/fyne/v2@v2.6.1/app/app.go:71 +0xc8
+
+goroutine 11 gp=0x140003d0fc0 m=9 mp=0x1400054e008 [syscall]:
+syscall.syscall6(0x14000216b48?, 0x102e5d680?, 0x1043c70c0?, 0x102e55e94?, 0x160d08988?, 0x102e5d680?, 0x1043c70c0?)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/sys_darwin.go:60 +0x50 fp=0x14000216b00 sp=0x14000216a40 pc=0x102eb4e60
+golang.org/x/sys/unix.kevent(0xc?, 0x0?, 0x0?, 0x14000216d68?, 0xa?, 0x0?)
+	/Users/erst/go/pkg/mod/golang.org/x/sys@v0.33.0/unix/zsyscall_darwin_arm64.go:275 +0x54 fp=0x14000216b70 sp=0x14000216b00 pc=0x1033dddd4
+golang.org/x/sys/unix.Kevent(0x0?, {0x0?, 0x0?, 0x0?}, {0x140004e7d68?, 0x0?, 0x140004e7bf8?}, 0x1033e11f0?)
+	/Users/erst/go/pkg/mod/golang.org/x/sys@v0.33.0/unix/syscall_bsd.go:397 +0x40 fp=0x14000216bb0 sp=0x14000216b70 pc=0x1033ddcb0
+github.com/fsnotify/fsnotify.(*kqueue).read(0x0?, {0x14000216d68, 0x0?, 0xa})
+	/Users/erst/go/pkg/mod/github.com/fsnotify/fsnotify@v1.9.0/backend_kqueue.go:689 +0x44 fp=0x14000216c00 sp=0x14000216bb0 pc=0x1033e22f4
+github.com/fsnotify/fsnotify.(*kqueue).readEvents(0x14002b00180)
+	/Users/erst/go/pkg/mod/github.com/fsnotify/fsnotify@v1.9.0/backend_kqueue.go:439 +0x84 fp=0x14000216fb0 sp=0x14000216c00 pc=0x1033e1214
+github.com/fsnotify/fsnotify.newBackend.gowrap1()
+	/Users/erst/go/pkg/mod/github.com/fsnotify/fsnotify@v1.9.0/backend_kqueue.go:202 +0x28 fp=0x14000216fd0 sp=0x14000216fb0 pc=0x1033e0438
+runtime.goexit({})
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/asm_arm64.s:1223 +0x4 fp=0x14000216fd0 sp=0x14000216fd0 pc=0x102eb9284
+created by github.com/fsnotify/fsnotify.newBackend in goroutine 1
+	/Users/erst/go/pkg/mod/github.com/fsnotify/fsnotify@v1.9.0/backend_kqueue.go:202 +0x214
+
+goroutine 12 gp=0x140003d1180 m=nil [chan receive]:
+runtime.gopark(0x0?, 0x0?, 0x0?, 0x0?, 0x0?)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/proc.go:435 +0xc8 fp=0x140004e8670 sp=0x140004e8650 pc=0x102eb1218
+runtime.chanrecv(0x140061c7960, 0x140004e8798, 0x1)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/chan.go:664 +0x42c fp=0x140004e86f0 sp=0x140004e8670 pc=0x102e4ef8c
+runtime.chanrecv2(0x0?, 0x0?)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/chan.go:511 +0x14 fp=0x140004e8720 sp=0x140004e86f0 pc=0x102e4eb44
+fyne.io/fyne/v2/app.watchFile.func1()
+	/Users/erst/go/pkg/mod/fyne.io/fyne/v2@v2.6.1/app/settings_desktop.go:42 +0x68 fp=0x140004e87d0 sp=0x140004e8720 pc=0x1033e6fb8
+runtime.goexit({})
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/asm_arm64.s:1223 +0x4 fp=0x140004e87d0 sp=0x140004e87d0 pc=0x102eb9284
+created by fyne.io/fyne/v2/app.watchFile in goroutine 1
+	/Users/erst/go/pkg/mod/fyne.io/fyne/v2@v2.6.1/app/settings_desktop.go:41 +0xe0
+
+goroutine 13 gp=0x140003d1340 m=nil [chan receive]:
+runtime.gopark(0x140004e8ec8?, 0x1033a9800?, 0x2?, 0x0?, 0x14002b04360?)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/proc.go:435 +0xc8 fp=0x140004e8ea0 sp=0x140004e8e80 pc=0x102eb1218
+runtime.chanrecv(0x140001c4150, 0x0, 0x1)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/chan.go:664 +0x42c fp=0x140004e8f20 sp=0x140004e8ea0 pc=0x102e4ef8c
+runtime.chanrecv1(0x140001c4150?, 0x140004e8f88?)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/chan.go:506 +0x14 fp=0x140004e8f50 sp=0x140004e8f20 pc=0x102e4eb24
+fyne.io/fyne/v2/internal/driver/glfw.(*gLDriver).catchTerm(0x14000390000)
+	/Users/erst/go/pkg/mod/fyne.io/fyne/v2@v2.6.1/internal/driver/glfw/driver_desktop.go:193 +0x74 fp=0x140004e8fb0 sp=0x140004e8f50 pc=0x1033ae0a4
+fyne.io/fyne/v2/internal/driver/glfw.(*gLDriver).Run.gowrap1()
+	/Users/erst/go/pkg/mod/fyne.io/fyne/v2@v2.6.1/internal/driver/glfw/driver.go:161 +0x28 fp=0x140004e8fd0 sp=0x140004e8fb0 pc=0x1033ad498
+runtime.goexit({})
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/asm_arm64.s:1223 +0x4 fp=0x140004e8fd0 sp=0x140004e8fd0 pc=0x102eb9284
+created by fyne.io/fyne/v2/internal/driver/glfw.(*gLDriver).Run in goroutine 1
+	/Users/erst/go/pkg/mod/fyne.io/fyne/v2@v2.6.1/internal/driver/glfw/driver.go:161 +0x74
+
+goroutine 38 gp=0x140004148c0 m=nil [select, locked to thread]:
+runtime.gopark(0x14000070fa0?, 0x2?, 0x58?, 0xe?, 0x14000070f90?)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/proc.go:435 +0xc8 fp=0x14000070e20 sp=0x14000070e00 pc=0x102eb1218
+runtime.selectgo(0x14000070fa0, 0x14000070f8c, 0x0?, 0x0, 0x0?, 0x1)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/select.go:351 +0x6c4 fp=0x14000070f50 sp=0x14000070e20 pc=0x102e915f4
+runtime.ensureSigM.func1()
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/signal_unix.go:1085 +0x160 fp=0x14000070fd0 sp=0x14000070f50 pc=0x102eabb80
+runtime.goexit({})
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/asm_arm64.s:1223 +0x4 fp=0x14000070fd0 sp=0x14000070fd0 pc=0x102eb9284
+created by runtime.ensureSigM in goroutine 13
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/signal_unix.go:1068 +0xd8
+
+goroutine 24 gp=0x140000ab340 m=7 mp=0x1400021c008 [syscall]:
+runtime.sigNoteSleep(0x0?)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/os_darwin.go:133 +0x20 fp=0x14001a92f90 sp=0x14001a92f50 pc=0x102e78500
+os/signal.signal_recv()
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/sigqueue.go:149 +0x2c fp=0x14001a92fb0 sp=0x14001a92f90 pc=0x102eb336c
+os/signal.loop()
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/os/signal/signal_unix.go:23 +0x1c fp=0x14001a92fd0 sp=0x14001a92fb0 pc=0x1033a9d6c
+runtime.goexit({})
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/asm_arm64.s:1223 +0x4 fp=0x14001a92fd0 sp=0x14001a92fd0 pc=0x102eb9284
+created by os/signal.Notify.func1.1 in goroutine 13
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/os/signal/signal.go:152 +0x28
+
+r0      0x0
+r1      0x103461c2c
+r2      0x1400042ba00
+r3      0x10439e480
+r4      0x600
+r5      0x14000428000
+r6      0x1
+r7      0x3a
+r8      0x10439ef00
+r9      0x1400042ba88
+r10     0x14001987580
+r11     0x37
+r12     0x3f
+r13     0x16cfc2f10
+r14     0x0
+r15     0x1400042bd10
+r16     0x107640154
+r17     0x1400042bb40
+r18     0x0
+r19     0x1400042ba88
+r20     0x1400042c000
+r21     0x1400042b470
+r22     0x0
+r23     0x0
+r24     0x0
+r25     0x0
+r26     0x140003258b0
+r27     0x938
+r28     0x10439e480
+r29     0x16cfc2ed0
+lr      0x10346ee50
+sp      0x16cfc2ed0
+pc      0x107640154
+fault   0x10
+[2:32:50 PM] % 

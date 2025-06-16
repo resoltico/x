@@ -1,4 +1,5 @@
-// Updated main application with improved layout and proportions
+// internal/gui/app.go
+// Fixed main application with proper Mat lifecycle handling
 package gui
 
 import (
@@ -137,10 +138,10 @@ func (a *Application) setupCallbacks() {
 	a.pipeline.SetCallbacks(
 		// onPreviewUpdate
 		func(preview gocv.Mat, metrics map[string]float64) {
-			fyne.Do(func() {
-				a.canvas.UpdatePreview(preview)
-				a.metricsPanel.UpdateMetrics(metrics)
-			})
+			// Convert Mat to image immediately before Mat lifecycle ends
+			a.canvas.UpdatePreview(preview)
+			a.metricsPanel.UpdateMetrics(metrics)
+			// Mat will be closed by pipeline after this callback returns
 		},
 		// onError
 		func(err error) {

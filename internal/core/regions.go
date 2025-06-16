@@ -1,4 +1,5 @@
-// ROI (Region of Interest) selection and management system
+// internal/core/regions.go
+// Fixed ROI selection and management system with proper scaling
 package core
 
 import (
@@ -93,11 +94,14 @@ func (rm *RegionManager) CreateMaskForSelection(selection layers.Selection, imgW
 	case int(SelectionRectangle):
 		points := selection.GetPoints()
 		if len(points) >= 2 {
+			// Scale points to target image dimensions
+			bounds := selection.GetBounds()
+
 			rect := image.Rect(
-				points[0].X,
-				points[0].Y,
-				points[1].X,
-				points[1].Y,
+				scaleCoordinate(bounds.Min.X, imgWidth),
+				scaleCoordinate(bounds.Min.Y, imgHeight),
+				scaleCoordinate(bounds.Max.X, imgWidth),
+				scaleCoordinate(bounds.Max.Y, imgHeight),
 			)
 
 			rect = rect.Intersect(image.Rect(0, 0, imgWidth, imgHeight))
@@ -112,17 +116,20 @@ func (rm *RegionManager) CreateMaskForSelection(selection layers.Selection, imgW
 	case int(SelectionFreehand):
 		points := selection.GetPoints()
 		if len(points) >= 3 {
-			// Convert layers.Point to image.Point
-			imagePoints := make([]image.Point, len(points))
+			// Scale points to target image dimensions
+			scaledPoints := make([]image.Point, len(points))
 			for i, p := range points {
-				imagePoints[i] = image.Point{X: p.X, Y: p.Y}
+				scaledPoints[i] = image.Point{
+					X: scaleCoordinate(p.X, imgWidth),
+					Y: scaleCoordinate(p.Y, imgHeight),
+				}
 			}
 
 			// Use GoCV's optimized FillPoly
 			pointsVector := gocv.NewPointsVector()
 			defer pointsVector.Close()
 
-			pointVector := gocv.NewPointVectorFromPoints(imagePoints)
+			pointVector := gocv.NewPointVectorFromPoints(scaledPoints)
 			defer pointVector.Close()
 
 			pointsVector.Append(pointVector)
@@ -131,6 +138,17 @@ func (rm *RegionManager) CreateMaskForSelection(selection layers.Selection, imgW
 	}
 
 	return mask
+}
+
+// scaleCoordinate scales a coordinate to fit target dimension
+func scaleCoordinate(coord, targetDim int) int {
+	if coord < 0 {
+		return 0
+	}
+	if coord >= targetDim {
+		return targetDim - 1
+	}
+	return coord
 }
 
 func (rm *RegionManager) CreateRectangleSelection(rect image.Rectangle) string {

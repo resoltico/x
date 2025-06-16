@@ -1,4 +1,5 @@
-// Layers package for region-based processing with proper imports
+// internal/layers/stack.go
+// Fixed layers package for region-based processing
 package layers
 
 import (
@@ -106,14 +107,38 @@ func (ls *LayerStack) GetLayers() []*Layer {
 
 // ProcessLayers applies all enabled layers to input image
 func (ls *LayerStack) ProcessLayers(input gocv.Mat) (gocv.Mat, error) {
+	fmt.Printf("DEBUG: ProcessLayers called with input empty=%v, rows=%d, cols=%d\n",
+		input.Empty(), input.Rows(), input.Cols())
+
 	if input.Empty() {
+		fmt.Printf("DEBUG: Input is empty, returning NewMat\n")
 		return gocv.NewMat(), fmt.Errorf("input image is empty")
 	}
 
-	result := input.Clone()
 	layers := ls.GetLayers()
-
 	fmt.Printf("DEBUG: Processing %d layers\n", len(layers))
+
+	// If no layers, return clone of input - NEVER return zero-value Mat
+	if len(layers) == 0 {
+		fmt.Printf("DEBUG: No layers, cloning input\n")
+		result := input.Clone()
+		fmt.Printf("DEBUG: Clone result: empty=%v, rows=%d, cols=%d\n",
+			result.Empty(), result.Rows(), result.Cols())
+
+		if result.Empty() {
+			fmt.Printf("DEBUG: Clone failed, creating new Mat and copying\n")
+			// Fallback: create a proper Mat copy
+			result = gocv.NewMatWithSize(input.Rows(), input.Cols(), input.Type())
+			input.CopyTo(&result)
+			fmt.Printf("DEBUG: After manual copy: empty=%v, rows=%d, cols=%d\n",
+				result.Empty(), result.Rows(), result.Cols())
+		}
+		return result, nil
+	}
+
+	result := input.Clone()
+	fmt.Printf("DEBUG: Initial clone for processing: empty=%v, rows=%d, cols=%d\n",
+		result.Empty(), result.Rows(), result.Cols())
 
 	for i, layer := range layers {
 		if !layer.Enabled {
@@ -123,137 +148,47 @@ func (ls *LayerStack) ProcessLayers(input gocv.Mat) (gocv.Mat, error) {
 
 		fmt.Printf("DEBUG: Processing layer %d: %s with algorithm %s\n", i, layer.Name, layer.Algorithm)
 
-		processed, err := ls.processLayer(result, layer)
+		// Apply algorithm to current result
+		processed, err := algorithms.Apply(layer.Algorithm, result, layer.Parameters)
 		if err != nil {
-			fmt.Printf("DEBUG: Layer processing failed: %v\n", err)
-			if !processed.Empty() {
-				processed.Close()
-			}
+			fmt.Printf("DEBUG: Algorithm failed: %v\n", err)
 			result.Close()
 			return gocv.NewMat(), err
 		}
 
 		if processed.Empty() {
-			fmt.Printf("DEBUG: Processed result is empty, skipping layer\n")
+			fmt.Printf("DEBUG: Algorithm returned empty result, skipping\n")
+			processed.Close()
 			continue
 		}
 
-		fmt.Printf("DEBUG: Layer processed successfully, blending...\n")
+		fmt.Printf("DEBUG: Algorithm applied successfully, result size: %dx%d\n", processed.Cols(), processed.Rows())
 
-		// Blend the processed result
-		blended := ls.blendLayers(result, processed, layer.BlendMode, layer.Opacity, layer.RegionID)
+		// Apply region mask if specified
+		if layer.RegionID != "" && ls.regionManager != nil {
+			if selection := ls.regionManager.GetSelection(layer.RegionID); selection != nil {
+				mask := ls.regionManager.CreateMaskForSelection(selection, result.Cols(), result.Rows())
+				if !mask.Empty() {
+					fmt.Printf("DEBUG: Applying region mask for %s\n", layer.RegionID)
+					// Apply mask to processed result
+					maskedResult := gocv.NewMat()
+					processed.CopyTo(&maskedResult)
+					result.CopyToWithMask(&maskedResult, mask)
+					processed.Close()
+					processed = maskedResult
+					mask.Close()
+				}
+			}
+		}
+
+		// Replace result with processed
 		result.Close()
-		processed.Close()
-		result = blended
+		result = processed
 
-		fmt.Printf("DEBUG: Layer %d blending completed\n", i)
+		fmt.Printf("DEBUG: Layer %d processing completed\n", i)
 	}
 
+	fmt.Printf("DEBUG: ProcessLayers returning: empty=%v, rows=%d, cols=%d\n",
+		result.Empty(), result.Rows(), result.Cols())
 	return result, nil
-}
-
-// processLayer applies algorithm to image with optional region mask
-func (ls *LayerStack) processLayer(input gocv.Mat, layer *Layer) (gocv.Mat, error) {
-	if input.Empty() {
-		return gocv.NewMat(), fmt.Errorf("input image is empty")
-	}
-
-	fmt.Printf("DEBUG: Applying algorithm %s with params %+v\n", layer.Algorithm, layer.Parameters)
-
-	// Apply algorithm using existing pipeline
-	result, err := algorithms.Apply(layer.Algorithm, input, layer.Parameters)
-	if err != nil {
-		fmt.Printf("DEBUG: Algorithm application failed: %v\n", err)
-		return gocv.NewMat(), err
-	}
-
-	if result.Empty() {
-		fmt.Printf("DEBUG: Algorithm returned empty result\n")
-		return gocv.NewMat(), fmt.Errorf("algorithm returned empty result")
-	}
-
-	fmt.Printf("DEBUG: Algorithm applied successfully, result size: %dx%d\n", result.Cols(), result.Rows())
-	return result, nil
-}
-
-// blendLayers combines two images using blend mode and opacity
-func (ls *LayerStack) blendLayers(base, overlay gocv.Mat, mode BlendMode, opacity float64, regionID string) gocv.Mat {
-	if base.Empty() || overlay.Empty() {
-		return base.Clone()
-	}
-
-	result := base.Clone()
-
-	// Create mask if region specified
-	var mask gocv.Mat
-	hasMask := false
-	if regionID != "" && ls.regionManager != nil {
-		if selection := ls.regionManager.GetSelection(regionID); selection != nil {
-			mask = ls.regionManager.CreateMaskForSelection(selection, base.Cols(), base.Rows())
-			hasMask = !mask.Empty()
-		}
-	}
-
-	// Ensure mask cleanup
-	defer func() {
-		if hasMask && !mask.Empty() {
-			mask.Close()
-		}
-	}()
-
-	// Apply blend mode with opacity
-	switch mode {
-	case BlendNormal:
-		ls.blendNormal(result, overlay, opacity, mask, hasMask)
-	case BlendOverlay:
-		ls.blendOverlay(result, overlay, opacity, mask, hasMask)
-		// Add other blend modes as needed
-	}
-
-	return result
-}
-
-// blendNormal performs normal alpha blending
-func (ls *LayerStack) blendNormal(base, overlay gocv.Mat, opacity float64, mask gocv.Mat, hasMask bool) {
-	if base.Empty() || overlay.Empty() {
-		fmt.Printf("DEBUG: Blend called with empty mats: base=%v, overlay=%v\n", base.Empty(), overlay.Empty())
-		return
-	}
-
-	fmt.Printf("DEBUG: Blending with opacity=%.2f, hasMask=%v\n", opacity, hasMask)
-
-	if !hasMask {
-		// Global blend - when opacity is 1.0, completely replace with overlay
-		if opacity >= 1.0 {
-			fmt.Printf("DEBUG: Full replacement (opacity=1.0)\n")
-			overlay.CopyTo(&base)
-		} else {
-			fmt.Printf("DEBUG: Alpha blending with opacity=%.2f\n", opacity)
-			gocv.AddWeighted(base, 1.0-opacity, overlay, opacity, 0, &base)
-		}
-	} else {
-		// Masked blend using GoCV's optimized operations
-		temp := gocv.NewMat()
-		defer temp.Close()
-
-		if opacity >= 1.0 {
-			fmt.Printf("DEBUG: Full masked replacement\n")
-			overlay.CopyToWithMask(&base, mask)
-		} else {
-			fmt.Printf("DEBUG: Alpha masked blending\n")
-			gocv.AddWeighted(base, 1.0-opacity, overlay, opacity, 0, &temp)
-			temp.CopyToWithMask(&base, mask)
-		}
-	}
-}
-
-// blendOverlay performs overlay blending (simplified)
-func (ls *LayerStack) blendOverlay(base, overlay gocv.Mat, opacity float64, mask gocv.Mat, hasMask bool) {
-	if base.Empty() || overlay.Empty() {
-		return
-	}
-
-	// Use GoCV's built-in operations for performance
-	// This is a simplified overlay - for production use proper overlay math
-	ls.blendNormal(base, overlay, opacity*0.5, mask, hasMask)
 }

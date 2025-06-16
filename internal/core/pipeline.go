@@ -1,4 +1,5 @@
-// Processing pipeline with sequential and layer-based support - Fixed UI thread handling
+// internal/core/pipeline.go
+// Fixed processing pipeline with proper preview handling
 package core
 
 import (
@@ -60,7 +61,7 @@ func NewEnhancedPipeline(imageData *ImageData, regionManager *RegionManager, log
 		steps:         make([]ProcessingStep, 0),
 		previewDelay:  200 * time.Millisecond,
 		realtimeMode:  true,
-		useLayerMode:  false, // Default to sequential mode
+		useLayerMode:  false,
 	}
 }
 
@@ -206,7 +207,11 @@ func (ep *EnhancedPipeline) processPreview() {
 
 		if useLayerMode {
 			result, err = ep.layerStack.ProcessLayers(preview)
-			ep.logger.Debug("Layer processing completed", "success", err == nil)
+			if err != nil {
+				ep.logger.Error("Layer processing failed", "error", err)
+			} else {
+				ep.logger.Debug("Layer processing completed", "success", true)
+			}
 		} else {
 			result, _ = ep.processSequential(ctx, preview)
 			ep.logger.Debug("Sequential processing completed")
@@ -227,6 +232,7 @@ func (ep *EnhancedPipeline) processPreview() {
 
 		if result.Empty() {
 			ep.logger.Error("Processing returned empty result")
+			result.Close()
 			if ep.onError != nil {
 				fyne.Do(func() {
 					ep.onError(fmt.Errorf("processing returned empty result"))
@@ -239,20 +245,19 @@ func (ep *EnhancedPipeline) processPreview() {
 		finalMetrics := ep.calculatePreviewMetrics(preview, result)
 		ep.logger.Debug("Metrics calculated", "psnr", finalMetrics["psnr"], "ssim", finalMetrics["ssim"])
 
-		// Store processed result for reuse
-		processedCopy := result.Clone()
-
 		// Update UI immediately in the main thread
 		ep.mu.RLock()
 		callback := ep.onPreviewUpdate
 		ep.mu.RUnlock()
 
 		if callback != nil {
-			// Use fyne.Do to ensure UI updates happen on main thread
 			fyne.Do(func() {
 				ep.logger.Debug("Calling preview update callback in UI thread")
-				callback(processedCopy, finalMetrics)
+				// Pass the result directly - callback will handle Mat lifecycle
+				callback(result, finalMetrics)
 			})
+		} else {
+			result.Close()
 		}
 
 		result.Close()

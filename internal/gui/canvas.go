@@ -1,4 +1,5 @@
-// Real-time image canvas with improved UI proportions and forced refresh
+// internal/gui/canvas.go
+// Fixed image canvas with proper preview handling
 package gui
 
 import (
@@ -95,26 +96,15 @@ func (ic *ImageCanvas) UpdateOriginalImage() {
 }
 
 func (ic *ImageCanvas) UpdatePreview(preview gocv.Mat) {
-	// Don't close the preview Mat here - it's managed by the caller
 	ic.logger.Debug("UpdatePreview called", "empty", preview.Empty())
 
+	// Validate Mat before any operations
 	if preview.Empty() {
-		ic.logger.Debug("Preview is empty, showing placeholder")
-		placeholderImg := image.NewRGBA(image.Rect(0, 0, 200, 150))
-		// Fill with light gray
-		for y := 0; y < 150; y++ {
-			for x := 0; x < 200; x++ {
-				placeholderImg.Set(x, y, color.RGBA{240, 240, 240, 255})
-			}
-		}
-		ic.previewImage.Image = placeholderImg
-		ic.previewImage.Refresh()
-		// Force parent containers to refresh as well
-		ic.previewView.Refresh()
-		ic.vbox.Refresh()
+		ic.logger.Debug("Preview Mat is empty, keeping current preview")
 		return
 	}
 
+	// Convert Mat to image - this MUST happen before Mat is closed
 	img, err := preview.ToImage()
 	if err != nil {
 		ic.logger.Error("Failed to convert preview Mat to image", "error", err)
@@ -125,21 +115,46 @@ func (ic *ImageCanvas) UpdatePreview(preview gocv.Mat) {
 		"width", img.Bounds().Dx(),
 		"height", img.Bounds().Dy())
 
-	// Update the image and force multiple levels of refresh
-	ic.previewImage.Image = img
-	ic.previewImage.Refresh()
+	// Schedule UI update on main thread
+	fyne.Do(func() {
+		// Update the image
+		ic.previewImage.Image = img
+		ic.previewImage.Refresh()
 
-	// Force refresh of parent containers to ensure the update is visible
-	ic.previewView.Refresh()
-	ic.vbox.Refresh()
+		// Force refresh of parent containers
+		if ic.previewView != nil {
+			ic.previewView.Refresh()
+		}
+		if ic.vbox != nil {
+			ic.vbox.Refresh()
+		}
 
-	ic.logger.Debug("Preview image updated and all containers refreshed")
+		ic.logger.Debug("Preview image updated and all containers refreshed")
+	})
 }
 
 func (ic *ImageCanvas) ClearPreview() {
 	ic.logger.Debug("Clearing preview")
+
+	// Get original preview or use placeholder
+	if ic.imageData.HasImage() {
+		originalPreview := ic.imageData.GetPreview()
+		defer originalPreview.Close()
+
+		if !originalPreview.Empty() {
+			img, err := originalPreview.ToImage()
+			if err == nil {
+				ic.previewImage.Image = img
+				ic.previewImage.Refresh()
+				ic.previewView.Refresh()
+				ic.vbox.Refresh()
+				return
+			}
+		}
+	}
+
+	// Fall back to placeholder
 	placeholderImg := image.NewRGBA(image.Rect(0, 0, 200, 150))
-	// Fill with light gray
 	for y := 0; y < 150; y++ {
 		for x := 0; x < 200; x++ {
 			placeholderImg.Set(x, y, color.RGBA{240, 240, 240, 255})
@@ -147,7 +162,6 @@ func (ic *ImageCanvas) ClearPreview() {
 	}
 	ic.previewImage.Image = placeholderImg
 	ic.previewImage.Refresh()
-	// Force parent containers to refresh as well
 	ic.previewView.Refresh()
 	ic.vbox.Refresh()
 }
