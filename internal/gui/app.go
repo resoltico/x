@@ -1,5 +1,5 @@
 // internal/gui/app.go
-// Simplified main application with working layout
+// Perfect UI implementation following specification document
 package gui
 
 import (
@@ -28,20 +28,19 @@ type Application struct {
 	pipeline      *core.EnhancedPipeline
 	loader        *io.ImageLoader
 
-	// GUI components
-	toolbar        *ModernToolbar
-	leftPanel      *ControlPanel
-	imageWorkspace *ImageWorkspace
-	rightPanel     *InfoPanel
-	statusManager  *StatusManager
+	// GUI components following Perfect UI spec
+	leftPanel   *LeftPanel   // 300px wide control hub
+	centerPanel *CenterPanel // 1000px wide image workspace
+	rightPanel  *RightPanel  // 300px wide feedback panel
 
-	// Layout
+	// Layout containers
 	mainContainer *fyne.Container
+	mainSplit     *container.Split
 }
 
 func NewApplication(app fyne.App, logger *slog.Logger, debugMode bool) *Application {
 	window := app.NewWindow("Advanced Image Processing v2.0")
-	window.Resize(fyne.NewSize(1600, 1000))
+	window.Resize(fyne.NewSize(1600, 1000)) // Exact specification size
 	window.CenterOnScreen()
 
 	appInstance := &Application{
@@ -68,40 +67,32 @@ func (a *Application) initializeCore() {
 }
 
 func (a *Application) initializeComponents() {
-	a.toolbar = NewModernToolbar(a.imageData, a.loader, a.logger)
-	a.leftPanel = NewControlPanel(a.pipeline, a.regionManager, a.logger)
-	a.imageWorkspace = NewImageWorkspace(a.imageData, a.regionManager, a.logger)
-	a.rightPanel = NewInfoPanel(a.logger)
-	a.statusManager = NewStatusManager()
+	// Initialize panels following Perfect UI specification
+	a.leftPanel = NewLeftPanel(a.pipeline, a.regionManager, a.imageData, a.loader, a.logger)
+	a.centerPanel = NewCenterPanel(a.imageData, a.regionManager, a.logger)
+	a.rightPanel = NewRightPanel(a.logger)
 }
 
 func (a *Application) setupLayout() {
-	// Create three-panel layout using HSplit containers
+	// Perfect UI Layout: Left (300px) | Center (1000px) | Right (300px)
 
-	// Left panel with fixed minimum width
+	// Get panel containers
 	leftContent := a.leftPanel.GetContainer()
-
-	// Center and right content
-	centerContent := a.imageWorkspace.GetContainer()
+	centerContent := a.centerPanel.GetContainer()
 	rightContent := a.rightPanel.GetContainer()
 
-	// Create right split (center + right)
+	// Create three-panel layout with exact proportions
+	// Left: 18.75% (300/1600), Center: 62.5% (1000/1600), Right: 18.75% (300/1600)
+
+	// Right split (center + right)
 	rightSplit := container.NewHSplit(centerContent, rightContent)
-	rightSplit.SetOffset(0.75) // 75% for center, 25% for right panel
+	rightSplit.SetOffset(0.769) // 1000/1300 = center / (center + right)
 
-	// Create main split (left + [center+right])
-	mainSplit := container.NewHSplit(leftContent, rightSplit)
-	mainSplit.SetOffset(0.2) // 20% for left panel, 80% for center+right
+	// Main split (left + [center+right])
+	a.mainSplit = container.NewHSplit(leftContent, rightSplit)
+	a.mainSplit.SetOffset(0.1875) // 300/1600 = left / total
 
-	// Main layout with toolbar and status
-	a.mainContainer = container.NewBorder(
-		a.toolbar.GetContainer(),    // top
-		a.statusManager.GetWidget(), // bottom
-		nil,                         // left
-		nil,                         // right
-		mainSplit,                   // center
-	)
-
+	a.mainContainer = container.NewBorder(nil, nil, nil, nil, a.mainSplit)
 	a.window.SetContent(a.mainContainer)
 }
 
@@ -109,94 +100,92 @@ func (a *Application) setupCallbacks() {
 	// Pipeline callbacks for real-time preview
 	a.pipeline.SetCallbacks(
 		func(preview image.Image, metrics map[string]float64) {
-			a.imageWorkspace.UpdatePreview(preview)
+			a.centerPanel.UpdatePreview(preview)
 			a.rightPanel.UpdateMetrics(metrics)
 		},
 		func(err error) {
-			a.statusManager.ShowError(err)
+			a.rightPanel.ShowError(err)
 		},
 	)
-
-	// Toolbar callbacks
-	a.toolbar.SetCallbacks(
-		func(filepath string) {
-			a.imageWorkspace.UpdateOriginal()
-			a.leftPanel.Enable()
-			a.statusManager.ShowSuccess(fmt.Sprintf("Loaded: %s", filepath))
-
-			metadata := a.imageData.GetMetadata()
-			a.rightPanel.ShowImageInfo(filepath, metadata.Width, metadata.Height, metadata.Channels)
-
-			// Show original image in preview initially
-			original := a.imageData.GetOriginal()
-			if !original.Empty() {
-				if img, err := original.ToImage(); err == nil {
-					a.imageWorkspace.UpdatePreview(img)
-				}
-			}
-			original.Close()
-		},
-		func(filepath string) {
-			a.statusManager.ShowSuccess(fmt.Sprintf("Saved: %s", filepath))
-		},
-		func(tool string) {
-			a.imageWorkspace.SetActiveTool(tool)
-			a.statusManager.ShowInfo(fmt.Sprintf("Tool: %s", tool))
-		},
-		func() {
-			a.pipeline.ClearAll()
-			a.imageData.ResetToOriginal()
-			a.imageWorkspace.Reset()
-			a.leftPanel.Reset()
-			a.rightPanel.Clear()
-			a.statusManager.ShowInfo("Reset to original")
-		},
-	)
-
-	a.toolbar.SetZoomCallback(func(zoom float64) {
-		a.imageWorkspace.SetZoom(zoom)
-	})
-
-	a.toolbar.SetViewCallback(func() {
-		a.statusManager.ShowInfo("View toggled")
-	})
 
 	// Left panel callbacks
 	a.leftPanel.SetCallbacks(
 		func(layerMode bool) {
 			a.pipeline.SetProcessingMode(layerMode)
-			mode := "Sequential"
-			if layerMode {
-				mode = "Layer"
-			}
-			a.statusManager.ShowInfo(fmt.Sprintf("Mode: %s", mode))
+			a.centerPanel.SetProcessingMode(layerMode)
+		},
+		func(filepath string) {
+			a.onImageLoaded(filepath)
+		},
+		func(filepath string) {
+			a.onImageSaved(filepath)
 		},
 		func() {
-			a.imageWorkspace.RefreshSelections()
+			a.onReset()
 		},
 	)
 
-	// Image workspace callbacks
-	a.imageWorkspace.SetCallbacks(
-		func(hasSelection bool) {
-			a.leftPanel.UpdateSelectionState(hasSelection)
-			a.toolbar.UpdateSelectionState(hasSelection)
-			if hasSelection {
-				a.statusManager.ShowInfo("Region selected")
-			}
+	// Center panel callbacks
+	a.centerPanel.SetCallbacks(
+		func(tool string) {
+			// Tool selection handled
 		},
 		func(zoom float64) {
-			a.statusManager.ShowInfo(fmt.Sprintf("Zoom: %.0f%%", zoom*100))
+			// Zoom change handled
+		},
+		func(hasSelection bool) {
+			a.leftPanel.UpdateSelectionState(hasSelection)
 		},
 	)
+}
+
+func (a *Application) onImageLoaded(filepath string) {
+	a.centerPanel.UpdateOriginal()
+	a.leftPanel.EnableProcessing()
+
+	metadata := a.imageData.GetMetadata()
+	a.rightPanel.ShowImageInfo(filepath, metadata.Width, metadata.Height, metadata.Channels)
+
+	// Show original image in preview initially
+	original := a.imageData.GetOriginal()
+	if !original.Empty() {
+		if img, err := original.ToImage(); err == nil {
+			a.centerPanel.UpdatePreview(img)
+		}
+	}
+	original.Close()
+
+	a.logger.Info("Image loaded successfully", "filepath", filepath)
+}
+
+func (a *Application) onImageSaved(filepath string) {
+	a.rightPanel.ShowMessage(fmt.Sprintf("Saved: %s", filepath))
+	a.logger.Info("Image saved successfully", "filepath", filepath)
+}
+
+func (a *Application) onReset() {
+	a.pipeline.ClearAll()
+	a.imageData.ResetToOriginal()
+	a.centerPanel.Reset()
+	a.leftPanel.Reset()
+	a.rightPanel.Clear()
+
+	// Show original image after reset
+	original := a.imageData.GetOriginal()
+	if !original.Empty() {
+		if img, err := original.ToImage(); err == nil {
+			a.centerPanel.UpdatePreview(img)
+		}
+	}
+	original.Close()
 }
 
 func (a *Application) setupTheme() {
-	a.app.Settings().SetTheme(&ModernTheme{})
+	a.app.Settings().SetTheme(&PerfectUITheme{})
 }
 
 func (a *Application) ShowAndRun() {
-	a.logger.Info("Starting Advanced Image Processing v2.0")
+	a.logger.Info("Starting Advanced Image Processing v2.0 with Perfect UI")
 
 	a.window.SetCloseIntercept(func() {
 		a.cleanup()
@@ -213,128 +202,58 @@ func (a *Application) cleanup() {
 	a.regionManager.ClearAll()
 }
 
-func (a *Application) LoadImageFromPath(filepath string) error {
-	mat, err := a.loader.LoadImage(filepath)
-	if err != nil {
-		return fmt.Errorf("failed to load image: %w", err)
-	}
-	defer mat.Close()
+// PerfectUITheme implements the Perfect UI color scheme
+type PerfectUITheme struct{}
 
-	if err := core.ValidateImage(mat); err != nil {
-		return fmt.Errorf("invalid image: %w", err)
-	}
-
-	if err := a.imageData.SetOriginal(mat, filepath); err != nil {
-		return fmt.Errorf("failed to set image: %w", err)
-	}
-
-	a.regionManager.ClearAll()
-	a.pipeline.ClearAll()
-
-	a.imageWorkspace.UpdateOriginal()
-	a.leftPanel.Enable()
-	a.rightPanel.Clear()
-
-	metadata := a.imageData.GetMetadata()
-	a.rightPanel.ShowImageInfo(filepath, metadata.Width, metadata.Height, metadata.Channels)
-	a.statusManager.ShowSuccess(fmt.Sprintf("Image loaded: %s", filepath))
-
-	a.logger.Info("Image loaded successfully", "filepath", filepath)
-	return nil
-}
-
-func (a *Application) SaveProcessedImage(filepath string) error {
-	if !a.imageData.HasImage() {
-		return fmt.Errorf("no image to save")
-	}
-
-	processed, err := a.pipeline.ProcessFullResolution()
-	if err != nil {
-		processed = a.imageData.GetOriginal()
-	}
-	defer processed.Close()
-
-	if err := a.loader.SaveImage(processed, filepath); err != nil {
-		return fmt.Errorf("failed to save image: %w", err)
-	}
-
-	a.logger.Info("Image saved successfully", "filepath", filepath)
-	return nil
-}
-
-func (a *Application) RefreshUI() {
-	fyne.Do(func() {
-		a.imageWorkspace.RefreshSelections()
-		a.leftPanel.Reset()
-		a.rightPanel.Clear()
-		a.statusManager.ShowInfo("UI refreshed")
-	})
-}
-
-// ModernTheme implements a custom theme
-type ModernTheme struct{}
-
-func (m *ModernTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
+func (t *PerfectUITheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
 	switch name {
 	case theme.ColorNameBackground:
-		return color.RGBA{R: 248, G: 250, B: 252, A: 255}
+		return color.RGBA{R: 245, G: 245, B: 245, A: 255} // #F5F5F5
 	case theme.ColorNameForeground:
-		return color.RGBA{R: 15, G: 23, B: 42, A: 255}
+		return color.RGBA{R: 51, G: 51, B: 51, A: 255} // #333333
 	case theme.ColorNamePrimary:
-		return color.RGBA{R: 59, G: 130, B: 246, A: 255}
+		return color.RGBA{R: 0, G: 120, B: 212, A: 255} // #0078D4
 	case theme.ColorNameFocus:
-		return color.RGBA{R: 99, G: 102, B: 241, A: 255}
+		return color.RGBA{R: 0, G: 120, B: 212, A: 255} // #0078D4
 	case theme.ColorNameHover:
-		return color.RGBA{R: 239, G: 246, B: 255, A: 255}
-	case theme.ColorNameShadow:
-		return color.RGBA{R: 0, G: 0, B: 0, A: 32}
+		return color.RGBA{R: 230, G: 230, B: 230, A: 255} // Light hover
 	case theme.ColorNameSuccess:
-		return color.RGBA{R: 34, G: 197, B: 94, A: 255}
-	case theme.ColorNameWarning:
-		return color.RGBA{R: 251, G: 146, B: 60, A: 255}
+		return color.RGBA{R: 40, G: 167, B: 69, A: 255} // #28A745
 	case theme.ColorNameError:
-		return color.RGBA{R: 239, G: 68, B: 68, A: 255}
+		return color.RGBA{R: 220, G: 53, B: 69, A: 255} // #DC3545
+	case theme.ColorNameWarning:
+		return color.RGBA{R: 255, G: 193, B: 7, A: 255} // #FFC107
 	case theme.ColorNameInputBackground:
-		return color.RGBA{R: 255, G: 255, B: 255, A: 255}
+		return color.RGBA{R: 255, G: 255, B: 255, A: 255} // White
 	case theme.ColorNameButton:
-		return color.RGBA{R: 59, G: 130, B: 246, A: 255}
+		return color.RGBA{R: 0, G: 120, B: 212, A: 255} // #0078D4
 	case theme.ColorNameDisabledButton:
-		return color.RGBA{R: 156, G: 163, B: 175, A: 255}
-	case theme.ColorNamePlaceHolder:
-		return color.RGBA{R: 107, G: 114, B: 128, A: 255}
-	case theme.ColorNamePressed:
-		return color.RGBA{R: 37, G: 99, B: 235, A: 255}
-	case theme.ColorNameSelection:
-		return color.RGBA{R: 219, G: 234, B: 254, A: 255}
+		return color.RGBA{R: 211, G: 211, B: 211, A: 255} // #D3D3D3
 	default:
 		return theme.DefaultTheme().Color(name, variant)
 	}
 }
 
-func (m *ModernTheme) Font(style fyne.TextStyle) fyne.Resource {
+func (t *PerfectUITheme) Font(style fyne.TextStyle) fyne.Resource {
 	return theme.DefaultTheme().Font(style)
 }
 
-func (m *ModernTheme) Icon(name fyne.ThemeIconName) fyne.Resource {
+func (t *PerfectUITheme) Icon(name fyne.ThemeIconName) fyne.Resource {
 	return theme.DefaultTheme().Icon(name)
 }
 
-func (m *ModernTheme) Size(name fyne.ThemeSizeName) float32 {
+func (t *PerfectUITheme) Size(name fyne.ThemeSizeName) float32 {
 	switch name {
 	case theme.SizeNamePadding:
-		return 8
+		return 5
 	case theme.SizeNameInlineIcon:
 		return 20
-	case theme.SizeNameScrollBar:
+	case theme.SizeNameText:
+		return 14
+	case theme.SizeNameCaptionText:
 		return 12
-	case theme.SizeNameSeparatorThickness:
-		return 1
-	case theme.SizeNameInputBorder:
-		return 2
-	case theme.SizeNameInputRadius:
-		return 6
-	case theme.SizeNameSelectionRadius:
-		return 4
+	case theme.SizeNameHeadingText:
+		return 14 // Bold via style, not size
 	default:
 		return theme.DefaultTheme().Size(name)
 	}

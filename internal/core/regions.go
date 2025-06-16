@@ -1,5 +1,5 @@
 // internal/core/regions.go
-// Fixed ROI selection and management system with proper scaling
+// Enhanced ROI selection and management system
 package core
 
 import (
@@ -20,6 +20,7 @@ const (
 	SelectionNone SelectionType = iota
 	SelectionRectangle
 	SelectionFreehand
+	SelectionWand // Magic wand selection
 )
 
 // Selection represents a region of interest
@@ -94,7 +95,6 @@ func (rm *RegionManager) CreateMaskForSelection(selection layers.Selection, imgW
 	case int(SelectionRectangle):
 		points := selection.GetPoints()
 		if len(points) >= 2 {
-			// Scale points to target image dimensions
 			bounds := selection.GetBounds()
 
 			rect := image.Rect(
@@ -116,7 +116,6 @@ func (rm *RegionManager) CreateMaskForSelection(selection layers.Selection, imgW
 	case int(SelectionFreehand):
 		points := selection.GetPoints()
 		if len(points) >= 3 {
-			// Scale points to target image dimensions
 			scaledPoints := make([]image.Point, len(points))
 			for i, p := range points {
 				scaledPoints[i] = image.Point{
@@ -125,7 +124,6 @@ func (rm *RegionManager) CreateMaskForSelection(selection layers.Selection, imgW
 				}
 			}
 
-			// Use GoCV's optimized FillPoly
 			pointsVector := gocv.NewPointsVector()
 			defer pointsVector.Close()
 
@@ -140,7 +138,6 @@ func (rm *RegionManager) CreateMaskForSelection(selection layers.Selection, imgW
 	return mask
 }
 
-// scaleCoordinate scales a coordinate to fit target dimension
 func scaleCoordinate(coord, targetDim int) int {
 	if coord < 0 {
 		return 0
@@ -185,7 +182,7 @@ func (rm *RegionManager) CreateFreehandSelection(points []image.Point) string {
 		return ""
 	}
 
-	id := fmt.Sprintf("freehand_%d", rm.nextID)
+	id := fmt.Sprintf("lasso_%d", rm.nextID)
 	rm.nextID++
 
 	bounds := calculateBounds(points)
@@ -209,6 +206,13 @@ func (rm *RegionManager) CreateFreehandSelection(points []image.Point) string {
 	rm.active = id
 
 	return id
+}
+
+// CreateWandSelection creates a magic wand selection (placeholder - FloodFill not available in GoCV yet)
+func (rm *RegionManager) CreateWandSelection(seedPoint image.Point, tolerance float64, imgMat gocv.Mat) string {
+	// TODO: Implement when gocv.FloodFill becomes available
+	// For now, return empty string to indicate magic wand is not implemented
+	return ""
 }
 
 func (rm *RegionManager) GetActiveSelection() *Selection {
@@ -381,7 +385,7 @@ func (rm *RegionManager) IsPointInSelection(point image.Point) bool {
 	switch selection.Type {
 	case SelectionRectangle:
 		return point.In(selection.Bounds)
-	case SelectionFreehand:
+	case SelectionFreehand, SelectionWand:
 		return isPointInPolygon(point, selection.Points)
 	}
 

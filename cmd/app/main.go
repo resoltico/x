@@ -1,7 +1,7 @@
 // Advanced Image Processing Application
 // Author: Ervins Strauhmanis
 // License: MIT
-// Version: 2.0.0 - Redesigned with Modern UI Patterns
+// Version: 2.0.0 - Redesigned with Perfect UI Patterns
 
 package main
 
@@ -27,7 +27,7 @@ func main() {
 
 	// Initialize logger
 	logger := initLogger(*debugMode)
-	logger.Info("Starting Advanced Image Processing Application with Modern UI Design",
+	logger.Info("Starting Advanced Image Processing Application with Perfect UI Design",
 		"version", AppVersion,
 		"debug_mode", *debugMode)
 
