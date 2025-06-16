@@ -3,14 +3,19 @@ package gui
 
 import (
 	"fmt"
+	"image"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/widget"
 	"github.com/sirupsen/logrus"
 	"gocv.io/x/gocv"
 
 	"advanced-image-processing/internal/core"
+	"advanced-image-processing/internal/io"
 )
 
 // ImageCanvas handles image display and ROI selection
@@ -19,9 +24,11 @@ type ImageCanvas struct {
 	regionManager *core.RegionManager
 	logger        *logrus.Logger
 
-	split         *container.Split
-	originalView  *widget.Card
-	processedView *widget.Card
+	split           *container.Split
+	originalView    *widget.Card
+	processedView   *widget.Card
+	interactiveOrig *InteractiveCanvas
+	processedImage  *canvas.Image
 
 	activeTool         string
 	onSelectionChanged func(bool)
@@ -41,13 +48,14 @@ func NewImageCanvas(imageData *core.ImageData, regionManager *core.RegionManager
 }
 
 func (ic *ImageCanvas) initializeUI() {
-	// Create original image view
-	ic.originalView = widget.NewCard("Original", "",
-		widget.NewLabel("Load an image to begin"))
+	// Create interactive original image view
+	ic.interactiveOrig = NewInteractiveCanvas(ic.imageData, ic.regionManager, ic.logger)
+	ic.originalView = widget.NewCard("Original", "", ic.interactiveOrig)
 
 	// Create processed image view
-	ic.processedView = widget.NewCard("Processed", "",
-		widget.NewLabel("Apply algorithms to see results"))
+	ic.processedImage = canvas.NewImageFromImage(image.NewRGBA(image.Rect(0, 0, 1, 1)))
+	ic.processedImage.FillMode = canvas.ImageFillContain
+	ic.processedView = widget.NewCard("Processed", "", ic.processedImage)
 
 	// Create split container
 	ic.split = container.NewHSplit(ic.originalView, ic.processedView)
@@ -63,28 +71,58 @@ func (ic *ImageCanvas) UpdateOriginalImage() {
 		return
 	}
 
-	// TODO: Convert OpenCV Mat to Fyne image and display
-	ic.originalView.SetContent(widget.NewLabel("Original image loaded"))
+	original := ic.imageData.GetOriginal()
+	defer original.Close()
+
+	if !original.Empty() {
+		// Convert Mat to image.Image
+		img, err := original.ToImage()
+		if err != nil {
+			ic.logger.WithError(err).Error("Failed to convert Mat to image")
+			return
+		}
+
+		// Update interactive canvas
+		ic.interactiveOrig.UpdateImage(img)
+	}
 }
 
 func (ic *ImageCanvas) UpdateProcessedImage(processed gocv.Mat) {
 	defer processed.Close()
-	// TODO: Convert OpenCV Mat to Fyne image and display
-	ic.processedView.SetContent(widget.NewLabel("Processed image updated"))
+
+	if processed.Empty() {
+		// Show placeholder
+		ic.processedImage.Image = image.NewRGBA(image.Rect(0, 0, 1, 1))
+		ic.processedImage.Refresh()
+		return
+	}
+
+	// Convert Mat to image.Image
+	img, err := processed.ToImage()
+	if err != nil {
+		ic.logger.WithError(err).Error("Failed to convert processed Mat to image")
+		return
+	}
+
+	// Update processed image
+	ic.processedImage.Image = img
+	ic.processedImage.Refresh()
 }
 
 func (ic *ImageCanvas) SetActiveTool(tool string) {
 	ic.activeTool = tool
+	ic.interactiveOrig.SetActiveTool(tool)
 	ic.logger.WithField("tool", tool).Debug("Active tool changed")
 }
 
 func (ic *ImageCanvas) RefreshSelections() {
-	// TODO: Update selection overlay
+	ic.interactiveOrig.RefreshSelections()
 	ic.logger.Debug("Refreshing selections")
 }
 
 func (ic *ImageCanvas) SetCallbacks(onSelectionChanged func(bool)) {
 	ic.onSelectionChanged = onSelectionChanged
+	ic.interactiveOrig.SetSelectionChangedCallback(onSelectionChanged)
 }
 
 func (ic *ImageCanvas) Refresh() {
@@ -97,9 +135,11 @@ type Toolbar struct {
 	rectangleTool *widget.Button
 	freehandTool  *widget.Button
 	clearButton   *widget.Button
+	resetButton   *widget.Button
 
 	onToolChanged    func(string)
 	onClearSelection func()
+	onResetImage     func()
 }
 
 // NewToolbar creates a new toolbar
@@ -128,12 +168,19 @@ func (t *Toolbar) initializeUI() {
 		}
 	})
 
+	t.resetButton = widget.NewButton("Reset to Original", func() {
+		if t.onResetImage != nil {
+			t.onResetImage()
+		}
+	})
+
 	t.hbox = container.NewHBox(
 		widget.NewLabel("Tools:"),
 		t.rectangleTool,
 		t.freehandTool,
 		widget.NewSeparator(),
 		t.clearButton,
+		t.resetButton,
 	)
 
 	// Initially disabled
@@ -148,12 +195,14 @@ func (t *Toolbar) Enable() {
 	t.rectangleTool.Enable()
 	t.freehandTool.Enable()
 	t.clearButton.Enable()
+	t.resetButton.Enable()
 }
 
 func (t *Toolbar) Disable() {
 	t.rectangleTool.Disable()
 	t.freehandTool.Disable()
 	t.clearButton.Disable()
+	t.resetButton.Disable()
 }
 
 func (t *Toolbar) SetSelectionState(hasSelection bool) {
@@ -169,6 +218,10 @@ func (t *Toolbar) SetCallbacks(onToolChanged func(string), onClearSelection func
 	t.onClearSelection = onClearSelection
 }
 
+func (t *Toolbar) SetResetCallback(onResetImage func()) {
+	t.onResetImage = onResetImage
+}
+
 func (t *Toolbar) Refresh() {
 	t.hbox.Refresh()
 }
@@ -178,8 +231,10 @@ type PropertiesPanel struct {
 	pipeline *core.ProcessingPipeline
 	logger   *logrus.Logger
 
-	vbox    *fyne.Container
-	enabled bool
+	vbox        *fyne.Container
+	enabled     bool
+	progressBar *widget.ProgressBar
+	statusLabel *widget.Label
 }
 
 // NewPropertiesPanel creates a new properties panel
@@ -195,9 +250,20 @@ func NewPropertiesPanel(pipeline *core.ProcessingPipeline, logger *logrus.Logger
 }
 
 func (pp *PropertiesPanel) initializeUI() {
+	pp.progressBar = widget.NewProgressBar()
+	pp.progressBar.Hide()
+
+	pp.statusLabel = widget.NewLabel("")
+	pp.statusLabel.Hide()
+
+	content := container.NewVBox(
+		widget.NewLabel("Select an algorithm to adjust parameters"),
+		pp.progressBar,
+		pp.statusLabel,
+	)
+
 	pp.vbox = container.NewVBox(
-		widget.NewCard("Algorithm Properties", "",
-			widget.NewLabel("Select an algorithm to adjust parameters")),
+		widget.NewCard("Algorithm Properties", "", content),
 	)
 }
 
@@ -215,7 +281,14 @@ func (pp *PropertiesPanel) Disable() {
 }
 
 func (pp *PropertiesPanel) UpdateProgress(step, total int, stepName string) {
-	// TODO: Show progress indicator
+	pp.progressBar.Show()
+	pp.statusLabel.Show()
+
+	if total > 0 {
+		pp.progressBar.SetValue(float64(step) / float64(total))
+	}
+	pp.statusLabel.SetText(fmt.Sprintf("Step %d/%d: %s", step, total, stepName))
+
 	pp.logger.WithFields(logrus.Fields{
 		"step":      step,
 		"total":     total,
@@ -224,7 +297,8 @@ func (pp *PropertiesPanel) UpdateProgress(step, total int, stepName string) {
 }
 
 func (pp *PropertiesPanel) ClearProgress() {
-	// TODO: Hide progress indicator
+	pp.progressBar.Hide()
+	pp.statusLabel.Hide()
 }
 
 func (pp *PropertiesPanel) Refresh() {
@@ -293,7 +367,7 @@ func (mp *MetricsPanel) Refresh() {
 type MenuHandler struct {
 	window    fyne.Window
 	imageData *core.ImageData
-	loader    interface{} // ImageLoader interface
+	loader    *io.ImageLoader
 	logger    *logrus.Logger
 
 	onImageLoaded func(string)
@@ -301,7 +375,7 @@ type MenuHandler struct {
 }
 
 // NewMenuHandler creates a new menu handler
-func NewMenuHandler(window fyne.Window, imageData *core.ImageData, loader interface{}, logger *logrus.Logger) *MenuHandler {
+func NewMenuHandler(window fyne.Window, imageData *core.ImageData, loader *io.ImageLoader, logger *logrus.Logger) *MenuHandler {
 	return &MenuHandler{
 		window:    window,
 		imageData: imageData,
@@ -321,37 +395,164 @@ func (mh *MenuHandler) GetMainMenu() *fyne.MainMenu {
 		}),
 	)
 
+	// Edit menu
+	editMenu := fyne.NewMenu("Edit",
+		fyne.NewMenuItem("Clear Selection", func() {
+			// TODO: Clear selection
+		}),
+		fyne.NewMenuItem("Reset to Original", func() {
+			if mh.imageData.HasImage() {
+				mh.imageData.ResetToOriginal()
+				mh.logger.Info("Reset to original image")
+				// Trigger UI update
+				if mh.onImageLoaded != nil {
+					filepath := mh.imageData.GetFilepath()
+					mh.onImageLoaded(filepath)
+				}
+			}
+		}),
+	)
+
 	// Help menu
 	helpMenu := fyne.NewMenu("Help",
 		fyne.NewMenuItem("About", mh.showAbout),
 	)
 
-	return fyne.NewMainMenu(fileMenu, helpMenu)
+	return fyne.NewMainMenu(fileMenu, editMenu, helpMenu)
 }
 
 func (mh *MenuHandler) openImage() {
-	// TODO: Implement file dialog for image opening
-	mh.logger.Info("Open image menu item clicked")
+	mh.logger.Info("Opening file dialog for image selection")
 
-	if mh.onImageLoaded != nil {
-		mh.onImageLoaded("test_image.jpg")
-	}
+	// Create file dialog for opening images
+	fileDialog := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
+		if err != nil {
+			mh.showError("File Dialog Error", err)
+			return
+		}
+		if reader == nil {
+			return // User cancelled
+		}
+		defer reader.Close()
+
+		uri := reader.URI()
+		filepath := uri.Path()
+
+		mh.logger.WithField("filepath", filepath).Info("Loading selected image")
+
+		// Load the image
+		mat, err := mh.loader.LoadImage(filepath)
+		if err != nil {
+			mh.showError("Failed to Load Image", err)
+			return
+		}
+		defer mat.Close()
+
+		// Validate the image
+		if err := core.ValidateImage(mat); err != nil {
+			mh.showError("Invalid Image", err)
+			return
+		}
+
+		// Set the image
+		if err := mh.imageData.SetOriginal(mat, filepath); err != nil {
+			mh.showError("Failed to Set Image", err)
+			return
+		}
+
+		mh.logger.WithField("filepath", filepath).Info("Image loaded successfully")
+
+		if mh.onImageLoaded != nil {
+			mh.onImageLoaded(filepath)
+		}
+
+	}, mh.window)
+
+	// Set file filter for images
+	imageFilter := storage.NewExtensionFileFilter([]string{".jpg", ".jpeg", ".png", ".tiff", ".tif", ".bmp"})
+	fileDialog.SetFilter(imageFilter)
+
+	fileDialog.Show()
 }
 
 func (mh *MenuHandler) saveImage() {
-	// TODO: Implement file dialog for image saving
-	mh.logger.Info("Save image menu item clicked")
-
-	if mh.onImageSaved != nil {
-		mh.onImageSaved("saved_image.png")
+	if !mh.imageData.HasImage() {
+		mh.showError("No Image", fmt.Errorf("no image loaded to save"))
+		return
 	}
+
+	mh.logger.Info("Opening file dialog for image saving")
+
+	// Create file dialog for saving images
+	fileDialog := dialog.NewFileSave(func(writer fyne.URIWriteCloser, err error) {
+		if err != nil {
+			mh.showError("File Dialog Error", err)
+			return
+		}
+		if writer == nil {
+			return // User cancelled
+		}
+		defer writer.Close()
+
+		uri := writer.URI()
+		filepath := uri.Path()
+
+		mh.logger.WithField("filepath", filepath).Info("Saving image")
+
+		// Get processed image (or original if no processing)
+		processed := mh.imageData.GetProcessed()
+		defer processed.Close()
+
+		if processed.Empty() {
+			// Use original if no processed image
+			processed = mh.imageData.GetOriginal()
+		}
+
+		// Save the image
+		if err := mh.loader.SaveImage(processed, filepath); err != nil {
+			mh.showError("Failed to Save Image", err)
+			return
+		}
+
+		mh.logger.WithField("filepath", filepath).Info("Image saved successfully")
+
+		if mh.onImageSaved != nil {
+			mh.onImageSaved(filepath)
+		}
+
+	}, mh.window)
+
+	// Set default filename and filter
+	fileDialog.SetFileName("processed_image.png")
+	imageFilter := storage.NewExtensionFileFilter([]string{".png", ".jpg", ".jpeg", ".tiff", ".tif", ".bmp"})
+	fileDialog.SetFilter(imageFilter)
+
+	fileDialog.Show()
 }
 
 func (mh *MenuHandler) showAbout() {
-	content := widget.NewLabel("Advanced Image Processing v2.0\n\nBy Ervins Strauhmanis\n\nBuilt with Fyne and OpenCV")
-	dialog := widget.NewModalPopUp(content, mh.window.Canvas())
-	dialog.Resize(fyne.NewSize(300, 200))
-	dialog.Show()
+	content := container.NewVBox(
+		widget.NewLabel("Advanced Image Processing v2.0"),
+		widget.NewSeparator(),
+		widget.NewLabel("A professional-grade image processing application"),
+		widget.NewLabel("for historical documents with ROI selection,"),
+		widget.NewLabel("Local Adaptive Algorithms (LAA), and"),
+		widget.NewLabel("comprehensive quality metrics."),
+		widget.NewSeparator(),
+		widget.NewLabel("Author: Ervins Strauhmanis"),
+		widget.NewLabel("Built with Go, Fyne v2.6, and OpenCV 4.11"),
+		widget.NewSeparator(),
+		widget.NewLabel("License: MIT"),
+	)
+
+	aboutDialog := dialog.NewCustom("About", "Close", content, mh.window)
+	aboutDialog.Resize(fyne.NewSize(400, 300))
+	aboutDialog.Show()
+}
+
+func (mh *MenuHandler) showError(title string, err error) {
+	mh.logger.WithError(err).Error(title)
+	dialog.ShowError(err, mh.window)
 }
 
 func (mh *MenuHandler) SetCallbacks(onImageLoaded, onImageSaved func(string)) {

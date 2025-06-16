@@ -265,8 +265,9 @@ func (pp *ProcessingPipeline) processImage() {
 		var result gocv.Mat
 		var processMetrics map[string]float64
 
-		// Check if we have ROI selection
-		if pp.regionManager.HasActiveSelection() {
+		// Check if we have any ROI selections
+		allSelections := pp.regionManager.GetAllSelections()
+		if len(allSelections) > 0 {
 			result, processMetrics = pp.processWithROI(ctx, original)
 		} else {
 			result, processMetrics = pp.processFullImage(ctx, original)
@@ -367,17 +368,31 @@ func (pp *ProcessingPipeline) processFullImage(ctx context.Context, original goc
 
 // processWithROI processes only the selected region
 func (pp *ProcessingPipeline) processWithROI(ctx context.Context, original gocv.Mat) (gocv.Mat, map[string]float64) {
-	// Create mask for active selection
-	mask := pp.regionManager.CreateMask(original.Cols(), original.Rows())
-	defer mask.Close()
-
-	if mask.Empty() {
+	// Get all selections and combine them into a single mask
+	allSelections := pp.regionManager.GetAllSelections()
+	if len(allSelections) == 0 {
 		return pp.processFullImage(ctx, original)
 	}
 
-	// Extract ROI region
+	// Create combined mask for all selections
+	combinedMask := gocv.NewMatWithSize(original.Rows(), original.Cols(), gocv.MatTypeCV8UC1)
+	defer combinedMask.Close()
+
+	for _, selection := range allSelections {
+		selectionMask := pp.regionManager.CreateMaskForSelection(selection, original.Cols(), original.Rows())
+		if !selectionMask.Empty() {
+			gocv.BitwiseOr(combinedMask, selectionMask, &combinedMask)
+			selectionMask.Close()
+		}
+	}
+
+	if combinedMask.Empty() {
+		return pp.processFullImage(ctx, original)
+	}
+
+	// Extract ROI regions using combined mask
 	roi := gocv.NewMat()
-	original.CopyToWithMask(&roi, mask)
+	original.CopyToWithMask(&roi, combinedMask)
 	defer roi.Close()
 
 	// Process the ROI
@@ -389,7 +404,7 @@ func (pp *ProcessingPipeline) processWithROI(ctx context.Context, original gocv.
 
 	// Combine processed ROI with original image
 	result := original.Clone()
-	processedROI.CopyToWithMask(&result, mask)
+	processedROI.CopyToWithMask(&result, combinedMask)
 
 	return result, processMetrics
 }

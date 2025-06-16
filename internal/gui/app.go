@@ -6,6 +6,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/sirupsen/logrus"
@@ -31,7 +32,7 @@ type Application struct {
 	// GUI components
 	canvas       *ImageCanvas
 	toolbar      *Toolbar
-	properties   *PropertiesPanel
+	properties   *EnhancedPropertiesPanel
 	metricsPanel *MetricsPanel
 	menuHandler  *MenuHandler
 
@@ -74,7 +75,7 @@ func (a *Application) initializeGUI() {
 	// Create main GUI components
 	a.canvas = NewImageCanvas(a.imageData, a.regionManager, a.logger)
 	a.toolbar = NewToolbar()
-	a.properties = NewPropertiesPanel(a.pipeline, a.logger)
+	a.properties = NewEnhancedPropertiesPanel(a.pipeline, a.logger)
 	a.metricsPanel = NewMetricsPanel()
 	a.menuHandler = NewMenuHandler(a.window, a.imageData, a.loader, a.logger)
 }
@@ -175,6 +176,16 @@ func (a *Application) setupCallbacks() {
 		},
 	)
 
+	a.toolbar.SetResetCallback(func() {
+		if a.imageData.HasImage() {
+			a.imageData.ResetToOriginal()
+			a.pipeline.ClearSteps()
+			a.canvas.UpdateOriginalImage()
+			a.canvas.UpdateProcessedImage(a.imageData.GetOriginal())
+			a.metricsPanel.Clear()
+		}
+	})
+
 	// Canvas callbacks
 	a.canvas.SetCallbacks(
 		// onSelectionChanged
@@ -216,50 +227,13 @@ func (a *Application) cleanup() {
 // showError displays an error dialog
 func (a *Application) showError(title string, err error) {
 	a.logger.WithError(err).Error(title)
-
-	if a.debugMode {
-		// Show detailed error in debug mode
-		content := container.NewVBox(
-			widget.NewLabel(err.Error()),
-			widget.NewSeparator(),
-			widget.NewLabel("Check console for detailed logs"),
-		)
-
-		dialog := container.NewBorder(
-			widget.NewLabel(title),
-			widget.NewButton("OK", func() {}),
-			nil, nil,
-			content,
-		)
-
-		popup := widget.NewModalPopUp(dialog, a.window.Canvas())
-		popup.Show()
-	} else {
-		// Simple error dialog for production
-		dialog := widget.NewModalPopUp(
-			container.NewVBox(
-				widget.NewLabel(title),
-				widget.NewLabel(err.Error()),
-				widget.NewButton("OK", func() {}),
-			),
-			a.window.Canvas(),
-		)
-		dialog.Show()
-	}
+	dialog.ShowError(err, a.window)
 }
 
 // showInfo displays an information dialog
 func (a *Application) showInfo(title, message string) {
 	a.logger.WithField("message", message).Info(title)
-	dialog := widget.NewModalPopUp(
-		container.NewVBox(
-			widget.NewLabel(title),
-			widget.NewLabel(message),
-			widget.NewButton("OK", func() {}),
-		),
-		a.window.Canvas(),
-	)
-	dialog.Show()
+	dialog.ShowInformation(title, message, a.window)
 }
 
 // showWarning displays a warning dialog
@@ -271,17 +245,8 @@ func (a *Application) showWarning(title, message string) {
 		widget.NewLabel(message),
 	)
 
-	dialog := widget.NewModalPopUp(
-		container.NewBorder(
-			widget.NewLabel(title),
-			widget.NewButton("OK", func() {}),
-			nil, nil,
-			content,
-		),
-		a.window.Canvas(),
-	)
-
-	dialog.Show()
+	warningDialog := dialog.NewCustom(title, "OK", content, a.window)
+	warningDialog.Show()
 }
 
 // GetWindow returns the main window

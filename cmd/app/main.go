@@ -7,10 +7,8 @@ package main
 
 import (
 	"flag"
-	"log"
 	"os"
 
-	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/theme"
 	"github.com/sirupsen/logrus"
@@ -39,11 +37,10 @@ func main() {
 	// Create Fyne application with updated metadata
 	myApp := app.NewWithID(AppID)
 	myApp.SetIcon(theme.DocumentIcon())
-	
-	// Set application metadata
-	myApp.Metadata().Name = AppName
-	myApp.Metadata().Version = AppVersion
-	
+
+	// Note: In Fyne v2.6+, metadata is read-only and set from FyneApp.toml
+	// The application metadata (name, version) is automatically loaded from FyneApp.toml
+
 	// Use default theme (optimized for Fyne v2.6)
 	myApp.Settings().SetTheme(theme.DefaultTheme())
 
