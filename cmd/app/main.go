@@ -1,17 +1,17 @@
-// Advanced Image Processing Application - Complete Rewrite
+// Advanced Image Processing Application
 // Author: Ervins Strauhmanis
 // License: MIT
-// Version: 2.0.0 - ROI + LAA + Full Metrics
+// Version: 2.0.0 - Optimized with Standard APIs
 
 package main
 
 import (
 	"flag"
+	"log/slog"
 	"os"
 
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/theme"
-	"github.com/sirupsen/logrus"
 
 	"advanced-image-processing/internal/gui"
 )
@@ -23,25 +23,18 @@ const (
 )
 
 func main() {
-	// Parse command line flags
 	debugMode := flag.Bool("debug", false, "Enable debug mode with verbose logging")
 	flag.Parse()
 
 	// Initialize logger
 	logger := initLogger(*debugMode)
-	logger.WithFields(logrus.Fields{
-		"version":    AppVersion,
-		"debug_mode": *debugMode,
-	}).Info("Starting Advanced Image Processing Application")
+	logger.Info("Starting Advanced Image Processing Application",
+		"version", AppVersion,
+		"debug_mode", *debugMode)
 
-	// Create Fyne application with updated metadata
+	// Create Fyne application
 	myApp := app.NewWithID(AppID)
 	myApp.SetIcon(theme.DocumentIcon())
-
-	// Note: In Fyne v2.6+, metadata is read-only and set from FyneApp.toml
-	// The application metadata (name, version) is automatically loaded from FyneApp.toml
-
-	// Use default theme (optimized for Fyne v2.6)
 	myApp.Settings().SetTheme(theme.DefaultTheme())
 
 	// Create and show main application window
@@ -52,24 +45,18 @@ func main() {
 	os.Exit(0)
 }
 
-// initLogger initializes the logger with appropriate level
-func initLogger(debugMode bool) *logrus.Logger {
-	logger := logrus.New()
-	logger.SetOutput(os.Stdout)
+func initLogger(debugMode bool) *slog.Logger {
+	var handler slog.Handler
 
 	if debugMode {
-		logger.SetLevel(logrus.DebugLevel)
-		logger.SetFormatter(&logrus.TextFormatter{
-			FullTimestamp: true,
-			ForceColors:   true,
+		handler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+			Level: slog.LevelDebug,
 		})
-		logger.Debug("Debug logging enabled")
 	} else {
-		logger.SetLevel(logrus.InfoLevel)
-		logger.SetFormatter(&logrus.JSONFormatter{
-			TimestampFormat: "2006-01-02 15:04:05",
+		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+			Level: slog.LevelInfo,
 		})
 	}
 
-	return logger
+	return slog.New(handler)
 }

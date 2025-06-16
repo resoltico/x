@@ -32,11 +32,10 @@ type Selection struct {
 type RegionManager struct {
 	mu         sync.RWMutex
 	selections map[string]*Selection
-	active     string // ID of currently active selection
+	active     string
 	nextID     int
 }
 
-// NewRegionManager creates a new region manager
 func NewRegionManager() *RegionManager {
 	return &RegionManager{
 		selections: make(map[string]*Selection),
@@ -44,7 +43,6 @@ func NewRegionManager() *RegionManager {
 	}
 }
 
-// CreateRectangleSelection creates a rectangular selection
 func (rm *RegionManager) CreateRectangleSelection(rect image.Rectangle) string {
 	rm.mu.Lock()
 	defer rm.mu.Unlock()
@@ -71,19 +69,17 @@ func (rm *RegionManager) CreateRectangleSelection(rect image.Rectangle) string {
 	return id
 }
 
-// CreateFreehandSelection creates a freehand polygon selection
 func (rm *RegionManager) CreateFreehandSelection(points []image.Point) string {
 	rm.mu.Lock()
 	defer rm.mu.Unlock()
 
 	if len(points) < 3 {
-		return "" // Need at least 3 points for a polygon
+		return ""
 	}
 
 	id := fmt.Sprintf("freehand_%d", rm.nextID)
 	rm.nextID++
 
-	// Calculate bounding rectangle
 	bounds := calculateBounds(points)
 
 	selection := &Selection{
@@ -107,7 +103,6 @@ func (rm *RegionManager) CreateFreehandSelection(points []image.Point) string {
 	return id
 }
 
-// GetActiveSelection returns the currently active selection
 func (rm *RegionManager) GetActiveSelection() *Selection {
 	rm.mu.RLock()
 	defer rm.mu.RUnlock()
@@ -121,7 +116,6 @@ func (rm *RegionManager) GetActiveSelection() *Selection {
 		return nil
 	}
 
-	// Return a copy to prevent external modification
 	result := &Selection{
 		ID:     selection.ID,
 		Type:   selection.Type,
@@ -134,7 +128,6 @@ func (rm *RegionManager) GetActiveSelection() *Selection {
 	return result
 }
 
-// GetSelection returns a selection by ID
 func (rm *RegionManager) GetSelection(id string) *Selection {
 	rm.mu.RLock()
 	defer rm.mu.RUnlock()
@@ -144,7 +137,6 @@ func (rm *RegionManager) GetSelection(id string) *Selection {
 		return nil
 	}
 
-	// Return a copy
 	result := &Selection{
 		ID:     selection.ID,
 		Type:   selection.Type,
@@ -157,14 +149,12 @@ func (rm *RegionManager) GetSelection(id string) *Selection {
 	return result
 }
 
-// GetAllSelections returns all selections
 func (rm *RegionManager) GetAllSelections() []*Selection {
 	rm.mu.RLock()
 	defer rm.mu.RUnlock()
 
 	result := make([]*Selection, 0, len(rm.selections))
 	for _, selection := range rm.selections {
-		// Return a copy
 		selectionCopy := &Selection{
 			ID:     selection.ID,
 			Type:   selection.Type,
@@ -179,7 +169,6 @@ func (rm *RegionManager) GetAllSelections() []*Selection {
 	return result
 }
 
-// SetActiveSelection sets the active selection
 func (rm *RegionManager) SetActiveSelection(id string) bool {
 	rm.mu.Lock()
 	defer rm.mu.Unlock()
@@ -201,7 +190,6 @@ func (rm *RegionManager) SetActiveSelection(id string) bool {
 	return true
 }
 
-// RemoveSelection removes a selection
 func (rm *RegionManager) RemoveSelection(id string) bool {
 	rm.mu.Lock()
 	defer rm.mu.Unlock()
@@ -213,7 +201,6 @@ func (rm *RegionManager) RemoveSelection(id string) bool {
 
 	delete(rm.selections, id)
 
-	// If this was the active selection, clear active
 	if rm.active == id {
 		rm.active = ""
 	}
@@ -221,7 +208,6 @@ func (rm *RegionManager) RemoveSelection(id string) bool {
 	return true
 }
 
-// ClearAll removes all selections
 func (rm *RegionManager) ClearAll() {
 	rm.mu.Lock()
 	defer rm.mu.Unlock()
@@ -230,20 +216,16 @@ func (rm *RegionManager) ClearAll() {
 	rm.active = ""
 }
 
-// CreateMask creates a binary mask for the active selection
 func (rm *RegionManager) CreateMask(imgWidth, imgHeight int) gocv.Mat {
 	selection := rm.GetActiveSelection()
 	if selection == nil {
-		// Return empty mask if no selection
 		return gocv.NewMat()
 	}
 
 	return rm.CreateMaskForSelection(selection, imgWidth, imgHeight)
 }
 
-// CreateMaskForSelection creates a binary mask for a specific selection
 func (rm *RegionManager) CreateMaskForSelection(selection *Selection, imgWidth, imgHeight int) gocv.Mat {
-	// Create mask (0 = background, 255 = selected region)
 	mask := gocv.Zeros(imgHeight, imgWidth, gocv.MatTypeCV8UC1)
 
 	switch selection.Type {
@@ -256,11 +238,9 @@ func (rm *RegionManager) CreateMaskForSelection(selection *Selection, imgWidth, 
 				selection.Points[1].Y,
 			)
 
-			// Ensure rectangle is within image bounds
 			rect = rect.Intersect(image.Rect(0, 0, imgWidth, imgHeight))
 
 			if !rect.Empty() {
-				// Fill rectangle region
 				roi := mask.Region(rect)
 				roi.SetTo(gocv.Scalar{Val1: 255, Val2: 255, Val3: 255, Val4: 255})
 				roi.Close()
@@ -269,17 +249,14 @@ func (rm *RegionManager) CreateMaskForSelection(selection *Selection, imgWidth, 
 
 	case SelectionFreehand:
 		if len(selection.Points) >= 3 {
-			// Create PointsVector using the correct GoCV API
+			// Use GoCV's optimized FillPoly
 			pointsVector := gocv.NewPointsVector()
 			defer pointsVector.Close()
 
-			// Create a PointVector from our points and append it to PointsVector
 			pointVector := gocv.NewPointVectorFromPoints(selection.Points)
 			defer pointVector.Close()
 
 			pointsVector.Append(pointVector)
-
-			// Use GoCV FillPoly with correct API
 			gocv.FillPoly(&mask, pointsVector, color.RGBA{R: 255, G: 255, B: 255, A: 255})
 		}
 	}
@@ -287,22 +264,19 @@ func (rm *RegionManager) CreateMaskForSelection(selection *Selection, imgWidth, 
 	return mask
 }
 
-// HasActiveSelection returns true if there's an active selection
 func (rm *RegionManager) HasActiveSelection() bool {
 	rm.mu.RLock()
 	defer rm.mu.RUnlock()
 	return rm.active != ""
 }
 
-// rectangleToPoints converts a rectangle to corner points
 func rectangleToPoints(rect image.Rectangle) []image.Point {
 	return []image.Point{
-		{X: rect.Min.X, Y: rect.Min.Y}, // Top-left
-		{X: rect.Max.X, Y: rect.Max.Y}, // Bottom-right
+		{X: rect.Min.X, Y: rect.Min.Y},
+		{X: rect.Max.X, Y: rect.Max.Y},
 	}
 }
 
-// calculateBounds calculates the bounding rectangle for a set of points
 func calculateBounds(points []image.Point) image.Rectangle {
 	if len(points) == 0 {
 		return image.Rectangle{}
@@ -329,7 +303,6 @@ func calculateBounds(points []image.Point) image.Rectangle {
 	return image.Rect(minX, minY, maxX, maxY)
 }
 
-// IsPointInSelection checks if a point is inside the active selection
 func (rm *RegionManager) IsPointInSelection(point image.Point) bool {
 	selection := rm.GetActiveSelection()
 	if selection == nil {
@@ -339,7 +312,6 @@ func (rm *RegionManager) IsPointInSelection(point image.Point) bool {
 	switch selection.Type {
 	case SelectionRectangle:
 		return point.In(selection.Bounds)
-
 	case SelectionFreehand:
 		return isPointInPolygon(point, selection.Points)
 	}
@@ -347,7 +319,6 @@ func (rm *RegionManager) IsPointInSelection(point image.Point) bool {
 	return false
 }
 
-// isPointInPolygon checks if a point is inside a polygon using ray casting
 func isPointInPolygon(point image.Point, polygon []image.Point) bool {
 	if len(polygon) < 3 {
 		return false

@@ -3,6 +3,7 @@ package core
 
 import (
 	"fmt"
+	"image"
 	"sync"
 
 	"gocv.io/x/gocv"
@@ -10,12 +11,13 @@ import (
 
 // ImageData manages original and processed images with thread safety
 type ImageData struct {
-	mu           sync.RWMutex
-	original     gocv.Mat
-	processed    gocv.Mat
-	hasImage     bool
-	filepath     string
-	metadata     ImageMetadata
+	mu        sync.RWMutex
+	original  gocv.Mat
+	processed gocv.Mat
+	preview   gocv.Mat // Low-res preview for real-time processing
+	hasImage  bool
+	filepath  string
+	metadata  ImageMetadata
 }
 
 // ImageMetadata contains image information
@@ -25,29 +27,28 @@ type ImageMetadata struct {
 	Channels int
 	Type     gocv.MatType
 	Format   string
-	Size     int64 // File size in bytes
+	Size     int64
 }
 
-// NewImageData creates a new thread-safe image data container
+const PreviewMaxSize = 400 // Max width/height for preview
+
 func NewImageData() *ImageData {
 	return &ImageData{
 		original:  gocv.NewMat(),
 		processed: gocv.NewMat(),
+		preview:   gocv.NewMat(),
 		hasImage:  false,
 	}
 }
 
-// SetOriginal sets the original image with validation
 func (img *ImageData) SetOriginal(mat gocv.Mat, filepath string) error {
 	img.mu.Lock()
 	defer img.mu.Unlock()
 
-	// Validate input
 	if mat.Empty() {
 		return fmt.Errorf("cannot set empty image")
 	}
 
-	// Validate image properties
 	if mat.Cols() <= 0 || mat.Rows() <= 0 {
 		return fmt.Errorf("invalid image dimensions: %dx%d", mat.Cols(), mat.Rows())
 	}
@@ -64,12 +65,18 @@ func (img *ImageData) SetOriginal(mat gocv.Mat, filepath string) error {
 	if !img.processed.Empty() {
 		img.processed.Close()
 	}
+	if !img.preview.Empty() {
+		img.preview.Close()
+	}
 
 	// Clone and store the image
 	img.original = mat.Clone()
-	img.processed = mat.Clone() // Start with original as processed
+	img.processed = mat.Clone()
 	img.hasImage = true
 	img.filepath = filepath
+
+	// Create preview
+	img.preview = img.createPreview(mat)
 
 	// Store metadata
 	img.metadata = ImageMetadata{
@@ -83,7 +90,38 @@ func (img *ImageData) SetOriginal(mat gocv.Mat, filepath string) error {
 	return nil
 }
 
-// SetProcessed sets the processed image
+func (img *ImageData) createPreview(mat gocv.Mat) gocv.Mat {
+	if mat.Empty() {
+		return gocv.NewMat()
+	}
+
+	width := mat.Cols()
+	height := mat.Rows()
+
+	// Calculate scale factor
+	scale := 1.0
+	if width > PreviewMaxSize || height > PreviewMaxSize {
+		scaleW := float64(PreviewMaxSize) / float64(width)
+		scaleH := float64(PreviewMaxSize) / float64(height)
+		if scaleW < scaleH {
+			scale = scaleW
+		} else {
+			scale = scaleH
+		}
+	}
+
+	if scale >= 1.0 {
+		return mat.Clone()
+	}
+
+	newWidth := int(float64(width) * scale)
+	newHeight := int(float64(height) * scale)
+
+	preview := gocv.NewMat()
+	gocv.Resize(mat, &preview, image.Pt(newWidth, newHeight), 0, 0, gocv.InterpolationArea)
+	return preview
+}
+
 func (img *ImageData) SetProcessed(mat gocv.Mat) error {
 	img.mu.Lock()
 	defer img.mu.Unlock()
@@ -105,7 +143,6 @@ func (img *ImageData) SetProcessed(mat gocv.Mat) error {
 	return nil
 }
 
-// GetOriginal returns a copy of the original image
 func (img *ImageData) GetOriginal() gocv.Mat {
 	img.mu.RLock()
 	defer img.mu.RUnlock()
@@ -116,7 +153,6 @@ func (img *ImageData) GetOriginal() gocv.Mat {
 	return img.original.Clone()
 }
 
-// GetProcessed returns a copy of the processed image
 func (img *ImageData) GetProcessed() gocv.Mat {
 	img.mu.RLock()
 	defer img.mu.RUnlock()
@@ -127,28 +163,34 @@ func (img *ImageData) GetProcessed() gocv.Mat {
 	return img.processed.Clone()
 }
 
-// HasImage returns true if an image is loaded
+func (img *ImageData) GetPreview() gocv.Mat {
+	img.mu.RLock()
+	defer img.mu.RUnlock()
+
+	if img.preview.Empty() {
+		return gocv.NewMat()
+	}
+	return img.preview.Clone()
+}
+
 func (img *ImageData) HasImage() bool {
 	img.mu.RLock()
 	defer img.mu.RUnlock()
 	return img.hasImage
 }
 
-// GetMetadata returns image metadata
 func (img *ImageData) GetMetadata() ImageMetadata {
 	img.mu.RLock()
 	defer img.mu.RUnlock()
 	return img.metadata
 }
 
-// GetFilepath returns the current file path
 func (img *ImageData) GetFilepath() string {
 	img.mu.RLock()
 	defer img.mu.RUnlock()
 	return img.filepath
 }
 
-// Clear clears all image data
 func (img *ImageData) Clear() {
 	img.mu.Lock()
 	defer img.mu.Unlock()
@@ -159,20 +201,22 @@ func (img *ImageData) Clear() {
 	if !img.processed.Empty() {
 		img.processed.Close()
 	}
+	if !img.preview.Empty() {
+		img.preview.Close()
+	}
 
 	img.original = gocv.NewMat()
 	img.processed = gocv.NewMat()
+	img.preview = gocv.NewMat()
 	img.hasImage = false
 	img.filepath = ""
 	img.metadata = ImageMetadata{}
 }
 
-// Close releases all resources
 func (img *ImageData) Close() {
 	img.Clear()
 }
 
-// ResetToOriginal resets processed image to original
 func (img *ImageData) ResetToOriginal() error {
 	img.mu.Lock()
 	defer img.mu.Unlock()
@@ -191,13 +235,11 @@ func (img *ImageData) ResetToOriginal() error {
 	return nil
 }
 
-// getFormatFromPath extracts image format from file path
 func getFormatFromPath(filepath string) string {
 	if filepath == "" {
 		return "unknown"
 	}
-	
-	// Extract extension
+
 	for i := len(filepath) - 1; i >= 0; i-- {
 		if filepath[i] == '.' {
 			return filepath[i+1:]
@@ -206,7 +248,6 @@ func getFormatFromPath(filepath string) string {
 	return "unknown"
 }
 
-// ValidateImage validates an OpenCV Mat for basic requirements
 func ValidateImage(mat gocv.Mat) error {
 	if mat.Empty() {
 		return fmt.Errorf("image is empty")
@@ -221,7 +262,6 @@ func ValidateImage(mat gocv.Mat) error {
 		return fmt.Errorf("unsupported channel count: %d", channels)
 	}
 
-	// Check for reasonable size limits (prevent memory issues)
 	const maxDimension = 16384
 	if mat.Cols() > maxDimension || mat.Rows() > maxDimension {
 		return fmt.Errorf("image too large: %dx%d (max: %d)", mat.Cols(), mat.Rows(), maxDimension)

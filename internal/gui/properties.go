@@ -1,36 +1,34 @@
-// Enhanced Properties Panel with algorithm selection
+// Real-time Properties Panel with algorithm selection
 package gui
 
 import (
 	"fmt"
+	"log/slog"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
-	"github.com/sirupsen/logrus"
 
 	"advanced-image-processing/internal/algorithms"
 	"advanced-image-processing/internal/core"
 )
 
-// EnhancedPropertiesPanel provides algorithm selection and parameter adjustment
+// EnhancedPropertiesPanel provides real-time algorithm selection and parameter adjustment
 type EnhancedPropertiesPanel struct {
 	pipeline *core.ProcessingPipeline
-	logger   *logrus.Logger
+	logger   *slog.Logger
 
 	vbox            *fyne.Container
 	algorithmSelect *widget.Select
 	paramContainer  *fyne.Container
-	progressBar     *widget.ProgressBar
-	statusLabel     *widget.Label
+	activityInd     *widget.ActivityIndicator
 	enabled         bool
 
 	currentAlgorithm string
 	paramWidgets     map[string]fyne.CanvasObject
 }
 
-// NewEnhancedPropertiesPanel creates a new enhanced properties panel
-func NewEnhancedPropertiesPanel(pipeline *core.ProcessingPipeline, logger *logrus.Logger) *EnhancedPropertiesPanel {
+func NewEnhancedPropertiesPanel(pipeline *core.ProcessingPipeline, logger *slog.Logger) *EnhancedPropertiesPanel {
 	panel := &EnhancedPropertiesPanel{
 		pipeline:     pipeline,
 		logger:       logger,
@@ -60,23 +58,19 @@ func (pp *EnhancedPropertiesPanel) initializeUI() {
 	// Parameter container
 	pp.paramContainer = container.NewVBox()
 
-	// Progress indicators
-	pp.progressBar = widget.NewProgressBar()
-	pp.progressBar.Hide()
-
-	pp.statusLabel = widget.NewLabel("")
-	pp.statusLabel.Hide()
+	// Activity indicator for real-time processing
+	pp.activityInd = widget.NewActivityIndicator()
+	pp.activityInd.Hide()
 
 	// Main container
 	content := container.NewVBox(
 		widget.NewLabel("Algorithm Selection"),
 		pp.algorithmSelect,
 		widget.NewSeparator(),
-		widget.NewLabel("Parameters"),
+		widget.NewLabel("Parameters (Real-time)"),
 		pp.paramContainer,
 		widget.NewSeparator(),
-		pp.progressBar,
-		pp.statusLabel,
+		pp.activityInd,
 	)
 
 	pp.vbox = container.NewVBox(
@@ -108,6 +102,15 @@ func (pp *EnhancedPropertiesPanel) onAlgorithmSelected(selected string) {
 
 	pp.currentAlgorithm = algorithmName
 	pp.createParameterWidgets(algorithmName)
+	
+	// Automatically add algorithm with default parameters
+	algorithm, exists := algorithms.Get(algorithmName)
+	if exists {
+		params := algorithm.GetDefaultParams()
+		if err := pp.pipeline.AddStep(algorithmName, params); err != nil {
+			pp.logger.Error("Failed to add algorithm step", "error", err)
+		}
+	}
 }
 
 func (pp *EnhancedPropertiesPanel) getCategoryForAlgorithm(algorithm string) string {
@@ -126,7 +129,7 @@ func (pp *EnhancedPropertiesPanel) getCategoryForAlgorithm(algorithm string) str
 func (pp *EnhancedPropertiesPanel) createParameterWidgets(algorithmName string) {
 	algorithm, exists := algorithms.Get(algorithmName)
 	if !exists {
-		pp.logger.WithField("algorithm", algorithmName).Error("Algorithm not found")
+		pp.logger.Error("Algorithm not found", "algorithm", algorithmName)
 		return
 	}
 
@@ -135,28 +138,34 @@ func (pp *EnhancedPropertiesPanel) createParameterWidgets(algorithmName string) 
 	pp.paramWidgets = make(map[string]fyne.CanvasObject)
 
 	// Get parameter info
-	paramInfo, ok := algorithm.(algorithms.AlgorithmInfo)
-	if !ok {
-		pp.paramContainer.Add(widget.NewLabel("No parameters available"))
-		return
-	}
-
-	parameters := paramInfo.GetParameterInfo()
-	if len(parameters) == 0 {
+	paramInfo := algorithm.GetParameterInfo()
+	if len(paramInfo) == 0 {
 		pp.paramContainer.Add(widget.NewLabel("No parameters available"))
 		return
 	}
 
 	// Create widgets for each parameter
-	for _, param := range parameters {
+	for _, param := range paramInfo {
 		pp.createParameterWidget(param)
 	}
 
-	// Add apply button
-	applyBtn := widget.NewButton("Apply Algorithm", func() {
-		pp.applyAlgorithm()
+	// Add remove button
+	removeBtn := widget.NewButton("Remove Algorithm", func() {
+		// Find and remove the last step with this algorithm
+		steps := pp.pipeline.GetSteps()
+		for i := len(steps) - 1; i >= 0; i-- {
+			if steps[i].Algorithm == algorithmName {
+				pp.pipeline.RemoveStep(i)
+				break
+			}
+		}
+		
+		// Clear the UI
+		pp.algorithmSelect.SetSelected("")
+		pp.paramContainer.RemoveAll()
+		pp.currentAlgorithm = ""
 	})
-	pp.paramContainer.Add(applyBtn)
+	pp.paramContainer.Add(removeBtn)
 }
 
 func (pp *EnhancedPropertiesPanel) createParameterWidget(param algorithms.ParameterInfo) {
@@ -170,8 +179,11 @@ func (pp *EnhancedPropertiesPanel) createParameterWidget(param algorithms.Parame
 		slider.SetValue(param.Default.(float64))
 		slider.Step = 1
 		valueLabel := widget.NewLabel(fmt.Sprintf("%.0f", param.Default.(float64)))
+		
+		// Real-time parameter update
 		slider.OnChanged = func(value float64) {
 			valueLabel.SetText(fmt.Sprintf("%.0f", value))
+			pp.updateAlgorithmParameter(param.Name, value)
 		}
 		paramWidget = container.NewHBox(slider, valueLabel)
 
@@ -180,17 +192,31 @@ func (pp *EnhancedPropertiesPanel) createParameterWidget(param algorithms.Parame
 		slider.SetValue(param.Default.(float64))
 		slider.Step = 0.1
 		valueLabel := widget.NewLabel(fmt.Sprintf("%.2f", param.Default.(float64)))
+		
+		// Real-time parameter update
 		slider.OnChanged = func(value float64) {
 			valueLabel.SetText(fmt.Sprintf("%.2f", value))
+			pp.updateAlgorithmParameter(param.Name, value)
 		}
 		paramWidget = container.NewHBox(slider, valueLabel)
 
 	case "bool":
-		check := widget.NewCheck("", nil)
+		check := widget.NewCheck("", func(checked bool) {
+			pp.updateAlgorithmParameter(param.Name, checked)
+		})
 		if defaultVal, ok := param.Default.(bool); ok {
 			check.SetChecked(defaultVal)
 		}
 		paramWidget = check
+
+	case "enum":
+		selectWidget := widget.NewSelect(param.Options, func(selected string) {
+			pp.updateAlgorithmParameter(param.Name, selected)
+		})
+		if defaultVal, ok := param.Default.(string); ok {
+			selectWidget.SetSelected(defaultVal)
+		}
+		paramWidget = selectWidget
 
 	default:
 		paramWidget = widget.NewLabel("Unsupported parameter type")
@@ -208,48 +234,30 @@ func (pp *EnhancedPropertiesPanel) createParameterWidget(param algorithms.Parame
 	pp.paramContainer.Add(paramBox)
 }
 
-func (pp *EnhancedPropertiesPanel) applyAlgorithm() {
+func (pp *EnhancedPropertiesPanel) updateAlgorithmParameter(paramName string, value interface{}) {
 	if pp.currentAlgorithm == "" {
 		return
 	}
 
-	// Collect parameter values
-	params := make(map[string]interface{})
-
-	algorithm, exists := algorithms.Get(pp.currentAlgorithm)
-	if !exists {
-		return
-	}
-
-	paramInfo, ok := algorithm.(algorithms.AlgorithmInfo)
-	if ok {
-		parameters := paramInfo.GetParameterInfo()
-
-		for _, param := range parameters {
-			paramWidget, exists := pp.paramWidgets[param.Name]
-			if !exists {
-				continue
+	// Find the last step with current algorithm and update its parameters
+	steps := pp.pipeline.GetSteps()
+	for i := len(steps) - 1; i >= 0; i-- {
+		if steps[i].Algorithm == pp.currentAlgorithm {
+			// Get current parameters
+			params := make(map[string]interface{})
+			for k, v := range steps[i].Parameters {
+				params[k] = v
 			}
-
-			switch param.Type {
-			case "int", "float":
-				if hbox, ok := paramWidget.(*fyne.Container); ok && len(hbox.Objects) > 0 {
-					if slider, ok := hbox.Objects[0].(*widget.Slider); ok {
-						params[param.Name] = slider.Value
-					}
-				}
-			case "bool":
-				if check, ok := paramWidget.(*widget.Check); ok {
-					params[param.Name] = check.Checked
-				}
+			
+			// Update the changed parameter
+			params[paramName] = value
+			
+			// Update the pipeline step
+			if err := pp.pipeline.UpdateStep(i, params); err != nil {
+				pp.logger.Error("Failed to update algorithm parameter", "error", err)
 			}
+			break
 		}
-	}
-
-	// Add algorithm to pipeline
-	err := pp.pipeline.AddStep(pp.currentAlgorithm, params)
-	if err != nil {
-		pp.logger.WithError(err).Error("Failed to add algorithm step")
 	}
 }
 
@@ -267,25 +275,14 @@ func (pp *EnhancedPropertiesPanel) Disable() {
 	pp.algorithmSelect.Disable()
 }
 
-func (pp *EnhancedPropertiesPanel) UpdateProgress(step, total int, stepName string) {
-	pp.progressBar.Show()
-	pp.statusLabel.Show()
-
-	if total > 0 {
-		pp.progressBar.SetValue(float64(step) / float64(total))
-	}
-	pp.statusLabel.SetText(fmt.Sprintf("Step %d/%d: %s", step, total, stepName))
-
-	pp.logger.WithFields(logrus.Fields{
-		"step":      step,
-		"total":     total,
-		"step_name": stepName,
-	}).Debug("Processing progress")
+func (pp *EnhancedPropertiesPanel) ShowActivity() {
+	pp.activityInd.Show()
+	pp.activityInd.Start()
 }
 
-func (pp *EnhancedPropertiesPanel) ClearProgress() {
-	pp.progressBar.Hide()
-	pp.statusLabel.Hide()
+func (pp *EnhancedPropertiesPanel) HideActivity() {
+	pp.activityInd.Stop()
+	pp.activityInd.Hide()
 }
 
 func (pp *EnhancedPropertiesPanel) Refresh() {

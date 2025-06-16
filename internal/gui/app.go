@@ -1,15 +1,15 @@
-// Main application GUI with modern Fyne v2.6 architecture
+// Main application GUI with real-time preview
 package gui
 
 import (
 	"fmt"
+	"log/slog"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/sirupsen/logrus"
 	"gocv.io/x/gocv"
 
 	"advanced-image-processing/internal/core"
@@ -20,7 +20,7 @@ import (
 type Application struct {
 	app       fyne.App
 	window    fyne.Window
-	logger    *logrus.Logger
+	logger    *slog.Logger
 	debugMode bool
 
 	// Core components
@@ -41,8 +41,7 @@ type Application struct {
 	rightPanel  *container.Split
 }
 
-// NewApplication creates a new application instance
-func NewApplication(app fyne.App, logger *logrus.Logger, debugMode bool) *Application {
+func NewApplication(app fyne.App, logger *slog.Logger, debugMode bool) *Application {
 	window := app.NewWindow("Advanced Image Processing v2.0")
 	window.Resize(fyne.NewSize(1400, 900))
 	window.CenterOnScreen()
@@ -62,7 +61,6 @@ func NewApplication(app fyne.App, logger *logrus.Logger, debugMode bool) *Applic
 	return appInstance
 }
 
-// initializeCore initializes core components
 func (a *Application) initializeCore() {
 	a.imageData = core.NewImageData()
 	a.regionManager = core.NewRegionManager()
@@ -70,9 +68,7 @@ func (a *Application) initializeCore() {
 	a.loader = io.NewImageLoader(a.logger)
 }
 
-// initializeGUI initializes GUI components
 func (a *Application) initializeGUI() {
-	// Create main GUI components
 	a.canvas = NewImageCanvas(a.imageData, a.regionManager, a.logger)
 	a.toolbar = NewToolbar()
 	a.properties = NewEnhancedPropertiesPanel(a.pipeline, a.logger)
@@ -80,7 +76,6 @@ func (a *Application) initializeGUI() {
 	a.menuHandler = NewMenuHandler(a.window, a.imageData, a.loader, a.logger)
 }
 
-// setupLayout creates the application layout
 func (a *Application) setupLayout() {
 	// Create toolbar
 	toolbarContainer := container.NewVBox(
@@ -90,10 +85,10 @@ func (a *Application) setupLayout() {
 
 	// Create main canvas area
 	canvasContainer := container.NewBorder(
-		toolbarContainer, // top
-		nil,              // bottom
-		nil,              // left
-		nil,              // right
+		toolbarContainer,
+		nil,
+		nil,
+		nil,
 		a.canvas.GetContainer(),
 	)
 
@@ -102,45 +97,33 @@ func (a *Application) setupLayout() {
 		a.properties.GetContainer(),
 		a.metricsPanel.GetContainer(),
 	)
-	a.rightPanel.SetOffset(0.6) // 60% for properties, 40% for metrics
+	a.rightPanel.SetOffset(0.6)
 
 	// Create main content split
 	a.mainContent = container.NewHSplit(
 		canvasContainer,
 		a.rightPanel,
 	)
-	a.mainContent.SetOffset(0.75) // 75% for canvas, 25% for right panel
+	a.mainContent.SetOffset(0.75)
 
-	// Set main menu
 	a.window.SetMainMenu(a.menuHandler.GetMainMenu())
-
-	// Set window content
 	a.window.SetContent(a.mainContent)
 }
 
-// setupCallbacks sets up component callbacks
 func (a *Application) setupCallbacks() {
-	// Pipeline callbacks
+	// Pipeline callbacks for real-time preview
 	a.pipeline.SetCallbacks(
-		// onProgress
-		func(step, total int, stepName string) {
+		// onPreviewUpdate
+		func(preview gocv.Mat, metrics map[string]float64) {
 			fyne.Do(func() {
-				a.properties.UpdateProgress(step, total, stepName)
-			})
-		},
-		// onComplete
-		func(result gocv.Mat, metrics map[string]float64) {
-			fyne.Do(func() {
-				a.canvas.UpdateProcessedImage(result)
+				a.canvas.UpdatePreview(preview)
 				a.metricsPanel.UpdateMetrics(metrics)
-				a.properties.ClearProgress()
 			})
 		},
 		// onError
 		func(err error) {
 			fyne.Do(func() {
 				a.showError("Processing Error", err)
-				a.properties.ClearProgress()
 			})
 		},
 	)
@@ -150,9 +133,12 @@ func (a *Application) setupCallbacks() {
 		// onImageLoaded
 		func(filepath string) {
 			fyne.Do(func() {
+				// Clear preview on new image load
+				a.canvas.ClearPreview()
 				a.canvas.UpdateOriginalImage()
 				a.properties.Enable()
 				a.toolbar.Enable()
+				a.metricsPanel.Clear()
 			})
 		},
 		// onImageSaved
@@ -178,10 +164,10 @@ func (a *Application) setupCallbacks() {
 
 	a.toolbar.SetResetCallback(func() {
 		if a.imageData.HasImage() {
-			a.imageData.ResetToOriginal()
 			a.pipeline.ClearSteps()
+			a.imageData.ResetToOriginal()
 			a.canvas.UpdateOriginalImage()
-			a.canvas.UpdateProcessedImage(a.imageData.GetOriginal())
+			a.canvas.ClearPreview()
 			a.metricsPanel.Clear()
 		}
 	})
@@ -197,11 +183,9 @@ func (a *Application) setupCallbacks() {
 	)
 }
 
-// ShowAndRun displays the application window and starts the event loop
 func (a *Application) ShowAndRun() {
 	a.logger.Info("Showing main application window")
 
-	// Set up window close handler
 	a.window.SetCloseIntercept(func() {
 		a.cleanup()
 		a.app.Quit()
@@ -210,35 +194,25 @@ func (a *Application) ShowAndRun() {
 	a.window.ShowAndRun()
 }
 
-// cleanup performs cleanup when the application closes
 func (a *Application) cleanup() {
 	a.logger.Info("Cleaning up application resources")
-
-	// Stop any ongoing processing
 	a.pipeline.Stop()
-
-	// Close image data
 	a.imageData.Close()
-
-	// Clear regions
 	a.regionManager.ClearAll()
 }
 
-// showError displays an error dialog
 func (a *Application) showError(title string, err error) {
-	a.logger.WithError(err).Error(title)
+	a.logger.Error(title, "error", err)
 	dialog.ShowError(err, a.window)
 }
 
-// showInfo displays an information dialog
 func (a *Application) showInfo(title, message string) {
-	a.logger.WithField("message", message).Info(title)
+	a.logger.Info(title, "message", message)
 	dialog.ShowInformation(title, message, a.window)
 }
 
-// showWarning displays a warning dialog
 func (a *Application) showWarning(title, message string) {
-	a.logger.WithField("message", message).Warn(title)
+	a.logger.Warn(title, "message", message)
 
 	content := container.NewVBox(
 		widget.NewIcon(theme.WarningIcon()),
@@ -249,27 +223,22 @@ func (a *Application) showWarning(title, message string) {
 	warningDialog.Show()
 }
 
-// GetWindow returns the main window
 func (a *Application) GetWindow() fyne.Window {
 	return a.window
 }
 
-// GetImageData returns the image data
 func (a *Application) GetImageData() *core.ImageData {
 	return a.imageData
 }
 
-// GetRegionManager returns the region manager
 func (a *Application) GetRegionManager() *core.RegionManager {
 	return a.regionManager
 }
 
-// GetPipeline returns the processing pipeline
 func (a *Application) GetPipeline() *core.ProcessingPipeline {
 	return a.pipeline
 }
 
-// RefreshUI refreshes the entire UI
 func (a *Application) RefreshUI() {
 	fyne.Do(func() {
 		a.canvas.Refresh()
@@ -279,27 +248,20 @@ func (a *Application) RefreshUI() {
 	})
 }
 
-// SetStatus sets the status message (if we add a status bar later)
 func (a *Application) SetStatus(message string) {
-	a.logger.WithField("status", message).Debug("Status update")
-	// TODO: Implement status bar if needed
+	a.logger.Debug("Status update", "status", message)
 }
 
-// ToggleDebugMode toggles debug mode display
 func (a *Application) ToggleDebugMode() {
 	a.debugMode = !a.debugMode
-	a.logger.WithField("debug_mode", a.debugMode).Info("Debug mode toggled")
-
-	// Update UI elements that depend on debug mode
+	a.logger.Info("Debug mode toggled", "debug_mode", a.debugMode)
 	a.RefreshUI()
 }
 
-// GetDebugMode returns current debug mode state
 func (a *Application) GetDebugMode() bool {
 	return a.debugMode
 }
 
-// LoadImageFromPath loads an image from file path
 func (a *Application) LoadImageFromPath(filepath string) error {
 	mat, err := a.loader.LoadImage(filepath)
 	if err != nil {
@@ -307,52 +269,48 @@ func (a *Application) LoadImageFromPath(filepath string) error {
 	}
 	defer mat.Close()
 
-	// Validate the image
 	if err := core.ValidateImage(mat); err != nil {
 		return fmt.Errorf("invalid image: %w", err)
 	}
 
-	// Set the image
 	if err := a.imageData.SetOriginal(mat, filepath); err != nil {
 		return fmt.Errorf("failed to set image: %w", err)
 	}
 
-	// Clear any existing regions and processing
+	// Clear previous processing state
 	a.regionManager.ClearAll()
 	a.pipeline.ClearSteps()
 
 	// Update UI
 	fyne.Do(func() {
+		a.canvas.ClearPreview()
 		a.canvas.UpdateOriginalImage()
 		a.properties.Enable()
 		a.toolbar.Enable()
 		a.metricsPanel.Clear()
 	})
 
-	a.logger.WithField("filepath", filepath).Info("Image loaded successfully")
+	a.logger.Info("Image loaded successfully", "filepath", filepath)
 	return nil
 }
 
-// SaveProcessedImage saves the processed image
 func (a *Application) SaveProcessedImage(filepath string) error {
 	if !a.imageData.HasImage() {
 		return fmt.Errorf("no image to save")
 	}
 
-	processed := a.imageData.GetProcessed()
-	defer processed.Close()
-
-	if processed.Empty() {
-		// Save original if no processing applied
-		original := a.imageData.GetOriginal()
-		defer original.Close()
-		processed = original
+	// Process full resolution
+	processed, err := a.pipeline.ProcessFullResolution()
+	if err != nil {
+		// Fall back to original if processing fails
+		processed = a.imageData.GetOriginal()
 	}
+	defer processed.Close()
 
 	if err := a.loader.SaveImage(processed, filepath); err != nil {
 		return fmt.Errorf("failed to save image: %w", err)
 	}
 
-	a.logger.WithField("filepath", filepath).Info("Image saved successfully")
+	a.logger.Info("Image saved successfully", "filepath", filepath)
 	return nil
 }
