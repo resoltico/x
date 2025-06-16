@@ -351,6 +351,93 @@ func (g *GaussianFilter) Apply(input gocv.Mat, params map[string]interface{}) (g
 		}
 	}
 
+	// Ensure kernel size is odd
+	if kernelSize%2 == 0 {
+		kernelSize++
+	}
+
+	output := gocv.NewMat()
+	gocv.GaussianBlur(input, &output, image.Pt(kernelSize, kernelSize), sigmaX, sigmaY, gocv.BorderDefault)
+
+	return output, nil
+}
+
+func (g *GaussianFilter) GetDefaultParams() map[string]interface{} {
+	return map[string]interface{}{
+		"kernel_size": 5.0,
+		"sigma_x":     1.0,
+		"sigma_y":     1.0,
+	}
+}
+
+func (g *GaussianFilter) GetName() string {
+	return "Gaussian Filter"
+}
+
+func (g *GaussianFilter) GetDescription() string {
+	return "Gaussian blur for general noise reduction"
+}
+
+func (g *GaussianFilter) Validate(params map[string]interface{}) error {
+	if val, ok := params["kernel_size"]; ok {
+		if v, ok := val.(float64); ok {
+			if v < 3 || v > 21 {
+				return fmt.Errorf("kernel_size must be between 3 and 21")
+			}
+		}
+	}
+	return nil
+}
+
+func (g *GaussianFilter) GetParameterInfo() []ParameterInfo {
+	return []ParameterInfo{
+		{
+			Name:        "kernel_size",
+			Type:        "int",
+			Min:         3.0,
+			Max:         21.0,
+			Default:     5.0,
+			Description: "Size of the Gaussian kernel (must be odd)",
+		},
+		{
+			Name:        "sigma_x",
+			Type:        "float",
+			Min:         0.1,
+			Max:         10.0,
+			Default:     1.0,
+			Description: "Standard deviation in X direction",
+		},
+		{
+			Name:        "sigma_y",
+			Type:        "float",
+			Min:         0.1,
+			Max:         10.0,
+			Default:     1.0,
+			Description: "Standard deviation in Y direction",
+		},
+	}
+}
+
+// MedianFilter
+type MedianFilter struct{}
+
+func NewMedianFilter() *MedianFilter {
+	return &MedianFilter{}
+}
+
+func (m *MedianFilter) Apply(input gocv.Mat, params map[string]interface{}) (gocv.Mat, error) {
+	if input.Empty() {
+		return gocv.NewMat(), fmt.Errorf("input image is empty")
+	}
+
+	kernelSize := 5
+	if val, ok := params["kernel_size"]; ok {
+		if v, ok := val.(float64); ok {
+			kernelSize = int(v)
+		}
+	}
+
+	// Ensure kernel size is odd
 	if kernelSize%2 == 0 {
 		kernelSize++
 	}
@@ -493,84 +580,3 @@ func (b *BilateralFilter) GetParameterInfo() []ParameterInfo {
 		},
 	}
 }
-
-	output := gocv.NewMat()
-	gocv.GaussianBlur(input, &output, image.Pt(kernelSize, kernelSize), sigmaX, sigmaY, gocv.BorderDefault)
-
-	return output, nil
-}
-
-func (g *GaussianFilter) GetDefaultParams() map[string]interface{} {
-	return map[string]interface{}{
-		"kernel_size": 5.0,
-		"sigma_x":     1.0,
-		"sigma_y":     1.0,
-	}
-}
-
-func (g *GaussianFilter) GetName() string {
-	return "Gaussian Filter"
-}
-
-func (g *GaussianFilter) GetDescription() string {
-	return "Gaussian blur for general noise reduction"
-}
-
-func (g *GaussianFilter) Validate(params map[string]interface{}) error {
-	if val, ok := params["kernel_size"]; ok {
-		if v, ok := val.(float64); ok {
-			if v < 3 || v > 21 {
-				return fmt.Errorf("kernel_size must be between 3 and 21")
-			}
-		}
-	}
-	return nil
-}
-
-func (g *GaussianFilter) GetParameterInfo() []ParameterInfo {
-	return []ParameterInfo{
-		{
-			Name:        "kernel_size",
-			Type:        "int",
-			Min:         3.0,
-			Max:         21.0,
-			Default:     5.0,
-			Description: "Size of the Gaussian kernel (must be odd)",
-		},
-		{
-			Name:        "sigma_x",
-			Type:        "float",
-			Min:         0.1,
-			Max:         10.0,
-			Default:     1.0,
-			Description: "Standard deviation in X direction",
-		},
-		{
-			Name:        "sigma_y",
-			Type:        "float",
-			Min:         0.1,
-			Max:         10.0,
-			Default:     1.0,
-			Description: "Standard deviation in Y direction",
-		},
-	}
-}
-
-// MedianFilter
-type MedianFilter struct{}
-
-func NewMedianFilter() *MedianFilter {
-	return &MedianFilter{}
-}
-
-func (m *MedianFilter) Apply(input gocv.Mat, params map[string]interface{}) (gocv.Mat, error) {
-	if input.Empty() {
-		return gocv.NewMat(), fmt.Errorf("input image is empty")
-	}
-
-	kernelSize := 5
-	if val, ok := params["kernel_size"]; ok {
-		if v, ok := val.(float64); ok {
-			kernelSize = int(v)
-		}
-	}

@@ -48,6 +48,12 @@ func NewInteractiveCanvas(imageData *core.ImageData, regionManager *core.RegionM
 	return ic
 }
 
+type interactiveCanvasRenderer struct {
+	canvas  *InteractiveCanvas
+	image   *canvas.Image
+	overlay *canvas.Raster
+}
+
 func (r *interactiveCanvasRenderer) Layout(size fyne.Size) {
 	r.image.Resize(size)
 	r.overlay.Resize(size)
@@ -67,7 +73,9 @@ func (r *interactiveCanvasRenderer) Refresh() {
 }
 
 func (r *interactiveCanvasRenderer) Destroy() {
-}ic *InteractiveCanvas) CreateRenderer() fyne.WidgetRenderer {
+}
+
+func (ic *InteractiveCanvas) CreateRenderer() fyne.WidgetRenderer {
 	ic.currentImage = canvas.NewImageFromImage(image.NewRGBA(image.Rect(0, 0, 1, 1)))
 	ic.currentImage.FillMode = canvas.ImageFillContain
 
@@ -415,11 +423,3 @@ func (ic *InteractiveCanvas) notifySelectionChanged(hasSelection bool) {
 func (ic *InteractiveCanvas) RefreshSelections() {
 	ic.overlayRaster.Refresh()
 }
-
-type interactiveCanvasRenderer struct {
-	canvas  *InteractiveCanvas
-	image   *canvas.Image
-	overlay *canvas.Raster
-}
-
-func (

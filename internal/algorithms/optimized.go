@@ -3,7 +3,6 @@ package algorithms
 
 import (
 	"fmt"
-	"image"
 
 	"gocv.io/x/gocv"
 )
@@ -63,7 +62,7 @@ func (a *AdaptiveThreshold) Apply(input gocv.Mat, params map[string]interface{})
 
 	// Apply adaptive threshold using GoCV built-in
 	output := gocv.NewMat()
-	gocv.AdaptiveThreshold(gray, &output, maxValue, method, gocv.ThresholdBinary, blockSize, C)
+	gocv.AdaptiveThreshold(gray, &output, float32(maxValue), method, gocv.ThresholdBinary, blockSize, float32(C))
 
 	return output, nil
 }
@@ -169,7 +168,7 @@ func (m *MultiOtsu) Apply(input gocv.Mat, params map[string]interface{}) (gocv.M
 
 	// Use GoCV's built-in Otsu threshold
 	output := gocv.NewMat()
-	gocv.Threshold(gray, &output, 0, maxValue, gocv.ThresholdBinary+gocv.ThresholdOtsu)
+	gocv.Threshold(gray, &output, 0, float32(maxValue), gocv.ThresholdBinary+gocv.ThresholdOtsu)
 
 	return output, nil
 }

@@ -1,7 +1,0 @@
-[8:11:19 AM] % go build ./cmd/app
-# advanced-image-processing/internal/algorithms
-internal/algorithms/morphology_filters.go:497:2: syntax error: non-declaration statement outside function body
-[8:12:00 AM] % 
-
-
-

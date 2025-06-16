@@ -2,6 +2,7 @@
 package gui
 
 import (
+	"fmt"
 	"image"
 	"log/slog"
 
@@ -262,7 +263,7 @@ func (mp *MetricsPanel) UpdateMetrics(metrics map[string]float64) {
 		default:
 			displayText = fmt.Sprintf("%s: %.3f", name, value)
 		}
-		
+
 		label := widget.NewLabel(displayText)
 		content.Add(label)
 	}

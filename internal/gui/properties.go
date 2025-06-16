@@ -21,7 +21,6 @@ type EnhancedPropertiesPanel struct {
 	vbox            *fyne.Container
 	algorithmSelect *widget.Select
 	paramContainer  *fyne.Container
-	activityInd     *widget.ActivityIndicator
 	enabled         bool
 
 	currentAlgorithm string
@@ -58,10 +57,6 @@ func (pp *EnhancedPropertiesPanel) initializeUI() {
 	// Parameter container
 	pp.paramContainer = container.NewVBox()
 
-	// Activity indicator for real-time processing
-	pp.activityInd = widget.NewActivityIndicator()
-	pp.activityInd.Hide()
-
 	// Main container
 	content := container.NewVBox(
 		widget.NewLabel("Algorithm Selection"),
@@ -69,8 +64,6 @@ func (pp *EnhancedPropertiesPanel) initializeUI() {
 		widget.NewSeparator(),
 		widget.NewLabel("Parameters (Real-time)"),
 		pp.paramContainer,
-		widget.NewSeparator(),
-		pp.activityInd,
 	)
 
 	pp.vbox = container.NewVBox(
@@ -102,7 +95,7 @@ func (pp *EnhancedPropertiesPanel) onAlgorithmSelected(selected string) {
 
 	pp.currentAlgorithm = algorithmName
 	pp.createParameterWidgets(algorithmName)
-	
+
 	// Automatically add algorithm with default parameters
 	algorithm, exists := algorithms.Get(algorithmName)
 	if exists {
@@ -159,7 +152,7 @@ func (pp *EnhancedPropertiesPanel) createParameterWidgets(algorithmName string) 
 				break
 			}
 		}
-		
+
 		// Clear the UI
 		pp.algorithmSelect.SetSelected("")
 		pp.paramContainer.RemoveAll()
@@ -179,7 +172,7 @@ func (pp *EnhancedPropertiesPanel) createParameterWidget(param algorithms.Parame
 		slider.SetValue(param.Default.(float64))
 		slider.Step = 1
 		valueLabel := widget.NewLabel(fmt.Sprintf("%.0f", param.Default.(float64)))
-		
+
 		// Real-time parameter update
 		slider.OnChanged = func(value float64) {
 			valueLabel.SetText(fmt.Sprintf("%.0f", value))
@@ -192,7 +185,7 @@ func (pp *EnhancedPropertiesPanel) createParameterWidget(param algorithms.Parame
 		slider.SetValue(param.Default.(float64))
 		slider.Step = 0.1
 		valueLabel := widget.NewLabel(fmt.Sprintf("%.2f", param.Default.(float64)))
-		
+
 		// Real-time parameter update
 		slider.OnChanged = func(value float64) {
 			valueLabel.SetText(fmt.Sprintf("%.2f", value))
@@ -248,10 +241,10 @@ func (pp *EnhancedPropertiesPanel) updateAlgorithmParameter(paramName string, va
 			for k, v := range steps[i].Parameters {
 				params[k] = v
 			}
-			
+
 			// Update the changed parameter
 			params[paramName] = value
-			
+
 			// Update the pipeline step
 			if err := pp.pipeline.UpdateStep(i, params); err != nil {
 				pp.logger.Error("Failed to update algorithm parameter", "error", err)
@@ -273,16 +266,6 @@ func (pp *EnhancedPropertiesPanel) Enable() {
 func (pp *EnhancedPropertiesPanel) Disable() {
 	pp.enabled = false
 	pp.algorithmSelect.Disable()
-}
-
-func (pp *EnhancedPropertiesPanel) ShowActivity() {
-	pp.activityInd.Show()
-	pp.activityInd.Start()
-}
-
-func (pp *EnhancedPropertiesPanel) HideActivity() {
-	pp.activityInd.Stop()
-	pp.activityInd.Hide()
 }
 
 func (pp *EnhancedPropertiesPanel) Refresh() {
