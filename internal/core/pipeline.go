@@ -1,10 +1,11 @@
 // internal/core/pipeline.go
-// Fixed processing pipeline with proper preview handling
+// Final fix with proper Mat lifecycle management
 package core
 
 import (
 	"context"
 	"fmt"
+	"image"
 	"log/slog"
 	"sync"
 	"time"
@@ -41,8 +42,8 @@ type EnhancedPipeline struct {
 	processing   bool
 	cancel       context.CancelFunc
 
-	// Callbacks
-	onPreviewUpdate func(preview gocv.Mat, metrics map[string]float64)
+	// Callbacks - THREAD SAFE: only accept Go image, not GoCV Mat
+	onPreviewUpdate func(preview image.Image, metrics map[string]float64)
 	onError         func(error)
 
 	// Real-time processing
@@ -129,8 +130,9 @@ func (ep *EnhancedPipeline) AddStep(algorithm string, parameters map[string]inte
 }
 
 // SetCallbacks sets preview update and error callbacks
+// CRITICAL: callback now takes image.Image, NOT gocv.Mat
 func (ep *EnhancedPipeline) SetCallbacks(
-	onPreviewUpdate func(gocv.Mat, map[string]float64),
+	onPreviewUpdate func(image.Image, map[string]float64),
 	onError func(error),
 ) {
 	ep.mu.Lock()
@@ -241,26 +243,40 @@ func (ep *EnhancedPipeline) processPreview() {
 			return
 		}
 
-		// Calculate metrics
+		// CRITICAL FIX: Calculate metrics BEFORE converting to image and closing Mat
+		ep.logger.Debug("Calculating metrics before conversion")
 		finalMetrics := ep.calculatePreviewMetrics(preview, result)
 		ep.logger.Debug("Metrics calculated", "psnr", finalMetrics["psnr"], "ssim", finalMetrics["ssim"])
 
-		// Update UI immediately in the main thread
+		// CRITICAL FIX: Convert Mat to image.Image in THIS goroutine
+		// BEFORE passing to fyne.Do()
+		ep.logger.Debug("Converting Mat to image before UI callback")
+		previewImage, err := result.ToImage()
+		result.Close() // Close Mat immediately after conversion
+
+		if err != nil {
+			ep.logger.Error("Failed to convert Mat to image", "error", err)
+			if ep.onError != nil {
+				fyne.Do(func() {
+					ep.onError(fmt.Errorf("failed to convert preview: %w", err))
+				})
+			}
+			return
+		}
+
+		// Update UI with Go image (thread-safe)
 		ep.mu.RLock()
 		callback := ep.onPreviewUpdate
 		ep.mu.RUnlock()
 
 		if callback != nil {
 			fyne.Do(func() {
-				ep.logger.Debug("Calling preview update callback in UI thread")
-				// Pass the result directly - callback will handle Mat lifecycle
-				callback(result, finalMetrics)
+				ep.logger.Debug("Calling preview update callback in UI thread with Go image")
+				// Now passing image.Image instead of gocv.Mat - THREAD SAFE
+				callback(previewImage, finalMetrics)
 			})
-		} else {
-			result.Close()
 		}
 
-		result.Close()
 		ep.logger.Debug("Preview processing completed successfully")
 	}()
 }
@@ -302,16 +318,28 @@ func (ep *EnhancedPipeline) processSequential(ctx context.Context, input gocv.Ma
 	return current, processMetrics
 }
 
-// calculatePreviewMetrics calculates quality metrics
+// calculatePreviewMetrics calculates quality metrics - MUST be called with valid Mats
 func (ep *EnhancedPipeline) calculatePreviewMetrics(original, processed gocv.Mat) map[string]float64 {
 	finalMetrics := make(map[string]float64)
 
+	// Validate inputs before metrics calculation
+	if original.Empty() || processed.Empty() {
+		ep.logger.Error("Cannot calculate metrics with empty Mats",
+			"original_empty", original.Empty(),
+			"processed_empty", processed.Empty())
+		return finalMetrics
+	}
+
 	if psnr, err := ep.metricsEval.CalculatePSNR(original, processed); err == nil {
 		finalMetrics["psnr"] = psnr
+	} else {
+		ep.logger.Error("Failed to calculate PSNR", "error", err)
 	}
 
 	if ssim, err := ep.metricsEval.CalculateSSIM(original, processed); err == nil {
 		finalMetrics["ssim"] = ssim
+	} else {
+		ep.logger.Error("Failed to calculate SSIM", "error", err)
 	}
 
 	return finalMetrics
@@ -371,9 +399,14 @@ func (ep *EnhancedPipeline) ClearAll() {
 		ep.imageData.ResetToOriginal()
 		if ep.onPreviewUpdate != nil {
 			original := ep.imageData.GetPreview()
-			fyne.Do(func() {
-				ep.onPreviewUpdate(original, nil)
-			})
+			if !original.Empty() {
+				if img, err := original.ToImage(); err == nil {
+					fyne.Do(func() {
+						ep.onPreviewUpdate(img, nil)
+					})
+				}
+			}
+			original.Close()
 		}
 	}
 }

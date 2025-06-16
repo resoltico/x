@@ -1,16 +1,16 @@
 // internal/gui/app.go
-// Fixed main application with proper Mat lifecycle handling
+// Fixed main application with thread-safe image handling
 package gui
 
 import (
 	"fmt"
+	"image"
 	"log/slog"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
-	"gocv.io/x/gocv"
 
 	"advanced-image-processing/internal/core"
 	"advanced-image-processing/internal/io"
@@ -135,13 +135,12 @@ func (a *Application) setupLayout() {
 
 func (a *Application) setupCallbacks() {
 	// Pipeline callbacks for real-time preview
+	// CRITICAL FIX: Callback now receives image.Image instead of gocv.Mat
 	a.pipeline.SetCallbacks(
-		// onPreviewUpdate
-		func(preview gocv.Mat, metrics map[string]float64) {
-			// Convert Mat to image immediately before Mat lifecycle ends
-			a.canvas.UpdatePreview(preview)
+		// onPreviewUpdate - now receives image.Image (thread-safe)
+		func(preview image.Image, metrics map[string]float64) {
+			a.canvas.UpdatePreviewFromImage(preview)
 			a.metricsPanel.UpdateMetrics(metrics)
-			// Mat will be closed by pipeline after this callback returns
 		},
 		// onError
 		func(err error) {

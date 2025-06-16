@@ -1,5 +1,5 @@
 // internal/gui/canvas.go
-// Fixed image canvas with proper preview handling
+// Fixed image canvas with enhanced debugging and preview display
 package gui
 
 import (
@@ -23,7 +23,7 @@ type ImageCanvas struct {
 	regionManager *core.RegionManager
 	logger        *slog.Logger
 
-	vbox            *fyne.Container
+	vbox            *container.Split // Changed from *fyne.Container to *container.Split
 	originalView    *widget.Card
 	previewView     *widget.Card
 	interactiveOrig *InteractiveCanvas
@@ -61,13 +61,20 @@ func (ic *ImageCanvas) initializeUI() {
 
 	ic.previewImage = canvas.NewImageFromImage(placeholderImg)
 	ic.previewImage.FillMode = canvas.ImageFillContain
+	ic.previewImage.ScaleMode = canvas.ImageScalePixels
+
+	// Set minimum size to prevent height collapse, but allow scaling
+	ic.previewImage.SetMinSize(fyne.NewSize(200, 150))
+
 	ic.previewView = widget.NewCard("Preview", "", ic.previewImage)
 
-	// Create vertical container with better proportions
-	ic.vbox = container.NewVBox(
+	// Create vertical split container with equal split
+	ic.vbox = container.NewVSplit(
 		ic.originalView,
 		ic.previewView,
 	)
+	// Set equal split (50/50)
+	ic.vbox.SetOffset(0.5)
 }
 
 func (ic *ImageCanvas) GetContainer() fyne.CanvasObject {
@@ -95,42 +102,108 @@ func (ic *ImageCanvas) UpdateOriginalImage() {
 	}
 }
 
+// DEPRECATED: Old method that caused thread safety issues
+// Kept for compatibility but should not be used
 func (ic *ImageCanvas) UpdatePreview(preview gocv.Mat) {
-	ic.logger.Debug("UpdatePreview called", "empty", preview.Empty())
+	ic.logger.Warn("UpdatePreview(gocv.Mat) called - this method is deprecated and unsafe")
+	// Do nothing to prevent crashes - use UpdatePreviewFromImage instead
+}
 
-	// Validate Mat before any operations
-	if preview.Empty() {
-		ic.logger.Debug("Preview Mat is empty, keeping current preview")
+// NEW: Thread-safe preview update using Go image.Image
+func (ic *ImageCanvas) UpdatePreviewFromImage(preview image.Image) {
+	ic.logger.Debug("UpdatePreviewFromImage called",
+		"width", preview.Bounds().Dx(),
+		"height", preview.Bounds().Dy())
+
+	// Additional debugging
+	bounds := preview.Bounds()
+	ic.logger.Debug("Preview image details",
+		"bounds", bounds,
+		"empty", bounds.Empty(),
+		"min", bounds.Min,
+		"max", bounds.Max)
+
+	// Validate the image before setting
+	if bounds.Empty() {
+		ic.logger.Error("Preview image has empty bounds")
 		return
 	}
 
-	// Convert Mat to image - this MUST happen before Mat is closed
-	img, err := preview.ToImage()
-	if err != nil {
-		ic.logger.Error("Failed to convert preview Mat to image", "error", err)
-		return
+	// Enhanced debugging - check current state
+	ic.logger.Debug("BEFORE update - current previewImage state",
+		"current_image_nil", ic.previewImage.Image == nil,
+		"current_file", ic.previewImage.File,
+		"current_resource_nil", ic.previewImage.Resource == nil,
+		"visible", ic.previewImage.Visible(),
+		"size", ic.previewImage.Size(),
+		"position", ic.previewImage.Position())
+
+	// CRITICAL FIX: Clear File property and set Image directly
+	// Based on Fyne issue #1886, we need to clear File before setting Image
+	ic.previewImage.File = ""
+	ic.previewImage.Resource = nil
+	ic.previewImage.Image = preview
+
+	ic.logger.Debug("AFTER setting - previewImage state",
+		"new_image_nil", ic.previewImage.Image == nil,
+		"new_file", ic.previewImage.File,
+		"new_resource_nil", ic.previewImage.Resource == nil,
+		"image_bounds", ic.previewImage.Image.Bounds(),
+		"fill_mode", ic.previewImage.FillMode,
+		"scale_mode", ic.previewImage.ScaleMode)
+
+	// Force immediate refresh
+	ic.logger.Debug("Forcing preview image refresh")
+	ic.previewImage.Refresh()
+
+	// Check if the widget is properly set up
+	ic.logger.Debug("Widget hierarchy check",
+		"previewImage_in_previewView", ic.previewView.Content == ic.previewImage,
+		"previewView_visible", ic.previewView.Visible(),
+		"split_leading", ic.vbox.Leading != nil,
+		"split_trailing", ic.vbox.Trailing != nil)
+
+	// Force refresh of parent containers
+	if ic.previewView != nil {
+		ic.logger.Debug("Refreshing preview card")
+		ic.previewView.Refresh()
+	}
+	if ic.vbox != nil {
+		ic.logger.Debug("Refreshing main container")
+		ic.vbox.Refresh()
 	}
 
-	ic.logger.Debug("Successfully converted preview to image",
-		"width", img.Bounds().Dx(),
-		"height", img.Bounds().Dy())
+	// Additional forced refresh to ensure display update using canvas.Refresh
+	if canvas := fyne.CurrentApp().Driver().CanvasForObject(ic.previewImage); canvas != nil {
+		ic.logger.Debug("Canvas found, forcing refresh")
+		canvas.Refresh(ic.previewImage)
+		canvas.Refresh(ic.previewView)
+		canvas.Refresh(ic.vbox)
+		ic.logger.Debug("Forced canvas refresh completed")
+	} else {
+		ic.logger.Error("NO CANVAS FOUND for previewImage - this might be the problem!")
+	}
 
-	// Schedule UI update on main thread
-	fyne.Do(func() {
-		// Update the image
-		ic.previewImage.Image = img
-		ic.previewImage.Refresh()
+	// Try alternative approach: recreate the image widget entirely
+	ic.logger.Debug("Trying alternative approach - recreating image widget")
+	newImage := canvas.NewImageFromImage(preview)
+	newImage.FillMode = canvas.ImageFillContain
+	newImage.ScaleMode = canvas.ImageScalePixels
 
-		// Force refresh of parent containers
-		if ic.previewView != nil {
-			ic.previewView.Refresh()
-		}
-		if ic.vbox != nil {
-			ic.vbox.Refresh()
-		}
+	// Set minimum size to prevent height collapse but allow scaling
+	newImage.SetMinSize(fyne.NewSize(200, 150))
 
-		ic.logger.Debug("Preview image updated and all containers refreshed")
-	})
+	// Replace the content of the preview card
+	ic.previewView.SetContent(newImage)
+	ic.previewImage = newImage
+
+	ic.logger.Debug("Recreated image widget",
+		"new_widget_image_nil", ic.previewImage.Image == nil,
+		"new_widget_bounds", ic.previewImage.Image.Bounds(),
+		"new_widget_size", ic.previewImage.Size(),
+		"new_widget_min_size", ic.previewImage.MinSize())
+
+	ic.logger.Debug("Preview image updated and all containers refreshed")
 }
 
 func (ic *ImageCanvas) ClearPreview() {
@@ -144,26 +217,22 @@ func (ic *ImageCanvas) ClearPreview() {
 		if !originalPreview.Empty() {
 			img, err := originalPreview.ToImage()
 			if err == nil {
-				ic.previewImage.Image = img
-				ic.previewImage.Refresh()
-				ic.previewView.Refresh()
-				ic.vbox.Refresh()
+				ic.logger.Debug("Clearing preview with original image")
+				ic.UpdatePreviewFromImage(img)
 				return
 			}
 		}
 	}
 
 	// Fall back to placeholder
+	ic.logger.Debug("Clearing preview with placeholder")
 	placeholderImg := image.NewRGBA(image.Rect(0, 0, 200, 150))
 	for y := 0; y < 150; y++ {
 		for x := 0; x < 200; x++ {
 			placeholderImg.Set(x, y, color.RGBA{240, 240, 240, 255})
 		}
 	}
-	ic.previewImage.Image = placeholderImg
-	ic.previewImage.Refresh()
-	ic.previewView.Refresh()
-	ic.vbox.Refresh()
+	ic.UpdatePreviewFromImage(placeholderImg)
 }
 
 func (ic *ImageCanvas) SetActiveTool(tool string) {
