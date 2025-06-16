@@ -8,7 +8,6 @@ import (
 	"gocv.io/x/gocv"
 
 	"advanced-image-processing/internal/algorithms"
-	"advanced-image-processing/internal/core"
 )
 
 // Layer represents a processing layer with optional region mask
@@ -33,15 +32,38 @@ const (
 	BlendScreen
 )
 
+// RegionManager interface to avoid import cycle
+type RegionManager interface {
+	GetSelection(id string) Selection
+	CreateMaskForSelection(selection Selection, width, height int) gocv.Mat
+}
+
+// Selection interface to avoid import cycle
+type Selection interface {
+	GetID() string
+	GetType() int
+	GetPoints() []Point
+	GetBounds() Rectangle
+	IsActive() bool
+}
+
+type Point struct {
+	X, Y int
+}
+
+type Rectangle struct {
+	Min, Max Point
+}
+
 // LayerStack manages multiple processing layers
 type LayerStack struct {
 	mu            sync.RWMutex
 	layers        []*Layer
-	regionManager *core.RegionManager
+	regionManager RegionManager
 	nextID        int
 }
 
-func NewLayerStack(regionManager *core.RegionManager) *LayerStack {
+func NewLayerStack(regionManager RegionManager) *LayerStack {
 	return &LayerStack{
 		layers:        make([]*Layer, 0),
 		regionManager: regionManager,
@@ -120,7 +142,7 @@ func (ls *LayerStack) blendLayers(base, overlay gocv.Mat, mode BlendMode, opacit
 
 	// Create mask if region specified
 	var mask gocv.Mat
-	if regionID != "" {
+	if regionID != "" && ls.regionManager != nil {
 		if selection := ls.regionManager.GetSelection(regionID); selection != nil {
 			mask = ls.regionManager.CreateMaskForSelection(selection, base.Cols(), base.Rows())
 			defer mask.Close()

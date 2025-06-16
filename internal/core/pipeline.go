@@ -1,4 +1,4 @@
-// Enhanced pipeline supporting layer-based processing
+// Processing pipeline with sequential and layer-based support
 package core
 
 import (
@@ -15,6 +15,13 @@ import (
 	"advanced-image-processing/internal/layers"
 	"advanced-image-processing/internal/metrics"
 )
+
+// ProcessingStep represents a sequential processing step
+type ProcessingStep struct {
+	Algorithm  string
+	Parameters map[string]interface{}
+	Enabled    bool
+}
 
 // EnhancedPipeline combines sequential and layer-based processing
 type EnhancedPipeline struct {
@@ -63,7 +70,7 @@ func (ep *EnhancedPipeline) SetProcessingMode(useLayerMode bool) {
 	defer ep.mu.Unlock()
 	ep.useLayerMode = useLayerMode
 	ep.logger.Debug("Processing mode changed", "layer_mode", useLayerMode)
-	
+
 	if ep.realtimeMode {
 		ep.triggerPreviewProcessing()
 	}
@@ -315,7 +322,7 @@ func (ep *EnhancedPipeline) ClearAll() {
 
 	ep.steps = make([]ProcessingStep, 0)
 	ep.layerStack = layers.NewLayerStack(ep.regionManager)
-	
+
 	if ep.imageData.HasImage() {
 		ep.imageData.ResetToOriginal()
 		if ep.onPreviewUpdate != nil {

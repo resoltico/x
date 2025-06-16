@@ -7,6 +7,8 @@ import (
 	"image/color"
 	"sync"
 
+	"advanced-image-processing/internal/layers"
+
 	"gocv.io/x/gocv"
 )
 
@@ -28,6 +30,34 @@ type Selection struct {
 	Active bool
 }
 
+// Implement layers.Selection interface
+func (s *Selection) GetID() string {
+	return s.ID
+}
+
+func (s *Selection) GetType() int {
+	return int(s.Type)
+}
+
+func (s *Selection) GetPoints() []layers.Point {
+	result := make([]layers.Point, len(s.Points))
+	for i, p := range s.Points {
+		result[i] = layers.Point{X: p.X, Y: p.Y}
+	}
+	return result
+}
+
+func (s *Selection) GetBounds() layers.Rectangle {
+	return layers.Rectangle{
+		Min: layers.Point{X: s.Bounds.Min.X, Y: s.Bounds.Min.Y},
+		Max: layers.Point{X: s.Bounds.Max.X, Y: s.Bounds.Max.Y},
+	}
+}
+
+func (s *Selection) IsActive() bool {
+	return s.Active
+}
+
 // RegionManager manages multiple ROI selections
 type RegionManager struct {
 	mu         sync.RWMutex
@@ -41,6 +71,66 @@ func NewRegionManager() *RegionManager {
 		selections: make(map[string]*Selection),
 		nextID:     1,
 	}
+}
+
+// Implement layers.RegionManager interface
+func (rm *RegionManager) GetSelection(id string) layers.Selection {
+	rm.mu.RLock()
+	defer rm.mu.RUnlock()
+
+	selection, exists := rm.selections[id]
+	if !exists {
+		return nil
+	}
+
+	return selection
+}
+
+func (rm *RegionManager) CreateMaskForSelection(selection layers.Selection, imgWidth, imgHeight int) gocv.Mat {
+	mask := gocv.Zeros(imgHeight, imgWidth, gocv.MatTypeCV8UC1)
+
+	switch selection.GetType() {
+	case int(SelectionRectangle):
+		points := selection.GetPoints()
+		if len(points) >= 2 {
+			rect := image.Rect(
+				points[0].X,
+				points[0].Y,
+				points[1].X,
+				points[1].Y,
+			)
+
+			rect = rect.Intersect(image.Rect(0, 0, imgWidth, imgHeight))
+
+			if !rect.Empty() {
+				roi := mask.Region(rect)
+				roi.SetTo(gocv.Scalar{Val1: 255, Val2: 255, Val3: 255, Val4: 255})
+				roi.Close()
+			}
+		}
+
+	case int(SelectionFreehand):
+		points := selection.GetPoints()
+		if len(points) >= 3 {
+			// Convert layers.Point to image.Point
+			imagePoints := make([]image.Point, len(points))
+			for i, p := range points {
+				imagePoints[i] = image.Point{X: p.X, Y: p.Y}
+			}
+
+			// Use GoCV's optimized FillPoly
+			pointsVector := gocv.NewPointsVector()
+			defer pointsVector.Close()
+
+			pointVector := gocv.NewPointVectorFromPoints(imagePoints)
+			defer pointVector.Close()
+
+			pointsVector.Append(pointVector)
+			gocv.FillPoly(&mask, pointsVector, color.RGBA{R: 255, G: 255, B: 255, A: 255})
+		}
+	}
+
+	return mask
 }
 
 func (rm *RegionManager) CreateRectangleSelection(rect image.Rectangle) string {
@@ -128,7 +218,7 @@ func (rm *RegionManager) GetActiveSelection() *Selection {
 	return result
 }
 
-func (rm *RegionManager) GetSelection(id string) *Selection {
+func (rm *RegionManager) GetSelectionByID(id string) *Selection {
 	rm.mu.RLock()
 	defer rm.mu.RUnlock()
 
@@ -223,45 +313,6 @@ func (rm *RegionManager) CreateMask(imgWidth, imgHeight int) gocv.Mat {
 	}
 
 	return rm.CreateMaskForSelection(selection, imgWidth, imgHeight)
-}
-
-func (rm *RegionManager) CreateMaskForSelection(selection *Selection, imgWidth, imgHeight int) gocv.Mat {
-	mask := gocv.Zeros(imgHeight, imgWidth, gocv.MatTypeCV8UC1)
-
-	switch selection.Type {
-	case SelectionRectangle:
-		if len(selection.Points) >= 2 {
-			rect := image.Rect(
-				selection.Points[0].X,
-				selection.Points[0].Y,
-				selection.Points[1].X,
-				selection.Points[1].Y,
-			)
-
-			rect = rect.Intersect(image.Rect(0, 0, imgWidth, imgHeight))
-
-			if !rect.Empty() {
-				roi := mask.Region(rect)
-				roi.SetTo(gocv.Scalar{Val1: 255, Val2: 255, Val3: 255, Val4: 255})
-				roi.Close()
-			}
-		}
-
-	case SelectionFreehand:
-		if len(selection.Points) >= 3 {
-			// Use GoCV's optimized FillPoly
-			pointsVector := gocv.NewPointsVector()
-			defer pointsVector.Close()
-
-			pointVector := gocv.NewPointVectorFromPoints(selection.Points)
-			defer pointVector.Close()
-
-			pointsVector.Append(pointVector)
-			gocv.FillPoly(&mask, pointsVector, color.RGBA{R: 255, G: 255, B: 255, A: 255})
-		}
-	}
-
-	return mask
 }
 
 func (rm *RegionManager) HasActiveSelection() bool {

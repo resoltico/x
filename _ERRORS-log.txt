@@ -1,7 +1,5 @@
-[9:09:38 AM] % go build ./cmd/app
-package advanced-image-processing/cmd/app
-	imports advanced-image-processing/internal/gui from main.go
-	imports advanced-image-processing/internal/core from app.go
-	imports advanced-image-processing/internal/layers from enhanced_pipeline.go
-	imports advanced-image-processing/internal/core from interface.go: import cycle not allowed
-[9:09:51 AM] % 
+[9:15:40 AM] % go build ./cmd/app
+# advanced-image-processing/internal/gui
+internal/gui/layers.go:151:16: lp.layerList.Enable undefined (type *"fyne.io/fyne/v2/widget".List has no field or method Enable)
+internal/gui/layers.go:156:16: lp.layerList.Disable undefined (type *"fyne.io/fyne/v2/widget".List has no field or method Disable)
+[9:15:51 AM] % 
