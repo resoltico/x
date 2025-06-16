@@ -1,8 +1,8 @@
-[2:54:44 AM] % go build ./cmd/app
-# advanced-image-processing/internal/io
-internal/io/loader.go:137:3: syntax error: non-declaration statement outside function body
-# advanced-image-processing/internal/metrics
-internal/metrics/implementations.go:235:38: syntax error: unexpected name gocv in argument list; possibly missing comma or )
-# advanced-image-processing/internal/algorithms
-internal/algorithms/local_adaptive.go:204:5: syntax error: non-declaration statement outside function body
-[2:54:52 AM] % 
+[3:54:05 AM] %  go build ./cmd/app
+# advanced-image-processing/cmd/app
+cmd/app/main.go:10:2: "log" imported and not used
+cmd/app/main.go:13:2: "fyne.io/fyne/v2" imported as fyne and not used
+cmd/app/main.go:44:2: cannot assign to myApp.Metadata().Name (neither addressable nor a map index expression)
+cmd/app/main.go:45:2: cannot assign to myApp.Metadata().Version (neither addressable nor a map index expression)
+[3:55:08 AM] % 
+

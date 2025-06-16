@@ -4,6 +4,7 @@ package core
 import (
 	"fmt"
 	"image"
+	"image/color"
 	"sync"
 
 	"gocv.io/x/gocv"
@@ -164,15 +165,15 @@ func (rm *RegionManager) GetAllSelections() []*Selection {
 	result := make([]*Selection, 0, len(rm.selections))
 	for _, selection := range rm.selections {
 		// Return a copy
-		copy := &Selection{
+		selectionCopy := &Selection{
 			ID:     selection.ID,
 			Type:   selection.Type,
 			Points: make([]image.Point, len(selection.Points)),
 			Bounds: selection.Bounds,
 			Active: selection.Active,
 		}
-		copy(copy.Points, selection.Points)
-		result = append(result, copy)
+		copy(selectionCopy.Points, selection.Points)
+		result = append(result, selectionCopy)
 	}
 
 	return result
@@ -254,27 +255,32 @@ func (rm *RegionManager) CreateMaskForSelection(selection *Selection, imgWidth, 
 				selection.Points[1].X,
 				selection.Points[1].Y,
 			)
-			
+
 			// Ensure rectangle is within image bounds
 			rect = rect.Intersect(image.Rect(0, 0, imgWidth, imgHeight))
-			
+
 			if !rect.Empty() {
 				// Fill rectangle region
 				roi := mask.Region(rect)
-				roi.SetTo(gocv.NewScalar(255, 255, 255, 255))
+				roi.SetTo(gocv.Scalar{Val1: 255, Val2: 255, Val3: 255, Val4: 255})
 				roi.Close()
 			}
 		}
 
 	case SelectionFreehand:
 		if len(selection.Points) >= 3 {
-			// Convert points to GoCV format
-			points := make([][]image.Point, 1)
-			points[0] = make([]image.Point, len(selection.Points))
-			copy(points[0], selection.Points)
+			// Create PointsVector using the correct GoCV API
+			pointsVector := gocv.NewPointsVector()
+			defer pointsVector.Close()
 
-			// Fill polygon
-			gocv.FillPoly(&mask, points, gocv.NewScalar(255, 255, 255, 255))
+			// Create a PointVector from our points and append it to PointsVector
+			pointVector := gocv.NewPointVectorFromPoints(selection.Points)
+			defer pointVector.Close()
+
+			pointsVector.Append(pointVector)
+
+			// Use GoCV FillPoly with correct API
+			gocv.FillPoly(&mask, pointsVector, color.RGBA{R: 255, G: 255, B: 255, A: 255})
 		}
 	}
 
@@ -362,4 +368,4 @@ func isPointInPolygon(point image.Point, polygon []image.Point) bool {
 	}
 
 	return inside
-} 
+}

@@ -3,6 +3,7 @@ package algorithms
 
 import (
 	"fmt"
+	"image"
 
 	"gocv.io/x/gocv"
 )
@@ -49,7 +50,7 @@ func (g *GaussianFilter) Apply(input gocv.Mat, params map[string]interface{}) (g
 
 	// Apply Gaussian blur
 	output := gocv.NewMat()
-	gocv.GaussianBlur(input, &output, gocv.NewPoint(kernelSize, kernelSize), sigmaX, sigmaY, gocv.BorderDefault)
+	gocv.GaussianBlur(input, &output, image.Pt(kernelSize, kernelSize), sigmaX, sigmaY, gocv.BorderDefault)
 
 	return output, nil
 }
@@ -78,7 +79,7 @@ func (g *GaussianFilter) Validate(params map[string]interface{}) error {
 			}
 		}
 	}
-	
+
 	if val, ok := params["sigma_x"]; ok {
 		if v, ok := val.(float64); ok {
 			if v < 0.1 || v > 10.0 {
@@ -86,7 +87,7 @@ func (g *GaussianFilter) Validate(params map[string]interface{}) error {
 			}
 		}
 	}
-	
+
 	if val, ok := params["sigma_y"]; ok {
 		if v, ok := val.(float64); ok {
 			if v < 0.1 || v > 10.0 {
@@ -94,7 +95,7 @@ func (g *GaussianFilter) Validate(params map[string]interface{}) error {
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -182,7 +183,7 @@ func (m *MedianFilter) Validate(params map[string]interface{}) error {
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -265,7 +266,7 @@ func (b *BilateralFilter) Validate(params map[string]interface{}) error {
 			}
 		}
 	}
-	
+
 	if val, ok := params["sigma_color"]; ok {
 		if v, ok := val.(float64); ok {
 			if v < 10.0 || v > 200.0 {
@@ -273,7 +274,7 @@ func (b *BilateralFilter) Validate(params map[string]interface{}) error {
 			}
 		}
 	}
-	
+
 	if val, ok := params["sigma_space"]; ok {
 		if v, ok := val.(float64); ok {
 			if v < 10.0 || v > 200.0 {
@@ -281,7 +282,7 @@ func (b *BilateralFilter) Validate(params map[string]interface{}) error {
 			}
 		}
 	}
-	
+
 	return nil
 }
 

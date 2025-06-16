@@ -3,8 +3,8 @@ package metrics
 
 import (
 	"fmt"
+	"image"
 	"math"
-	"time"
 
 	"gocv.io/x/gocv"
 )
@@ -139,8 +139,8 @@ func (s *SSIM) Calculate(original, processed gocv.Mat) (float64, error) {
 func (s *SSIM) calculateSSIM(img1, img2 gocv.Mat) float64 {
 	// SSIM constants
 	const (
-		C1 = 6.5025   // (0.01 * 255)^2
-		C2 = 58.5225  // (0.03 * 255)^2
+		C1 = 6.5025  // (0.01 * 255)^2
+		C2 = 58.5225 // (0.03 * 255)^2
 	)
 
 	// Convert to float
@@ -155,11 +155,11 @@ func (s *SSIM) calculateSSIM(img1, img2 gocv.Mat) float64 {
 	// Calculate means
 	mu1 := gocv.NewMat()
 	defer mu1.Close()
-	gocv.GaussianBlur(f1, &mu1, gocv.NewPoint(11, 11), 1.5, 1.5, gocv.BorderDefault)
+	gocv.GaussianBlur(f1, &mu1, image.Pt(11, 11), 1.5, 1.5, gocv.BorderDefault)
 
 	mu2 := gocv.NewMat()
 	defer mu2.Close()
-	gocv.GaussianBlur(f2, &mu2, gocv.NewPoint(11, 11), 1.5, 1.5, gocv.BorderDefault)
+	gocv.GaussianBlur(f2, &mu2, image.Pt(11, 11), 1.5, 1.5, gocv.BorderDefault)
 
 	// Calculate squared means
 	mu1Sq := gocv.NewMat()
@@ -180,7 +180,7 @@ func (s *SSIM) calculateSSIM(img1, img2 gocv.Mat) float64 {
 	f1Sq := gocv.NewMat()
 	defer f1Sq.Close()
 	gocv.Multiply(f1, f1, &f1Sq)
-	gocv.GaussianBlur(f1Sq, &sigma1Sq, gocv.NewPoint(11, 11), 1.5, 1.5, gocv.BorderDefault)
+	gocv.GaussianBlur(f1Sq, &sigma1Sq, image.Pt(11, 11), 1.5, 1.5, gocv.BorderDefault)
 	gocv.Subtract(sigma1Sq, mu1Sq, &sigma1Sq)
 
 	sigma2Sq := gocv.NewMat()
@@ -188,7 +188,7 @@ func (s *SSIM) calculateSSIM(img1, img2 gocv.Mat) float64 {
 	f2Sq := gocv.NewMat()
 	defer f2Sq.Close()
 	gocv.Multiply(f2, f2, &f2Sq)
-	gocv.GaussianBlur(f2Sq, &sigma2Sq, gocv.NewPoint(11, 11), 1.5, 1.5, gocv.BorderDefault)
+	gocv.GaussianBlur(f2Sq, &sigma2Sq, image.Pt(11, 11), 1.5, 1.5, gocv.BorderDefault)
 	gocv.Subtract(sigma2Sq, mu2Sq, &sigma2Sq)
 
 	sigma12 := gocv.NewMat()
@@ -196,19 +196,19 @@ func (s *SSIM) calculateSSIM(img1, img2 gocv.Mat) float64 {
 	f1f2 := gocv.NewMat()
 	defer f1f2.Close()
 	gocv.Multiply(f1, f2, &f1f2)
-	gocv.GaussianBlur(f1f2, &sigma12, gocv.NewPoint(11, 11), 1.5, 1.5, gocv.BorderDefault)
+	gocv.GaussianBlur(f1f2, &sigma12, image.Pt(11, 11), 1.5, 1.5, gocv.BorderDefault)
 	gocv.Subtract(sigma12, mu1Mu2, &sigma12)
 
 	// Calculate SSIM
 	numerator1 := gocv.NewMat()
 	defer numerator1.Close()
-	gocv.MultiplyWithParams(mu1Mu2, 2.0, &numerator1)
-	gocv.AddScalar(numerator1, gocv.NewScalar(C1, C1, C1, C1), &numerator1)
+	gocv.Multiply(mu1Mu2, gocv.NewMatFromScalar(gocv.Scalar{Val1: 2.0, Val2: 2.0, Val3: 2.0, Val4: 2.0}, gocv.MatTypeCV32F), &numerator1)
+	gocv.Add(numerator1, gocv.NewMatFromScalar(gocv.Scalar{Val1: C1, Val2: C1, Val3: C1, Val4: C1}, gocv.MatTypeCV32F), &numerator1)
 
 	numerator2 := gocv.NewMat()
 	defer numerator2.Close()
-	gocv.MultiplyWithParams(sigma12, 2.0, &numerator2)
-	gocv.AddScalar(numerator2, gocv.NewScalar(C2, C2, C2, C2), &numerator2)
+	gocv.Multiply(sigma12, gocv.NewMatFromScalar(gocv.Scalar{Val1: 2.0, Val2: 2.0, Val3: 2.0, Val4: 2.0}, gocv.MatTypeCV32F), &numerator2)
+	gocv.Add(numerator2, gocv.NewMatFromScalar(gocv.Scalar{Val1: C2, Val2: C2, Val3: C2, Val4: C2}, gocv.MatTypeCV32F), &numerator2)
 
 	numerator := gocv.NewMat()
 	defer numerator.Close()
@@ -217,12 +217,12 @@ func (s *SSIM) calculateSSIM(img1, img2 gocv.Mat) float64 {
 	denominator1 := gocv.NewMat()
 	defer denominator1.Close()
 	gocv.Add(mu1Sq, mu2Sq, &denominator1)
-	gocv.AddScalar(denominator1, gocv.NewScalar(C1, C1, C1, C1), &denominator1)
+	gocv.Add(denominator1, gocv.NewMatFromScalar(gocv.Scalar{Val1: C1, Val2: C1, Val3: C1, Val4: C1}, gocv.MatTypeCV32F), &denominator1)
 
 	denominator2 := gocv.NewMat()
 	defer denominator2.Close()
 	gocv.Add(sigma1Sq, sigma2Sq, &denominator2)
-	gocv.AddScalar(denominator2, gocv.NewScalar(C2, C2, C2, C2), &denominator2)
+	gocv.Add(denominator2, gocv.NewMatFromScalar(gocv.Scalar{Val1: C2, Val2: C2, Val3: C2, Val4: C2}, gocv.MatTypeCV32F), &denominator2)
 
 	denominator := gocv.NewMat()
 	defer denominator.Close()
@@ -231,6 +231,11 @@ func (s *SSIM) calculateSSIM(img1, img2 gocv.Mat) float64 {
 	ssimMap := gocv.NewMat()
 	defer ssimMap.Close()
 	gocv.Divide(numerator, denominator, &ssimMap)
+
+	// Calculate mean SSIM
+	meanSSIM := calculateMean(ssimMap)
+	return meanSSIM
+}
 
 func (s *SSIM) ensureGrayscale(input gocv.Mat) gocv.Mat {
 	if input.Channels() == 1 {
@@ -490,15 +495,15 @@ func (c *ContrastRatio) calculateContrast(input gocv.Mat) float64 {
 	}()
 
 	// Calculate standard deviation as a measure of contrast
-	mean := gocv.Mean(gray)
-	
+	meanVal := calculateMean(gray)
+
 	sumSquaredDiff := 0.0
 	totalPixels := gray.Rows() * gray.Cols()
 
 	for y := 0; y < gray.Rows(); y++ {
 		for x := 0; x < gray.Cols(); x++ {
 			val := float64(gray.GetUCharAt(y, x))
-			diff := val - mean.Val1
+			diff := val - meanVal
 			sumSquaredDiff += diff * diff
 		}
 	}
@@ -571,15 +576,15 @@ func (s *Sharpness) calculateSharpness(input gocv.Mat) float64 {
 	gocv.Laplacian(gray, &laplacian, gocv.MatTypeCV64F, 1, 1, 0, gocv.BorderDefault)
 
 	// Calculate variance of Laplacian as sharpness measure
-	mean := gocv.Mean(laplacian)
-	
+	meanVal := calculateMean(laplacian)
+
 	sumSquaredDiff := 0.0
 	totalPixels := laplacian.Rows() * laplacian.Cols()
 
 	for y := 0; y < laplacian.Rows(); y++ {
 		for x := 0; x < laplacian.Cols(); x++ {
 			val := laplacian.GetDoubleAt(y, x)
-			diff := val - mean.Val1
+			diff := val - meanVal
 			sumSquaredDiff += diff * diff
 		}
 	}
@@ -612,4 +617,28 @@ func (s *Sharpness) GetRange() (float64, float64) {
 
 func (s *Sharpness) IsHigherBetter() bool {
 	return true
+}
+
+// Helper function to calculate mean of a matrix
+func calculateMean(mat gocv.Mat) float64 {
+	sum := 0.0
+	totalPixels := mat.Rows() * mat.Cols()
+
+	if mat.Type() == gocv.MatTypeCV64F {
+		// For double precision matrices
+		for y := 0; y < mat.Rows(); y++ {
+			for x := 0; x < mat.Cols(); x++ {
+				sum += mat.GetDoubleAt(y, x)
+			}
+		}
+	} else {
+		// For 8-bit matrices
+		for y := 0; y < mat.Rows(); y++ {
+			for x := 0; x < mat.Cols(); x++ {
+				sum += float64(mat.GetUCharAt(y, x))
+			}
+		}
+	}
+
+	return sum / float64(totalPixels)
 }

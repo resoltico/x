@@ -3,7 +3,7 @@ package algorithms
 
 import (
 	"fmt"
-	"math"
+	"image"
 
 	"gocv.io/x/gocv"
 )
@@ -46,7 +46,7 @@ func (m *MultiOtsu) Apply(input gocv.Mat, params map[string]interface{}) (gocv.M
 
 	// Calculate histogram
 	hist := m.calculateHistogram(gray)
-	
+
 	var thresholds []float64
 	if levels == 2 {
 		// Single threshold (classic Otsu)
@@ -85,7 +85,7 @@ func (m *MultiOtsu) Validate(params map[string]interface{}) error {
 			}
 		}
 	}
-	
+
 	if val, ok := params["max_value"]; ok {
 		if v, ok := val.(float64); ok {
 			if v < 0 || v > 255 {
@@ -93,7 +93,7 @@ func (m *MultiOtsu) Validate(params map[string]interface{}) error {
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -122,7 +122,7 @@ func (m *MultiOtsu) ensureGrayscale(input gocv.Mat) gocv.Mat {
 	if input.Channels() == 1 {
 		return input
 	}
-	
+
 	gray := gocv.NewMat()
 	gocv.CvtColor(input, &gray, gocv.ColorBGRToGray)
 	return gray
@@ -130,7 +130,7 @@ func (m *MultiOtsu) ensureGrayscale(input gocv.Mat) gocv.Mat {
 
 func (m *MultiOtsu) calculateHistogram(gray gocv.Mat) []float64 {
 	hist := make([]float64, 256)
-	
+
 	// Manual histogram calculation for better control
 	for y := 0; y < gray.Rows(); y++ {
 		for x := 0; x < gray.Cols(); x++ {
@@ -138,13 +138,13 @@ func (m *MultiOtsu) calculateHistogram(gray gocv.Mat) []float64 {
 			hist[intensity]++
 		}
 	}
-	
+
 	// Normalize histogram
 	totalPixels := float64(gray.Rows() * gray.Cols())
 	for i := range hist {
 		hist[i] /= totalPixels
 	}
-	
+
 	return hist
 }
 
@@ -154,55 +154,55 @@ func (m *MultiOtsu) calculateOtsuThreshold(hist []float64) float64 {
 	for i := 0; i < 256; i++ {
 		sum += float64(i) * hist[i]
 	}
-	
+
 	sumB := 0.0
 	wB := 0.0
 	maximum := 0.0
 	level := 0.0
-	
+
 	for t := 0; t < 256; t++ {
 		wB += hist[t]
 		if wB == 0 {
 			continue
 		}
-		
+
 		wF := 1.0 - wB
 		if wF == 0 {
 			break
 		}
-		
+
 		sumB += float64(t) * hist[t]
 		mB := sumB / wB
 		mF := (sum - sumB) / wF
-		
+
 		// Calculate between-class variance
 		between := wB * wF * (mB - mF) * (mB - mF)
-		
+
 		if between > maximum {
 			level = float64(t)
 			maximum = between
 		}
 	}
-	
+
 	return level
 }
 
 func (m *MultiOtsu) calculateMultiOtsuThresholds(hist []float64, levels int) []float64 {
 	// For simplicity, use recursive binary Otsu for multi-level
 	// This is a simplified implementation - full multi-level Otsu is more complex
-	
+
 	thresholds := make([]float64, levels-1)
-	
+
 	if levels == 3 {
 		// Two thresholds for 3-level
 		// First threshold using standard Otsu
 		t1 := m.calculateOtsuThreshold(hist)
 		thresholds[0] = t1
-		
+
 		// Second threshold using modified histogram
 		t2 := m.calculateSecondThreshold(hist, t1)
 		thresholds[1] = t2
-		
+
 		// Ensure proper ordering
 		if thresholds[0] > thresholds[1] {
 			thresholds[0], thresholds[1] = thresholds[1], thresholds[0]
@@ -211,14 +211,14 @@ func (m *MultiOtsu) calculateMultiOtsuThresholds(hist []float64, levels int) []f
 		// For other levels, use recursive approach
 		thresholds[0] = m.calculateOtsuThreshold(hist)
 	}
-	
+
 	return thresholds
 }
 
 func (m *MultiOtsu) calculateSecondThreshold(hist []float64, firstThreshold float64) float64 {
 	// Calculate second threshold for the upper part of the histogram
 	t1 := int(firstThreshold)
-	
+
 	// Create histogram for upper part
 	upperHist := make([]float64, 256-t1)
 	sum := 0.0
@@ -226,14 +226,14 @@ func (m *MultiOtsu) calculateSecondThreshold(hist []float64, firstThreshold floa
 		upperHist[i-t1] = hist[i]
 		sum += upperHist[i-t1]
 	}
-	
+
 	// Normalize upper histogram
 	if sum > 0 {
 		for i := range upperHist {
 			upperHist[i] /= sum
 		}
 	}
-	
+
 	// Calculate Otsu for upper part
 	threshold := m.calculateOtsuThresholdForRange(upperHist)
 	return threshold + firstThreshold
@@ -245,48 +245,48 @@ func (m *MultiOtsu) calculateOtsuThresholdForRange(hist []float64) float64 {
 	for i := 0; i < length; i++ {
 		sum += float64(i) * hist[i]
 	}
-	
+
 	sumB := 0.0
 	wB := 0.0
 	maximum := 0.0
 	level := 0.0
-	
+
 	for t := 0; t < length; t++ {
 		wB += hist[t]
 		if wB == 0 {
 			continue
 		}
-		
+
 		wF := 1.0 - wB
 		if wF == 0 {
 			break
 		}
-		
+
 		sumB += float64(t) * hist[t]
 		mB := sumB / wB
 		mF := (sum - sumB) / wF
-		
+
 		// Calculate between-class variance
 		between := wB * wF * (mB - mF) * (mB - mF)
-		
+
 		if between > maximum {
 			level = float64(t)
 			maximum = between
 		}
 	}
-	
+
 	return level
 }
 
 func (m *MultiOtsu) applyThresholds(gray gocv.Mat, thresholds []float64, maxValue float64) gocv.Mat {
 	output := gocv.NewMat()
 	gray.CopyTo(&output)
-	
+
 	// Apply thresholds to create segmented image
 	for y := 0; y < output.Rows(); y++ {
 		for x := 0; x < output.Cols(); x++ {
 			intensity := float64(output.GetUCharAt(y, x))
-			
+
 			var newValue uint8
 			if len(thresholds) == 1 {
 				// Binary thresholding
@@ -306,11 +306,11 @@ func (m *MultiOtsu) applyThresholds(gray gocv.Mat, thresholds []float64, maxValu
 				// Map level to output value
 				newValue = uint8(float64(level) * maxValue / float64(len(thresholds)))
 			}
-			
+
 			output.SetUCharAt(y, x, newValue)
 		}
 	}
-	
+
 	return output
 }
 
@@ -369,9 +369,9 @@ func (l *LocalOtsu) Apply(input gocv.Mat, params map[string]interface{}) (gocv.M
 
 func (l *LocalOtsu) GetDefaultParams() map[string]interface{} {
 	return map[string]interface{}{
-		"window_size":    15.0,
-		"overlap":        0.5,
-		"interpolation":  true,
+		"window_size":   15.0,
+		"overlap":       0.5,
+		"interpolation": true,
 	}
 }
 
@@ -391,7 +391,7 @@ func (l *LocalOtsu) Validate(params map[string]interface{}) error {
 			}
 		}
 	}
-	
+
 	if val, ok := params["overlap"]; ok {
 		if v, ok := val.(float64); ok {
 			if v < 0 || v > 0.9 {
@@ -399,7 +399,7 @@ func (l *LocalOtsu) Validate(params map[string]interface{}) error {
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -434,7 +434,7 @@ func (l *LocalOtsu) ensureGrayscale(input gocv.Mat) gocv.Mat {
 	if input.Channels() == 1 {
 		return input
 	}
-	
+
 	gray := gocv.NewMat()
 	gocv.CvtColor(input, &gray, gocv.ColorBGRToGray)
 	return gray
@@ -465,13 +465,13 @@ func (l *LocalOtsu) applyLocalOtsu(gray gocv.Mat, windowSize int, overlap float6
 			// Define window bounds
 			x1 := x
 			y1 := y
-			x2 := min(x+windowSize, width)
-			y2 := min(y+windowSize, height)
+			x2 := minInt(x+windowSize, width)
+			y2 := minInt(y+windowSize, height)
 
 			// Extract window
 			windowRect := image.Rect(x1, y1, x2, y2)
 			window := gray.Region(windowRect)
-			
+
 			// Calculate local Otsu threshold
 			threshold := l.calculateLocalOtsuThreshold(window)
 			window.Close()
@@ -502,7 +502,7 @@ func (l *LocalOtsu) calculateLocalOtsuThreshold(window gocv.Mat) float64 {
 	// Calculate histogram for the window
 	hist := make([]float64, 256)
 	totalPixels := 0
-	
+
 	for y := 0; y < window.Rows(); y++ {
 		for x := 0; x < window.Cols(); x++ {
 			intensity := window.GetUCharAt(y, x)
@@ -510,16 +510,16 @@ func (l *LocalOtsu) calculateLocalOtsuThreshold(window gocv.Mat) float64 {
 			totalPixels++
 		}
 	}
-	
+
 	if totalPixels == 0 {
 		return 127 // Default threshold
 	}
-	
+
 	// Normalize histogram
 	for i := range hist {
 		hist[i] /= float64(totalPixels)
 	}
-	
+
 	// Calculate Otsu threshold
 	return l.calculateOtsuThreshold(hist)
 }
@@ -529,36 +529,36 @@ func (l *LocalOtsu) calculateOtsuThreshold(hist []float64) float64 {
 	for i := 0; i < 256; i++ {
 		sum += float64(i) * hist[i]
 	}
-	
+
 	sumB := 0.0
 	wB := 0.0
 	maximum := 0.0
 	level := 0.0
-	
+
 	for t := 0; t < 256; t++ {
 		wB += hist[t]
 		if wB == 0 {
 			continue
 		}
-		
+
 		wF := 1.0 - wB
 		if wF == 0 {
 			break
 		}
-		
+
 		sumB += float64(t) * hist[t]
 		mB := sumB / wB
 		mF := (sum - sumB) / wF
-		
+
 		// Calculate between-class variance
 		between := wB * wF * (mB - mF) * (mB - mF)
-		
+
 		if between > maximum {
 			level = float64(t)
 			maximum = between
 		}
 	}
-	
+
 	return level
 }
 
@@ -578,12 +578,12 @@ func (l *LocalOtsu) applyThresholdToRegion(output gocv.Mat, region image.Rectang
 func (l *LocalOtsu) applyInterpolatedThresholds(output, thresholdMap gocv.Mat, step int) {
 	height := output.Rows()
 	width := output.Cols()
-	
+
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
 			// Calculate interpolated threshold
 			threshold := l.interpolateThreshold(thresholdMap, x, y, step)
-			
+
 			// Apply threshold
 			intensity := output.GetUCharAt(y, x)
 			if float64(intensity) <= threshold {
@@ -599,17 +599,17 @@ func (l *LocalOtsu) interpolateThreshold(thresholdMap gocv.Mat, x, y, step int) 
 	// Map coordinates to threshold map
 	fx := float64(x) / float64(step)
 	fy := float64(y) / float64(step)
-	
+
 	// Get integer coordinates
 	x1 := int(fx)
 	y1 := int(fy)
 	x2 := x1 + 1
 	y2 := y1 + 1
-	
+
 	// Clamp to map bounds
 	mapHeight := thresholdMap.Rows()
 	mapWidth := thresholdMap.Cols()
-	
+
 	if x2 >= mapWidth {
 		x2 = mapWidth - 1
 		x1 = x2
@@ -618,26 +618,19 @@ func (l *LocalOtsu) interpolateThreshold(thresholdMap gocv.Mat, x, y, step int) 
 		y2 = mapHeight - 1
 		y1 = y2
 	}
-	
+
 	// Get threshold values
 	t11 := float64(thresholdMap.GetFloatAt(y1, x1))
 	t12 := float64(thresholdMap.GetFloatAt(y2, x1))
 	t21 := float64(thresholdMap.GetFloatAt(y1, x2))
 	t22 := float64(thresholdMap.GetFloatAt(y2, x2))
-	
+
 	// Bilinear interpolation
 	wx := fx - float64(x1)
 	wy := fy - float64(y1)
-	
+
 	t1 := t11*(1-wx) + t21*wx
 	t2 := t12*(1-wx) + t22*wx
-	
-	return t1*(1-wy) + t2*wy
-}
 
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
+	return t1*(1-wy) + t2*wy
 }

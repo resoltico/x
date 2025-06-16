@@ -3,6 +3,7 @@ package algorithms
 
 import (
 	"fmt"
+	"image"
 
 	"gocv.io/x/gocv"
 )
@@ -36,8 +37,7 @@ func (e *Erosion) Apply(input gocv.Mat, params map[string]interface{}) (gocv.Mat
 	}
 
 	// Create kernel
-	kernel := gocv.GetStructuringElement(gocv.MorphRect, 
-		gocv.NewPoint(kernelSize, kernelSize), gocv.NewPoint(-1, -1))
+	kernel := gocv.GetStructuringElement(gocv.MorphRect, image.Pt(kernelSize, kernelSize))
 	defer kernel.Close()
 
 	// Apply erosion
@@ -78,7 +78,7 @@ func (e *Erosion) Validate(params map[string]interface{}) error {
 			}
 		}
 	}
-	
+
 	if val, ok := params["iterations"]; ok {
 		if v, ok := val.(float64); ok {
 			if v < 1 || v > 10 {
@@ -86,7 +86,7 @@ func (e *Erosion) Validate(params map[string]interface{}) error {
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -140,8 +140,7 @@ func (d *Dilation) Apply(input gocv.Mat, params map[string]interface{}) (gocv.Ma
 	}
 
 	// Create kernel
-	kernel := gocv.GetStructuringElement(gocv.MorphRect, 
-		gocv.NewPoint(kernelSize, kernelSize), gocv.NewPoint(-1, -1))
+	kernel := gocv.GetStructuringElement(gocv.MorphRect, image.Pt(kernelSize, kernelSize))
 	defer kernel.Close()
 
 	// Apply dilation
@@ -182,7 +181,7 @@ func (d *Dilation) Validate(params map[string]interface{}) error {
 			}
 		}
 	}
-	
+
 	if val, ok := params["iterations"]; ok {
 		if v, ok := val.(float64); ok {
 			if v < 1 || v > 10 {
@@ -190,7 +189,7 @@ func (d *Dilation) Validate(params map[string]interface{}) error {
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -237,13 +236,12 @@ func (o *Opening) Apply(input gocv.Mat, params map[string]interface{}) (gocv.Mat
 	}
 
 	// Create kernel
-	kernel := gocv.GetStructuringElement(gocv.MorphRect, 
-		gocv.NewPoint(kernelSize, kernelSize), gocv.NewPoint(-1, -1))
+	kernel := gocv.GetStructuringElement(gocv.MorphRect, image.Pt(kernelSize, kernelSize))
 	defer kernel.Close()
 
 	// Apply opening (erosion followed by dilation)
 	output := gocv.NewMat()
-	gocv.MorphologyEx(input, &output, gocv.MorphOpen, kernel, gocv.NewPoint(-1, -1), 1, gocv.BorderConstant, gocv.NewScalar(0, 0, 0, 0))
+	gocv.MorphologyEx(input, &output, gocv.MorphOpen, kernel)
 
 	return output, nil
 }
@@ -270,7 +268,7 @@ func (o *Opening) Validate(params map[string]interface{}) error {
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -309,13 +307,12 @@ func (c *Closing) Apply(input gocv.Mat, params map[string]interface{}) (gocv.Mat
 	}
 
 	// Create kernel
-	kernel := gocv.GetStructuringElement(gocv.MorphRect, 
-		gocv.NewPoint(kernelSize, kernelSize), gocv.NewPoint(-1, -1))
+	kernel := gocv.GetStructuringElement(gocv.MorphRect, image.Pt(kernelSize, kernelSize))
 	defer kernel.Close()
 
 	// Apply closing (dilation followed by erosion)
 	output := gocv.NewMat()
-	gocv.MorphologyEx(input, &output, gocv.MorphClose, kernel, gocv.NewPoint(-1, -1), 1, gocv.BorderConstant, gocv.NewScalar(0, 0, 0, 0))
+	gocv.MorphologyEx(input, &output, gocv.MorphClose, kernel)
 
 	return output, nil
 }
@@ -342,7 +339,7 @@ func (c *Closing) Validate(params map[string]interface{}) error {
 			}
 		}
 	}
-	
+
 	return nil
 }
 
