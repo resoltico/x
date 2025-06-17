@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 
+	"advanced-image-processing/internal/core"
 	"advanced-image-processing/internal/gui"
 )
 
@@ -39,8 +40,12 @@ func main() {
 		"version", "2.0.0",
 		"debug_mode", *debugMode)
 
+	// Initialize debug systems
+	core.InitPipelineDebugger(logger)
+	gui.InitGUIDebugger(logger)
+
 	// Create and initialize the GUI application
-	app := gui.NewApplication(logger) // Only 1 argument - the logger
+	app := gui.NewApplication(logger)
 
 	if err := app.Initialize(); err != nil {
 		logger.Error("Failed to initialize application", "error", err)

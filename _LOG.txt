@@ -1,18 +1,15 @@
-[6:40:37 AM] % ./app --debug
-time=2025-06-17T06:40:39.436+03:00 level=INFO msg="Starting Image Restoration Suite v2.0 with Perfect UI Design" version=2.0.0 debug_mode=true
-time=2025-06-17T06:40:39.436+03:00 level=ERROR msg="=== CURRENT BUILD ISSUES ==="
-time=2025-06-17T06:40:39.436+03:00 level=ERROR msg="GUI Constructor Error" component=NewEnhancedPipeline expected_args=3 got_args=1
-time=2025-06-17T06:40:39.436+03:00 level=ERROR msg="GUI Constructor Error" component=NewRegionManager expected_args=0 got_args=1
-time=2025-06-17T06:40:39.436+03:00 level=ERROR msg="GUI Missing Callback" component=Toolbar callback=onOpenImage
-time=2025-06-17T06:40:39.436+03:00 level=ERROR msg="GUI Missing Callback" component=Toolbar callback=onSaveImage
-time=2025-06-17T06:40:39.436+03:00 level=ERROR msg="GUI Missing Callback" component=Toolbar callback=onViewModeChanged
-time=2025-06-17T06:40:39.436+03:00 level=ERROR msg="GUI Build Error" component=ImageData method=LoadFromFile expected="LoadFromFile(string) error" got="method not found"
-time=2025-06-17T06:40:39.436+03:00 level=ERROR msg="GUI Build Error" component=ImageData method=GetDimensions expected="GetDimensions() (int, int, int)" got="method not found"
-time=2025-06-17T06:40:39.436+03:00 level=ERROR msg="GUI Build Error" component=dialog.NewFileSave method="callback signature" expected="func(fyne.URIWriteCloser, error)" got=func(fyne.URIWriteCloser)
-time=2025-06-17T06:40:39.436+03:00 level=ERROR msg="GUI Build Error" component=saveDialog.SetFilter method="parameter type" expected=storage.FileFilter got=[]string
-time=2025-06-17T06:40:39.654+03:00 level=DEBUG msg="Initialized image canvases with min size" size=400x400
-time=2025-06-17T06:40:39.654+03:00 level=INFO msg="Starting Image Restoration Suite with Perfect UI"
-time=2025-06-17T06:40:39.656+03:00 level=ERROR msg="GUI Runtime Error" component=Application error="Toolbar and LeftPanel callbacks not implemented - interfaces unknown" stack="goroutine 1 [running, locked to thread]:\nadvanced-image-processing/internal/gui.getStackTrace(...)\n\t/Users/erst/Library/CloudStorage/Dropbox/Websites/x/internal/gui/gui_debug.go:263\nadvanced-image-processing/internal/gui.(*GUIDebugger).LogRuntimeError(0x140001252c0, {0x10323a46a, 0xb}, {0x10326e2ab, 0x44})\n\t/Users/erst/Library/CloudStorage/Dropbox/Websites/x/internal/gui/gui_debug.go:169 +0x178\nadvanced-image-processing/internal/gui.(*Application).SetupCallbacks(0x14000710680)\n\t/Users/erst/Library/CloudStorage/Dropbox/Websites/x/internal/gui/app.go:113 +0xb0\nadvanced-image-processing/internal/gui.(*Application).Initialize(0x14000710680)\n\t/Users/erst/Library/CloudStorage/Dropbox/Websites/x/internal/gui/app.go:86 +0x60\nmain.main()\n\t/Users/erst/Library/CloudStorage/Dropbox/Websites/x/cmd/app/main.go:45 +0x2dc\n"
-time=2025-06-17T06:40:57.631+03:00 level=DEBUG msg="Loading image" filepath="/Users/erst/Desktop/Ut feritur ferit.tiff"
-time=2025-06-17T06:40:57.667+03:00 level=INFO msg="Image loaded successfully" filepath="/Users/erst/Desktop/Ut feritur ferit.tiff" width=1400 height=995 channels=3
-[6:42:32 AM] % 
+[9:51:29 AM] % go build ./cmd/app
+# advanced-image-processing/internal/gui
+internal/gui/gui_debug.go:468:5: GlobalGUIDebugger redeclared in this block
+	internal/gui/center_panel.go:21:5: other declaration of GlobalGUIDebugger
+internal/gui/gui_debug.go:472:23: GlobalGUIDebugger.enabled undefined (type interface{LogImageOperation(operation string, success bool, details map[string]interface{}); LogUIInteraction(component string, action string, data map[string]interface{})} has no field or method enabled)
+internal/gui/gui_debug.go:473:21: GlobalGUIDebugger.LogCurrentBuildIssues undefined (type interface{LogImageOperation(operation string, success bool, details map[string]interface{}); LogUIInteraction(component string, action string, data map[string]interface{})} has no field or method LogCurrentBuildIssues)
+internal/gui/left_panel.go:193:21: GlobalGUIDebugger.LogLayerAddAttempt undefined (type interface{LogImageOperation(operation string, success bool, details map[string]interface{}); LogUIInteraction(component string, action string, data map[string]interface{})} has no field or method LogLayerAddAttempt)
+internal/gui/left_panel.go:204:22: GlobalGUIDebugger.LogLayerAddComplete undefined (type interface{LogImageOperation(operation string, success bool, details map[string]interface{}); LogUIInteraction(component string, action string, data map[string]interface{})} has no field or method LogLayerAddComplete)
+internal/gui/left_panel.go:205:22: GlobalGUIDebugger.LogLayerOperation undefined (type interface{LogImageOperation(operation string, success bool, details map[string]interface{}); LogUIInteraction(component string, action string, data map[string]interface{})} has no field or method LogLayerOperation)
+internal/gui/left_panel.go:220:22: GlobalGUIDebugger.LogLayerAddComplete undefined (type interface{LogImageOperation(operation string, success bool, details map[string]interface{}); LogUIInteraction(component string, action string, data map[string]interface{})} has no field or method LogLayerAddComplete)
+internal/gui/left_panel.go:221:22: GlobalGUIDebugger.LogLayerOperation undefined (type interface{LogImageOperation(operation string, success bool, details map[string]interface{}); LogUIInteraction(component string, action string, data map[string]interface{})} has no field or method LogLayerOperation)
+internal/gui/left_panel.go:237:21: GlobalGUIDebugger.LogProcessingEvent undefined (type interface{LogImageOperation(operation string, success bool, details map[string]interface{}); LogUIInteraction(component string, action string, data map[string]interface{})} has no field or method LogProcessingEvent)
+internal/gui/left_panel.go:250:22: GlobalGUIDebugger.LogLayerAddComplete undefined (type interface{LogImageOperation(operation string, success bool, details map[string]interface{}); LogUIInteraction(component string, action string, data map[string]interface{})} has no field or method LogLayerAddComplete)
+internal/gui/left_panel.go:250:22: too many errors
+[9:51:36 AM] % 

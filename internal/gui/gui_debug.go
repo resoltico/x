@@ -1,3 +1,5 @@
+// internal/gui/gui_debug.go
+// GUI-specific debugging - separated from core pipeline debugging
 package gui
 
 import (
@@ -9,16 +11,21 @@ import (
 	"fyne.io/fyne/v2"
 )
 
-// GUIDebugger provides comprehensive debugging for GUI components
+// GUIDebugger provides GUI-specific debugging (UI interactions, display operations)
 type GUIDebugger struct {
 	logger    *slog.Logger
 	enabled   bool
 	startTime time.Time
 
-	// Component states
-	toolbarState map[string]interface{}
-	panelStates  map[string]map[string]interface{}
-	imageState   map[string]interface{}
+	// GUI Component states
+	toolbarState     map[string]interface{}
+	leftPanelState   map[string]interface{}
+	centerPanelState map[string]interface{}
+	rightPanelState  map[string]interface{}
+
+	// GUI-specific operations
+	uiInteractions []UIInteraction
+	displayOps     []DisplayOperation
 
 	// Error tracking
 	buildErrors   []string
@@ -29,19 +36,186 @@ type GUIDebugger struct {
 	layoutTimes []time.Duration
 }
 
+// UIInteraction tracks user interface interactions
+type UIInteraction struct {
+	Timestamp time.Time
+	Component string // "Toolbar", "LeftPanel", "CenterPanel", "RightPanel"
+	Action    string // "button_click", "slider_change", "dropdown_select", etc.
+	Data      map[string]interface{}
+	Duration  time.Duration
+}
+
+// DisplayOperation tracks image display operations
+type DisplayOperation struct {
+	Timestamp time.Time
+	Operation string // "update_original", "update_preview", "view_change", "zoom_change"
+	Success   bool
+	Details   map[string]interface{}
+	Duration  time.Duration
+}
+
 func NewGUIDebugger(logger *slog.Logger) *GUIDebugger {
 	return &GUIDebugger{
-		logger:        logger,
-		enabled:       true, // Always enabled - no need to remember GUI_DEBUG=true
-		startTime:     time.Now(),
-		toolbarState:  make(map[string]interface{}),
-		panelStates:   make(map[string]map[string]interface{}),
-		imageState:    make(map[string]interface{}),
-		buildErrors:   []string{},
-		runtimeErrors: []string{},
-		renderTimes:   []time.Duration{},
-		layoutTimes:   []time.Duration{},
+		logger:           logger,
+		enabled:          true,
+		startTime:        time.Now(),
+		toolbarState:     make(map[string]interface{}),
+		leftPanelState:   make(map[string]interface{}),
+		centerPanelState: make(map[string]interface{}),
+		rightPanelState:  make(map[string]interface{}),
+		uiInteractions:   make([]UIInteraction, 0),
+		displayOps:       make([]DisplayOperation, 0),
+		buildErrors:      make([]string, 0),
+		runtimeErrors:    make([]string, 0),
+		renderTimes:      make([]time.Duration, 0),
+		layoutTimes:      make([]time.Duration, 0),
 	}
+}
+
+// UI Interaction logging
+func (d *GUIDebugger) LogUIInteraction(component, action string, data map[string]interface{}) {
+	if !d.enabled {
+		return
+	}
+
+	var duration time.Duration
+	if startTime, ok := data["start_time"].(time.Time); ok {
+		duration = time.Since(startTime)
+		delete(data, "start_time") // Remove from data to avoid logging it
+	}
+
+	interaction := UIInteraction{
+		Timestamp: time.Now(),
+		Component: component,
+		Action:    action,
+		Data:      data,
+		Duration:  duration,
+	}
+
+	d.uiInteractions = append(d.uiInteractions, interaction)
+
+	// Update component state
+	switch component {
+	case "Toolbar":
+		d.updateToolbarState(action, data)
+	case "LeftPanel":
+		d.updateLeftPanelState(action, data)
+	case "CenterPanel":
+		d.updateCenterPanelState(action, data)
+	case "RightPanel":
+		d.updateRightPanelState(action, data)
+	}
+
+	d.logger.Debug("GUI UI Interaction",
+		"component", component,
+		"action", action,
+		"data", data,
+		"duration_ms", duration.Milliseconds())
+}
+
+// Display operation logging
+func (d *GUIDebugger) LogDisplayOperation(operation string, success bool, details map[string]interface{}) {
+	if !d.enabled {
+		return
+	}
+
+	var duration time.Duration
+	if startTime, ok := details["start_time"].(time.Time); ok {
+		duration = time.Since(startTime)
+		delete(details, "start_time")
+	}
+
+	displayOp := DisplayOperation{
+		Timestamp: time.Now(),
+		Operation: operation,
+		Success:   success,
+		Details:   details,
+		Duration:  duration,
+	}
+
+	d.displayOps = append(d.displayOps, displayOp)
+
+	level := slog.LevelDebug
+	if !success {
+		level = slog.LevelError
+	}
+
+	d.logger.Log(nil, level, "GUI Display Operation",
+		"operation", operation,
+		"success", success,
+		"details", details,
+		"duration_ms", duration.Milliseconds())
+}
+
+// Component state updates
+func (d *GUIDebugger) updateToolbarState(action string, data map[string]interface{}) {
+	switch action {
+	case "zoom_set":
+		d.toolbarState["current_zoom"] = data["new_zoom"]
+	case "view_set":
+		d.toolbarState["current_view"] = data["new_view"]
+	case "processing_buttons_enabled", "processing_buttons_disabled":
+		d.toolbarState["save_enabled"] = data["save_enabled"]
+		d.toolbarState["reset_enabled"] = data["reset_enabled"]
+	}
+	d.toolbarState["last_action"] = action
+	d.toolbarState["last_update"] = time.Now()
+}
+
+func (d *GUIDebugger) updateLeftPanelState(action string, data map[string]interface{}) {
+	switch action {
+	case "layer_added":
+		if count, ok := d.leftPanelState["layer_count"].(int); ok {
+			d.leftPanelState["layer_count"] = count + 1
+		} else {
+			d.leftPanelState["layer_count"] = 1
+		}
+	case "layer_deleted":
+		if count, ok := d.leftPanelState["layer_count"].(int); ok && count > 0 {
+			d.leftPanelState["layer_count"] = count - 1
+		}
+	case "layer_selected":
+		d.leftPanelState["selected_layer"] = data["layer_id"]
+	}
+	d.leftPanelState["last_action"] = action
+	d.leftPanelState["last_update"] = time.Now()
+}
+
+func (d *GUIDebugger) updateCenterPanelState(action string, data map[string]interface{}) {
+	switch action {
+	case "view_mode_change":
+		d.centerPanelState["current_view_mode"] = data["new_mode"]
+	case "zoom_change":
+		d.centerPanelState["current_zoom"] = data["zoom"]
+	case "update_original_success":
+		d.centerPanelState["has_original"] = true
+		d.centerPanelState["original_bounds"] = data["image_bounds"]
+	case "update_preview_success":
+		d.centerPanelState["has_preview"] = true
+		d.centerPanelState["preview_bounds"] = data["image_bounds"]
+	case "center_panel_reset":
+		d.centerPanelState["has_original"] = false
+		d.centerPanelState["has_preview"] = false
+	}
+	d.centerPanelState["last_action"] = action
+	d.centerPanelState["last_update"] = time.Now()
+}
+
+func (d *GUIDebugger) updateRightPanelState(action string, data map[string]interface{}) {
+	switch action {
+	case "metrics_updated":
+		d.rightPanelState["psnr"] = data["psnr"]
+		d.rightPanelState["ssim"] = data["ssim"]
+	case "status_updated":
+		d.rightPanelState["status"] = data["status"]
+	}
+	d.rightPanelState["last_action"] = action
+	d.rightPanelState["last_update"] = time.Now()
+}
+
+// Image operation convenience method (for backward compatibility)
+func (d *GUIDebugger) LogImageOperation(operation string, success bool, details map[string]interface{}) {
+	d.LogDisplayOperation(operation, success, details)
 }
 
 // Build-time debugging
@@ -86,59 +260,6 @@ func (d *GUIDebugger) LogConstructorError(component string, expectedArgs, gotArg
 		"got_args", gotArgs)
 }
 
-// Runtime debugging
-func (d *GUIDebugger) LogPanelState(panelName string, state map[string]interface{}) {
-	if !d.enabled {
-		return
-	}
-
-	if d.panelStates[panelName] == nil {
-		d.panelStates[panelName] = make(map[string]interface{})
-	}
-
-	for key, value := range state {
-		d.panelStates[panelName][key] = value
-	}
-
-	d.logger.Debug("GUI Panel State Updated",
-		"panel", panelName,
-		"state", state)
-}
-
-func (d *GUIDebugger) LogImageOperation(operation string, success bool, details map[string]interface{}) {
-	if !d.enabled {
-		return
-	}
-
-	d.imageState[operation] = map[string]interface{}{
-		"success":   success,
-		"timestamp": time.Now(),
-		"details":   details,
-	}
-
-	level := slog.LevelDebug
-	if !success {
-		level = slog.LevelError
-	}
-
-	d.logger.Log(nil, level, "GUI Image Operation",
-		"operation", operation,
-		"success", success,
-		"details", details)
-}
-
-func (d *GUIDebugger) LogUIInteraction(component, action string, data map[string]interface{}) {
-	if !d.enabled {
-		return
-	}
-
-	d.logger.Debug("GUI UI Interaction",
-		"component", component,
-		"action", action,
-		"data", data,
-		"timestamp", time.Now())
-}
-
 func (d *GUIDebugger) LogPerformance(operation string, duration time.Duration) {
 	if !d.enabled {
 		return
@@ -169,7 +290,6 @@ func (d *GUIDebugger) LogRuntimeError(component, error string) {
 		"stack", getStackTrace())
 }
 
-// Current build errors from compilation
 func (d *GUIDebugger) LogCurrentBuildIssues() {
 	if !d.enabled {
 		return
@@ -203,6 +323,8 @@ func (d *GUIDebugger) PrintStatus() {
 
 	fmt.Println("\n=== GUI DEBUG STATUS ===")
 	fmt.Printf("Runtime: %v\n", time.Since(d.startTime))
+	fmt.Printf("UI Interactions: %d\n", len(d.uiInteractions))
+	fmt.Printf("Display Operations: %d\n", len(d.displayOps))
 	fmt.Printf("Build Errors: %d\n", len(d.buildErrors))
 	fmt.Printf("Runtime Errors: %d\n", len(d.runtimeErrors))
 
@@ -229,6 +351,42 @@ func (d *GUIDebugger) PrintStatus() {
 		avg := averageDuration(d.layoutTimes)
 		fmt.Printf("Average Layout Time: %v\n", avg)
 	}
+
+	// Recent UI interactions
+	fmt.Println("\nRecent UI Interactions:")
+	recentCount := 5
+	if len(d.uiInteractions) < recentCount {
+		recentCount = len(d.uiInteractions)
+	}
+
+	for i := len(d.uiInteractions) - recentCount; i < len(d.uiInteractions); i++ {
+		interaction := d.uiInteractions[i]
+		fmt.Printf("  [%s] %s.%s (%v)\n",
+			interaction.Timestamp.Format("15:04:05.000"),
+			interaction.Component,
+			interaction.Action,
+			interaction.Duration)
+	}
+
+	// Recent display operations
+	fmt.Println("\nRecent Display Operations:")
+	recentDisplayCount := 5
+	if len(d.displayOps) < recentDisplayCount {
+		recentDisplayCount = len(d.displayOps)
+	}
+
+	for i := len(d.displayOps) - recentDisplayCount; i < len(d.displayOps); i++ {
+		op := d.displayOps[i]
+		status := "SUCCESS"
+		if !op.Success {
+			status = "FAILED"
+		}
+		fmt.Printf("  [%s] %s - %s (%v)\n",
+			op.Timestamp.Format("15:04:05.000"),
+			op.Operation,
+			status,
+			op.Duration)
+	}
 }
 
 func (d *GUIDebugger) DumpComponentStates() {
@@ -236,23 +394,25 @@ func (d *GUIDebugger) DumpComponentStates() {
 		return
 	}
 
-	fmt.Println("\n=== COMPONENT STATES ===")
+	fmt.Println("\n=== GUI COMPONENT STATES ===")
 
 	fmt.Println("Toolbar State:")
 	for key, value := range d.toolbarState {
 		fmt.Printf("  %s: %v\n", key, value)
 	}
 
-	fmt.Println("Panel States:")
-	for panel, state := range d.panelStates {
-		fmt.Printf("  %s:\n", panel)
-		for key, value := range state {
-			fmt.Printf("    %s: %v\n", key, value)
-		}
+	fmt.Println("Left Panel State:")
+	for key, value := range d.leftPanelState {
+		fmt.Printf("  %s: %v\n", key, value)
 	}
 
-	fmt.Println("Image State:")
-	for key, value := range d.imageState {
+	fmt.Println("Center Panel State:")
+	for key, value := range d.centerPanelState {
+		fmt.Printf("  %s: %v\n", key, value)
+	}
+
+	fmt.Println("Right Panel State:")
+	for key, value := range d.rightPanelState {
 		fmt.Printf("  %s: %v\n", key, value)
 	}
 }
@@ -296,22 +456,11 @@ func (d *GUIDebugger) DebugImageLoad(filepath string, success bool, width, heigh
 		return
 	}
 
-	d.LogImageOperation("load", success, map[string]interface{}{
+	d.LogDisplayOperation("load", success, map[string]interface{}{
 		"filepath": filepath,
 		"width":    width,
 		"height":   height,
 		"channels": channels,
-	})
-}
-
-func (d *GUIDebugger) DebugLayerOperation(operation, layerID, algorithm string) {
-	if !d.enabled {
-		return
-	}
-
-	d.LogUIInteraction("LayerManager", operation, map[string]interface{}{
-		"layer_id":  layerID,
-		"algorithm": algorithm,
 	})
 }
 
