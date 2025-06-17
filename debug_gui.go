@@ -100,6 +100,14 @@ func (d *DebugGUI) LogTransformationApplication(transformationName string, succe
 	}
 }
 
+// Enhanced zoom logging
+func (d *DebugGUI) LogZoomOperation(operation string, oldZoom, newZoom float64) {
+	if !d.enabled {
+		return
+	}
+	log.Printf("[GUI DEBUG] Zoom %s: %.1f%% -> %.1f%%", operation, oldZoom*100, newZoom*100)
+}
+
 func (d *DebugGUI) LogZoomChange(oldZoom, newZoom float64) {
 	if !d.enabled {
 		return
@@ -196,6 +204,54 @@ func (d *DebugGUI) LogUIStructure(description string) {
 		return
 	}
 	log.Printf("[GUI DEBUG] UI Structure: %s", description)
+}
+
+// Enhanced canvas and image logging
+func (d *DebugGUI) LogImageCanvasResize(canvasName string, width, height float32) {
+	if !d.enabled {
+		return
+	}
+	log.Printf("[GUI DEBUG] Canvas '%s' resized to %.0fx%.0f", canvasName, width, height)
+}
+
+func (d *DebugGUI) LogImageCanvasProperties(canvasName string, canvasWidth, canvasHeight float32, imageWidth, imageHeight int) {
+	if !d.enabled {
+		return
+	}
+	log.Printf("[GUI DEBUG] Canvas '%s': canvas=%.0fx%.0f, image=%dx%d", canvasName, canvasWidth, canvasHeight, imageWidth, imageHeight)
+}
+
+// Enhanced save operation logging
+func (d *DebugGUI) LogSaveOperation(filename, extension string, hasProcessedImage bool) {
+	if !d.enabled {
+		return
+	}
+	log.Printf("[GUI DEBUG] Save operation: file='%s', ext='%s', hasImage=%t", filename, extension, hasProcessedImage)
+}
+
+func (d *DebugGUI) LogSaveResult(filename string, success bool, errorMsg string) {
+	if !d.enabled {
+		return
+	}
+	if success {
+		log.Printf("[GUI DEBUG] Save successful: %s", filename)
+	} else {
+		log.Printf("[GUI DEBUG] Save failed: %s - %s", filename, errorMsg)
+	}
+}
+
+func (d *DebugGUI) LogFileExtensionCheck(filename, detectedExt string, isValid bool) {
+	if !d.enabled {
+		return
+	}
+	log.Printf("[GUI DEBUG] File extension check: '%s' -> '%s', valid=%t", filename, detectedExt, isValid)
+}
+
+func (d *DebugGUI) LogUIRefreshTrigger(component string, reason string) {
+	if !d.enabled {
+		return
+	}
+	log.Printf("[GUI DEBUG] UI refresh triggered: %s (%s)", component, reason)
 }
 
 func (d *DebugGUI) IsEnabled() bool {

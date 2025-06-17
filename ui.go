@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"image"
+	"path/filepath"
 	"strconv"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -30,20 +32,14 @@ type ImageRestorationUI struct {
 	psnrLabel                    *widget.Label
 	ssimLabel                    *widget.Label
 	debugGUI                     *DebugGUI
-	debugPipeline                *DebugPipeline
-	debugImage                   *DebugImage
-	debugFyne                    *DebugFyne
 }
 
 func NewImageRestorationUI(window fyne.Window) *ImageRestorationUI {
 	ui := &ImageRestorationUI{
-		window:        window,
-		pipeline:      NewImagePipeline(),
-		zoomLevel:     1.0,
-		debugGUI:      NewDebugGUI(),
-		debugPipeline: NewDebugPipeline(),
-		debugImage:    NewDebugImage(),
-		debugFyne:     NewDebugFyne(),
+		window:    window,
+		pipeline:  NewImagePipeline(),
+		zoomLevel: 1.0,
+		debugGUI:  NewDebugGUI(),
 	}
 	return ui
 }
@@ -282,17 +278,49 @@ func (ui *ImageRestorationUI) saveImage() {
 
 	dialog.ShowFileSave(func(writer fyne.URIWriteCloser, err error) {
 		if err != nil || writer == nil {
+			ui.debugGUI.LogError(err)
 			return
 		}
 		defer writer.Close()
 
-		ui.debugGUI.LogFileOperation("save", writer.URI().Name())
-		success := gocv.IMWrite(writer.URI().Path(), ui.pipeline.GetProcessedImage())
+		filename := writer.URI().Name()
+		filePath := writer.URI().Path()
+		ui.debugGUI.LogFileOperation("save", filename)
+
+		// Check file extension and add .png if missing
+		ext := strings.ToLower(filepath.Ext(filename))
+		ui.debugGUI.LogFileExtensionCheck(filename, ext, ext != "")
+
+		if ext == "" {
+			// No extension provided, add .png
+			filePath = filePath + ".png"
+			filename = filename + ".png"
+			ui.debugGUI.Log("Added .png extension to filename")
+		} else if ext != ".png" && ext != ".jpg" && ext != ".jpeg" && ext != ".tiff" && ext != ".tif" {
+			// Unsupported extension, force to .png
+			ui.debugGUI.Log(fmt.Sprintf("Unsupported extension %s, forcing to .png", ext))
+			filePath = strings.TrimSuffix(filePath, ext) + ".png"
+			filename = strings.TrimSuffix(filename, ext) + ".png"
+		}
+
+		processedImage := ui.pipeline.GetProcessedImage()
+		hasImage := !processedImage.Empty()
+		ui.debugGUI.LogSaveOperation(filename, filepath.Ext(filename), hasImage)
+
+		if !hasImage {
+			ui.debugGUI.LogSaveResult(filename, false, "no processed image available")
+			dialog.ShowError(fmt.Errorf("no processed image available"), ui.window)
+			return
+		}
+
+		success := gocv.IMWrite(filePath, processedImage)
 		if !success {
-			err := fmt.Errorf("failed to save image")
+			err := fmt.Errorf("failed to write image to %s", filePath)
+			ui.debugGUI.LogSaveResult(filename, false, err.Error())
 			ui.debugGUI.LogError(err)
 			dialog.ShowError(err, ui.window)
 		} else {
+			ui.debugGUI.LogSaveResult(filename, true, "")
 			ui.debugGUI.Log("Image saved successfully")
 		}
 	}, ui.window)
@@ -311,19 +339,23 @@ func (ui *ImageRestorationUI) onZoomChanged(text string) {
 	if value, err := strconv.ParseFloat(text, 64); err == nil && value > 0 {
 		oldZoom := ui.zoomLevel
 		ui.zoomLevel = value / 100.0
-		ui.debugGUI.LogZoomChange(oldZoom, ui.zoomLevel)
+		ui.debugGUI.LogZoomOperation("manual entry", oldZoom, ui.zoomLevel)
 		ui.updateImageDisplay()
 	}
 }
 
 func (ui *ImageRestorationUI) zoomIn() {
+	oldZoom := ui.zoomLevel
 	ui.zoomLevel *= 1.2
+	ui.debugGUI.LogZoomOperation("zoom in", oldZoom, ui.zoomLevel)
 	ui.zoomEntry.SetText(fmt.Sprintf("%.0f", ui.zoomLevel*100))
 	ui.updateImageDisplay()
 }
 
 func (ui *ImageRestorationUI) zoomOut() {
+	oldZoom := ui.zoomLevel
 	ui.zoomLevel /= 1.2
+	ui.debugGUI.LogZoomOperation("zoom out", oldZoom, ui.zoomLevel)
 	ui.zoomEntry.SetText(fmt.Sprintf("%.0f", ui.zoomLevel*100))
 	ui.updateImageDisplay()
 }
@@ -391,13 +423,18 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 
 		ui.debugGUI.LogUIEvent("updateImageDisplay: setting original image")
 		ui.originalImage.Image = originalImg
-		// Set a reasonable size for the image canvas to make it fit better
-		ui.originalImage.Resize(fyne.NewSize(600, 450))
+
+		// Apply zoom by resizing the canvas
+		baseWidth := float32(600)
+		baseHeight := float32(450)
+		zoomedWidth := baseWidth * float32(ui.zoomLevel)
+		zoomedHeight := baseHeight * float32(ui.zoomLevel)
+
+		ui.originalImage.Resize(fyne.NewSize(zoomedWidth, zoomedHeight))
+		ui.debugGUI.LogImageCanvasResize("originalImage", zoomedWidth, zoomedHeight)
+		ui.debugGUI.LogImageCanvasProperties("originalImage", zoomedWidth, zoomedHeight, bounds.Dx(), bounds.Dy())
 		ui.originalImage.Refresh()
 		ui.debugGUI.LogCanvasRefresh("originalImage")
-
-		// Debug canvas properties
-		ui.debugFyne.LogCanvasImageProperties("originalImage", ui.originalImage)
 
 		ui.debugGUI.LogUIEvent("updateImageDisplay: converting processed image")
 		// Convert processed image
@@ -419,13 +456,13 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 
 		ui.debugGUI.LogUIEvent("updateImageDisplay: setting processed image")
 		ui.previewImage.Image = processedImg
-		// Set a reasonable size for the image canvas to make it fit better
-		ui.previewImage.Resize(fyne.NewSize(600, 450))
+
+		// Apply zoom to processed image as well
+		ui.previewImage.Resize(fyne.NewSize(zoomedWidth, zoomedHeight))
+		ui.debugGUI.LogImageCanvasResize("previewImage", zoomedWidth, zoomedHeight)
+		ui.debugGUI.LogImageCanvasProperties("previewImage", zoomedWidth, zoomedHeight, bounds.Dx(), bounds.Dy())
 		ui.previewImage.Refresh()
 		ui.debugGUI.LogCanvasRefresh("previewImage")
-
-		// Debug canvas properties
-		ui.debugFyne.LogCanvasImageProperties("previewImage", ui.previewImage)
 
 		// Force container refresh
 		ui.window.Content().Refresh()
@@ -452,8 +489,6 @@ func (ui *ImageRestorationUI) updateQualityMetrics() {
 		// Calculate PSNR and SSIM
 		psnr := ui.pipeline.CalculatePSNR()
 		ssim := ui.pipeline.CalculateSSIM()
-
-		ui.debugImage.LogQualityMetrics(psnr, ssim)
 
 		ui.psnrLabel.SetText(fmt.Sprintf("PSNR: %.2f dB", psnr))
 		ui.psnrProgress.SetValue(psnr / 50.0) // Normalize to 0-1 range

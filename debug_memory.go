@@ -2,8 +2,6 @@ package main
 
 import (
 	"log"
-
-	"gocv.io/x/gocv"
 )
 
 type DebugMemory struct {
@@ -14,32 +12,33 @@ func NewDebugMemory() *DebugMemory {
 	return &DebugMemory{enabled: true}
 }
 
-// SafeMatEmpty - Check pointer before calling Empty() to prevent segfault
-func (d *DebugMemory) SafeMatEmpty(name string, mat gocv.Mat) bool {
-	// Get the raw pointer as uintptr
-	matPtr := mat.Ptr()
-
-	// Check if pointer is zero (NULL)
-	if matPtr == uintptr(0) {
-		if d.enabled {
-			log.Printf("[MEMORY DEBUG] Mat '%s' has NULL pointer - returning true (empty)", name)
-		}
-		return true
-	}
-
-	// Safe to call Empty() - pointer is valid
-	if d.enabled {
-		log.Printf("[MEMORY DEBUG] Mat '%s' has valid pointer - calling Empty()", name)
-	}
-	return mat.Empty()
-}
-
 func (d *DebugMemory) Log(message string) {
 	if d.enabled {
 		log.Println("[MEMORY DEBUG]", message)
 	}
 }
 
+func (d *DebugMemory) LogMatCreation(name string) {
+	if d.enabled {
+		log.Printf("[MEMORY DEBUG] Mat '%s' created", name)
+	}
+}
+
+func (d *DebugMemory) LogMatCleanup(name string) {
+	if d.enabled {
+		log.Printf("[MEMORY DEBUG] Mat '%s' cleaned up", name)
+	}
+}
+
 func (d *DebugMemory) IsEnabled() bool {
 	return d.enabled
+}
+
+func (d *DebugMemory) Enable() {
+	d.enabled = true
+	d.Log("Memory debugging enabled")
+}
+
+func (d *DebugMemory) Disable() {
+	d.enabled = false
 }

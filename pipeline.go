@@ -13,6 +13,7 @@ type ImagePipeline struct {
 	transformations []Transformation
 	debugPipeline   *DebugPipeline
 	debugImage      *DebugImage
+	debugMemory     *DebugMemory
 	initialized     bool
 }
 
@@ -21,11 +22,14 @@ func NewImagePipeline() *ImagePipeline {
 		transformations: make([]Transformation, 0),
 		debugPipeline:   NewDebugPipeline(),
 		debugImage:      NewDebugImage(),
+		debugMemory:     NewDebugMemory(),
 		initialized:     false,
 	}
 	// Initialize with empty Mats to prevent segfaults
 	pipeline.originalImage = gocv.NewMat()
 	pipeline.processedImage = gocv.NewMat()
+	pipeline.debugMemory.LogMatCreation("originalImage")
+	pipeline.debugMemory.LogMatCreation("processedImage")
 	return pipeline
 }
 
@@ -36,23 +40,25 @@ func (p *ImagePipeline) SetOriginalImage(img gocv.Mat) {
 	if p.initialized && !p.originalImage.Empty() {
 		p.debugPipeline.LogSetOriginalStep("closing existing original image")
 		p.originalImage.Close()
+		p.debugMemory.LogMatCleanup("originalImage")
 	}
 	if p.initialized && !p.processedImage.Empty() {
 		p.debugPipeline.LogSetOriginalStep("closing existing processed image")
 		p.processedImage.Close()
+		p.debugMemory.LogMatCleanup("processedImage")
 	}
 
 	// Clear existing transformations when loading a new image
 	p.debugPipeline.LogSetOriginalStep("clearing existing transformations")
-	p.ClearTransformations()
+	p.transformations = make([]Transformation, 0) // Clear without calling processImage
 
 	// Set up new image
 	p.originalImage = img.Clone()
-	p.processedImage = gocv.NewMat() // Reset processed image
+	p.processedImage = p.originalImage.Clone() // Initialize with original, not empty Mat
 	p.initialized = true
 	p.debugPipeline.LogImageStats("original", p.originalImage)
 
-	// Now process the image with no transformations
+	// Now process the image with no transformations (will just keep original)
 	p.processImage()
 }
 
@@ -106,10 +112,11 @@ func (p *ImagePipeline) processImage() {
 	}()
 
 	// Start with original image
-	p.debugPipeline.LogProcessStep("checking processedImage.Empty()")
+	p.debugPipeline.LogProcessStep("checking if processedImage needs reset")
 	if p.initialized && !p.processedImage.Empty() {
 		p.debugPipeline.LogProcessStep("closing existing processedImage")
 		p.processedImage.Close()
+		p.debugMemory.LogMatCleanup("processedImage")
 	}
 	p.debugPipeline.LogProcessStep("cloning original image")
 	p.processedImage = p.originalImage.Clone()
@@ -257,9 +264,11 @@ func (p *ImagePipeline) Close() {
 	if p.initialized {
 		if !p.originalImage.Empty() {
 			p.originalImage.Close()
+			p.debugMemory.LogMatCleanup("originalImage final")
 		}
 		if !p.processedImage.Empty() {
 			p.processedImage.Close()
+			p.debugMemory.LogMatCleanup("processedImage final")
 		}
 	}
 }
