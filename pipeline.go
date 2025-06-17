@@ -13,22 +13,46 @@ type ImagePipeline struct {
 	transformations []Transformation
 	debugPipeline   *DebugPipeline
 	debugImage      *DebugImage
+	initialized     bool
 }
 
 func NewImagePipeline() *ImagePipeline {
-	return &ImagePipeline{
+	pipeline := &ImagePipeline{
 		transformations: make([]Transformation, 0),
 		debugPipeline:   NewDebugPipeline(),
 		debugImage:      NewDebugImage(),
+		initialized:     false,
 	}
+	// Initialize with empty Mats to prevent segfaults
+	pipeline.originalImage = gocv.NewMat()
+	pipeline.processedImage = gocv.NewMat()
+	return pipeline
 }
 
 func (p *ImagePipeline) SetOriginalImage(img gocv.Mat) {
-	if !p.originalImage.Empty() {
+	p.debugPipeline.LogSetOriginalStart()
+
+	// Close existing images first
+	if p.initialized && !p.originalImage.Empty() {
+		p.debugPipeline.LogSetOriginalStep("closing existing original image")
 		p.originalImage.Close()
 	}
+	if p.initialized && !p.processedImage.Empty() {
+		p.debugPipeline.LogSetOriginalStep("closing existing processed image")
+		p.processedImage.Close()
+	}
+
+	// Clear existing transformations when loading a new image
+	p.debugPipeline.LogSetOriginalStep("clearing existing transformations")
+	p.ClearTransformations()
+
+	// Set up new image
 	p.originalImage = img.Clone()
-	p.debugImage.LogMatInfo("original", p.originalImage)
+	p.processedImage = gocv.NewMat() // Reset processed image
+	p.initialized = true
+	p.debugPipeline.LogImageStats("original", p.originalImage)
+
+	// Now process the image with no transformations
 	p.processImage()
 }
 
@@ -50,31 +74,48 @@ func (p *ImagePipeline) ClearTransformations() {
 }
 
 func (p *ImagePipeline) GetProcessedImage() gocv.Mat {
+	if !p.initialized {
+		p.debugPipeline.LogGetProcessedImage("not initialized, returning empty Mat")
+		return gocv.NewMat()
+	}
 	if p.processedImage.Empty() {
+		p.debugPipeline.LogGetProcessedImage("processed image empty, returning original")
 		return p.originalImage
 	}
 	return p.processedImage
 }
 
 func (p *ImagePipeline) processImage() {
+	p.debugPipeline.LogProcessStart()
+	if !p.initialized {
+		p.debugPipeline.LogProcessEarlyReturn("not initialized")
+		return
+	}
 	if p.originalImage.Empty() {
+		p.debugPipeline.LogProcessEarlyReturn("original image is empty")
 		return
 	}
 
 	p.debugPipeline.StartTimer("processImage")
 	defer func() {
 		p.debugPipeline.EndTimer("processImage")
-		p.debugPipeline.LogPipelineStats(p.originalImage.Size(), p.processedImage.Size(), len(p.transformations))
+		if p.initialized && !p.processedImage.Empty() {
+			p.debugPipeline.LogPipelineStats(p.originalImage.Size(), p.processedImage.Size(), len(p.transformations))
+		}
 		p.debugPipeline.LogMemoryUsage()
 	}()
 
 	// Start with original image
-	if !p.processedImage.Empty() {
+	p.debugPipeline.LogProcessStep("checking processedImage.Empty()")
+	if p.initialized && !p.processedImage.Empty() {
+		p.debugPipeline.LogProcessStep("closing existing processedImage")
 		p.processedImage.Close()
 	}
+	p.debugPipeline.LogProcessStep("cloning original image")
 	p.processedImage = p.originalImage.Clone()
 
 	// Apply all transformations sequentially
+	p.debugPipeline.LogTransformationCount(len(p.transformations))
 	for i, transformation := range p.transformations {
 		p.debugPipeline.StartTimer(fmt.Sprintf("transformation_%d_%s", i, transformation.Name()))
 
@@ -88,10 +129,11 @@ func (p *ImagePipeline) processImage() {
 		p.processedImage = result
 		before.Close()
 	}
+	p.debugPipeline.LogProcessComplete()
 }
 
 func (p *ImagePipeline) CalculatePSNR() float64 {
-	if p.originalImage.Empty() || p.processedImage.Empty() {
+	if !p.initialized || p.originalImage.Empty() || p.processedImage.Empty() {
 		return 0.0
 	}
 
@@ -107,7 +149,7 @@ func (p *ImagePipeline) CalculatePSNR() float64 {
 		}
 	}
 
-	// Calculate MSE using proper GoCV API
+	// Calculate MSE
 	diff := gocv.NewMat()
 	defer diff.Close()
 	gocv.Subtract(orig, proc, &diff)
@@ -116,7 +158,6 @@ func (p *ImagePipeline) CalculatePSNR() float64 {
 	defer diffSq.Close()
 	gocv.Multiply(diff, diff, &diffSq)
 
-	// Use Mat.Sum() method (not standalone function)
 	sumResult := diffSq.Sum()
 	mse := sumResult.Val1 / float64(orig.Total())
 
@@ -129,7 +170,7 @@ func (p *ImagePipeline) CalculatePSNR() float64 {
 }
 
 func (p *ImagePipeline) CalculateSSIM() float64 {
-	if p.originalImage.Empty() || p.processedImage.Empty() {
+	if !p.initialized || p.originalImage.Empty() || p.processedImage.Empty() {
 		return 0.0
 	}
 
@@ -153,11 +194,11 @@ func (p *ImagePipeline) CalculateSSIM() float64 {
 	orig.ConvertTo(&origF, gocv.MatTypeCV32F)
 	proc.ConvertTo(&procF, gocv.MatTypeCV32F)
 
-	// Calculate means using proper GoCV API - Mat.Mean() method
+	// Calculate means
 	origMean := origF.Mean()
 	procMean := procF.Mean()
 
-	// Calculate standard deviations and covariance using proper GoCV API
+	// Calculate standard deviations and covariance
 	origVar := gocv.NewMat()
 	defer origVar.Close()
 	procVar := gocv.NewMat()
@@ -183,7 +224,7 @@ func (p *ImagePipeline) CalculateSSIM() float64 {
 	gocv.Multiply(procSub, procSub, &procVar)
 	gocv.Multiply(origSub, procSub, &covar)
 
-	// Use Mat.Sum() method to get variance and covariance
+	// Calculate variance and covariance
 	origVarSum := origVar.Sum()
 	procVarSum := procVar.Sum()
 	covarSum := covar.Sum()
@@ -213,10 +254,12 @@ func (p *ImagePipeline) CalculateSSIM() float64 {
 }
 
 func (p *ImagePipeline) Close() {
-	if !p.originalImage.Empty() {
-		p.originalImage.Close()
-	}
-	if !p.processedImage.Empty() {
-		p.processedImage.Close()
+	if p.initialized {
+		if !p.originalImage.Empty() {
+			p.originalImage.Close()
+		}
+		if !p.processedImage.Empty() {
+			p.processedImage.Close()
+		}
 	}
 }

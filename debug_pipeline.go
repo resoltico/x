@@ -204,6 +204,54 @@ func (d *DebugPipeline) LogMatrixProperties(name string, mat gocv.Mat) {
 	d.Log(fmt.Sprintf("  Continuous: %t", mat.IsContinuous()))
 }
 
+func (d *DebugPipeline) LogProcessStart() {
+	if d.enabled {
+		d.Log("processImage called")
+	}
+}
+
+func (d *DebugPipeline) LogProcessEarlyReturn(reason string) {
+	if d.enabled {
+		d.Log(fmt.Sprintf("processImage: %s, returning", reason))
+	}
+}
+
+func (d *DebugPipeline) LogProcessStep(step string) {
+	if d.enabled {
+		d.Log(fmt.Sprintf("processImage: %s", step))
+	}
+}
+
+func (d *DebugPipeline) LogProcessComplete() {
+	if d.enabled {
+		d.Log("processImage: completed successfully")
+	}
+}
+
+func (d *DebugPipeline) LogTransformationCount(count int) {
+	if d.enabled {
+		d.Log(fmt.Sprintf("processImage: applying %d transformations", count))
+	}
+}
+
+func (d *DebugPipeline) LogSetOriginalStart() {
+	if d.enabled {
+		d.Log("SetOriginalImage called")
+	}
+}
+
+func (d *DebugPipeline) LogSetOriginalStep(step string) {
+	if d.enabled {
+		d.Log(fmt.Sprintf("SetOriginalImage: %s", step))
+	}
+}
+
+func (d *DebugPipeline) LogGetProcessedImage(message string) {
+	if d.enabled {
+		d.Log(fmt.Sprintf("GetProcessedImage: %s", message))
+	}
+}
+
 func (d *DebugPipeline) IsEnabled() bool {
 	return d.enabled
 }

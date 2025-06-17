@@ -75,6 +75,31 @@ func (d *DebugGUI) LogListSelection(listName string, itemID int, itemName string
 	log.Printf("[GUI DEBUG] List '%s' selection: ID=%d, Name='%s'", listName, itemID, itemName)
 }
 
+func (d *DebugGUI) LogListUnselect(listName string) {
+	if !d.enabled {
+		return
+	}
+	log.Printf("[GUI DEBUG] List '%s' unselected/cleared", listName)
+}
+
+func (d *DebugGUI) LogListInteraction(listName, action string, details interface{}) {
+	if !d.enabled {
+		return
+	}
+	log.Printf("[GUI DEBUG] List '%s' %s: %v", listName, action, details)
+}
+
+func (d *DebugGUI) LogTransformationApplication(transformationName string, success bool) {
+	if !d.enabled {
+		return
+	}
+	if success {
+		log.Printf("[GUI DEBUG] Transformation '%s' applied successfully", transformationName)
+	} else {
+		log.Printf("[GUI DEBUG] Transformation '%s' application failed", transformationName)
+	}
+}
+
 func (d *DebugGUI) LogZoomChange(oldZoom, newZoom float64) {
 	if !d.enabled {
 		return
@@ -125,6 +150,52 @@ func (d *DebugGUI) LogParameterUpdate(transformationName, paramName string, oldV
 	}
 	log.Printf("[GUI DEBUG] Parameter updated in %s: %s changed from %v to %v",
 		transformationName, paramName, oldValue, newValue)
+}
+
+func (d *DebugGUI) LogImageDisplay(imageName string, width, height int, hasImage bool) {
+	if !d.enabled {
+		return
+	}
+	log.Printf("[GUI DEBUG] Image display '%s': %dx%d, hasImage=%t", imageName, width, height, hasImage)
+}
+
+func (d *DebugGUI) LogCanvasRefresh(canvasName string) {
+	if !d.enabled {
+		return
+	}
+	log.Printf("[GUI DEBUG] Canvas refreshed: %s", canvasName)
+}
+
+func (d *DebugGUI) LogImageConversion(imageName string, success bool, errorMsg string) {
+	if !d.enabled {
+		return
+	}
+	if success {
+		log.Printf("[GUI DEBUG] Image conversion successful: %s", imageName)
+	} else {
+		log.Printf("[GUI DEBUG] Image conversion failed: %s - %s", imageName, errorMsg)
+	}
+}
+
+func (d *DebugGUI) LogContainerRefresh(containerName string) {
+	if !d.enabled {
+		return
+	}
+	log.Printf("[GUI DEBUG] Container refreshed: %s", containerName)
+}
+
+func (d *DebugGUI) LogLayoutIssue(componentName string, hasSize bool, width, height float32) {
+	if !d.enabled {
+		return
+	}
+	log.Printf("[GUI DEBUG] Layout Issue - %s: hasSize=%t, size=%.0fx%.0f", componentName, hasSize, width, height)
+}
+
+func (d *DebugGUI) LogUIStructure(description string) {
+	if !d.enabled {
+		return
+	}
+	log.Printf("[GUI DEBUG] UI Structure: %s", description)
 }
 
 func (d *DebugGUI) IsEnabled() bool {

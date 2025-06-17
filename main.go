@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	myApp := app.New()
+	myApp := app.NewWithID("com.imagerestoration.suite")
 	myWindow := myApp.NewWindow("Image Restoration Suite")
 	myWindow.Resize(fyne.NewSize(1600, 900))
 

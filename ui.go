@@ -15,22 +15,24 @@ import (
 )
 
 type ImageRestorationUI struct {
-	window              fyne.Window
-	pipeline            *ImagePipeline
-	originalImage       *canvas.Image
-	previewImage        *canvas.Image
-	transformationsList *widget.List
-	parametersContainer *fyne.Container
-	zoomEntry           *widget.Entry
-	zoomLevel           float64
-	imageInfoLabel      *widget.RichText
-	psnrProgress        *widget.ProgressBar
-	ssimProgress        *widget.ProgressBar
-	psnrLabel           *widget.Label
-	ssimLabel           *widget.Label
-	debugGUI            *DebugGUI
-	debugPipeline       *DebugPipeline
-	debugImage          *DebugImage
+	window                       fyne.Window
+	pipeline                     *ImagePipeline
+	originalImage                *canvas.Image
+	previewImage                 *canvas.Image
+	transformationsList          *widget.List
+	availableTransformationsList *widget.List
+	parametersContainer          *fyne.Container
+	zoomEntry                    *widget.Entry
+	zoomLevel                    float64
+	imageInfoLabel               *widget.RichText
+	psnrProgress                 *widget.ProgressBar
+	ssimProgress                 *widget.ProgressBar
+	psnrLabel                    *widget.Label
+	ssimLabel                    *widget.Label
+	debugGUI                     *DebugGUI
+	debugPipeline                *DebugPipeline
+	debugImage                   *DebugImage
+	debugFyne                    *DebugFyne
 }
 
 func NewImageRestorationUI(window fyne.Window) *ImageRestorationUI {
@@ -41,6 +43,7 @@ func NewImageRestorationUI(window fyne.Window) *ImageRestorationUI {
 		debugGUI:      NewDebugGUI(),
 		debugPipeline: NewDebugPipeline(),
 		debugImage:    NewDebugImage(),
+		debugFyne:     NewDebugFyne(),
 	}
 	return ui
 }
@@ -113,7 +116,7 @@ func (ui *ImageRestorationUI) createLeftPanel() fyne.CanvasObject {
 	// Transformations list
 	transformations := []string{"2D Otsu"}
 
-	transformationsList := widget.NewList(
+	ui.availableTransformationsList = widget.NewList(
 		func() int { return len(transformations) },
 		func() fyne.CanvasObject {
 			return widget.NewLabel("Transformation")
@@ -123,10 +126,10 @@ func (ui *ImageRestorationUI) createLeftPanel() fyne.CanvasObject {
 		},
 	)
 
-	transformationsList.OnSelected = ui.onTransformationSelected
+	ui.availableTransformationsList.OnSelected = ui.onTransformationSelected
 
 	transformationsCard := container.NewBorder(
-		widget.NewCard("", "TRANSFORMATIONS", transformationsList),
+		widget.NewCard("", "TRANSFORMATIONS", ui.availableTransformationsList),
 		nil, nil, nil,
 	)
 
@@ -149,13 +152,13 @@ func (ui *ImageRestorationUI) createCenterPanel() fyne.CanvasObject {
 	originalContainer := container.NewBorder(
 		widget.NewCard("", "Original", nil),
 		nil, nil, nil,
-		container.NewCenter(ui.originalImage),
+		container.NewScroll(ui.originalImage),
 	)
 
 	previewContainer := container.NewBorder(
 		widget.NewCard("", "Preview", nil),
 		nil, nil, nil,
-		container.NewCenter(ui.previewImage),
+		container.NewScroll(ui.previewImage),
 	)
 
 	imagesSplit := container.NewHSplit(originalContainer, previewContainer)
@@ -262,7 +265,6 @@ func (ui *ImageRestorationUI) openImage() {
 
 		size := mat.Size()
 		ui.debugGUI.LogImageInfo(size[1], size[0], mat.Channels())
-		ui.debugPipeline.LogImageStats("original", mat)
 		ui.pipeline.SetOriginalImage(mat)
 		ui.updateUI()
 		ui.updateWindowTitle(reader.URI().Name())
@@ -272,7 +274,7 @@ func (ui *ImageRestorationUI) openImage() {
 
 func (ui *ImageRestorationUI) saveImage() {
 	ui.debugGUI.LogButtonClick("SAVE IMAGE")
-	if ui.pipeline.originalImage.Empty() {
+	if !ui.pipeline.initialized || ui.pipeline.originalImage.Empty() {
 		ui.debugGUI.Log("Save attempt with no image loaded")
 		dialog.ShowInformation("No Image", "Please load an image first", ui.window)
 		return
@@ -333,7 +335,12 @@ func (ui *ImageRestorationUI) onTransformationSelected(id widget.ListItemID) {
 		transformation := NewTwoDOtsu()
 		ui.pipeline.AddTransformation(transformation)
 		ui.debugGUI.LogTransformation(transformation.Name(), transformation.GetParameters())
+		ui.debugGUI.LogTransformationApplication(transformation.Name(), true)
 		ui.updateUI()
+
+		// Clear the selection so it can be clicked again
+		ui.availableTransformationsList.UnselectAll()
+		ui.debugGUI.LogListUnselect("available transformations")
 	}
 }
 
@@ -367,22 +374,71 @@ func (ui *ImageRestorationUI) updateUI() {
 }
 
 func (ui *ImageRestorationUI) updateImageDisplay() {
-	if !ui.pipeline.originalImage.Empty() {
+	ui.debugGUI.LogUIEvent("updateImageDisplay called")
+	if ui.pipeline.initialized && !ui.pipeline.originalImage.Empty() {
+		ui.debugGUI.LogUIEvent("updateImageDisplay: converting original image")
 		// Convert original image
-		originalImg, _ := ui.pipeline.originalImage.ToImage()
-		ui.originalImage.Image = originalImg
-		ui.originalImage.Refresh()
+		originalImg, err := ui.pipeline.originalImage.ToImage()
+		if err != nil {
+			ui.debugGUI.LogImageConversion("original", false, err.Error())
+			return
+		}
+		ui.debugGUI.LogImageConversion("original", true, "")
 
+		// Log image properties
+		bounds := originalImg.Bounds()
+		ui.debugGUI.LogImageDisplay("original", bounds.Dx(), bounds.Dy(), originalImg != nil)
+
+		ui.debugGUI.LogUIEvent("updateImageDisplay: setting original image")
+		ui.originalImage.Image = originalImg
+		// Set a reasonable size for the image canvas to make it fit better
+		ui.originalImage.Resize(fyne.NewSize(600, 450))
+		ui.originalImage.Refresh()
+		ui.debugGUI.LogCanvasRefresh("originalImage")
+
+		// Debug canvas properties
+		ui.debugFyne.LogCanvasImageProperties("originalImage", ui.originalImage)
+
+		ui.debugGUI.LogUIEvent("updateImageDisplay: converting processed image")
 		// Convert processed image
 		processedMat := ui.pipeline.GetProcessedImage()
-		processedImg, _ := processedMat.ToImage()
+		if processedMat.Empty() {
+			ui.debugGUI.LogUIEvent("updateImageDisplay: processed image is empty")
+			return
+		}
+		processedImg, err := processedMat.ToImage()
+		if err != nil {
+			ui.debugGUI.LogImageConversion("processed", false, err.Error())
+			return
+		}
+		ui.debugGUI.LogImageConversion("processed", true, "")
+
+		// Log processed image properties
+		bounds = processedImg.Bounds()
+		ui.debugGUI.LogImageDisplay("processed", bounds.Dx(), bounds.Dy(), processedImg != nil)
+
+		ui.debugGUI.LogUIEvent("updateImageDisplay: setting processed image")
 		ui.previewImage.Image = processedImg
+		// Set a reasonable size for the image canvas to make it fit better
+		ui.previewImage.Resize(fyne.NewSize(600, 450))
 		ui.previewImage.Refresh()
+		ui.debugGUI.LogCanvasRefresh("previewImage")
+
+		// Debug canvas properties
+		ui.debugFyne.LogCanvasImageProperties("previewImage", ui.previewImage)
+
+		// Force container refresh
+		ui.window.Content().Refresh()
+		ui.debugGUI.LogContainerRefresh("main window content")
+
+		ui.debugGUI.LogUIEvent("updateImageDisplay: completed successfully")
+	} else {
+		ui.debugGUI.LogUIEvent("updateImageDisplay: pipeline not initialized or original image empty")
 	}
 }
 
 func (ui *ImageRestorationUI) updateImageInfo() {
-	if !ui.pipeline.originalImage.Empty() {
+	if ui.pipeline.initialized && !ui.pipeline.originalImage.Empty() {
 		size := ui.pipeline.originalImage.Size()
 		channels := ui.pipeline.originalImage.Channels()
 
