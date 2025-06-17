@@ -1,5 +1,5 @@
 // internal/gui/toolbar.go
-// Perfect UI Top Toolbar (50px height)
+// Perfect UI Top Toolbar (50px height) with exact specification
 package gui
 
 import (
@@ -25,21 +25,22 @@ type Toolbar struct {
 
 	container *fyne.Container
 
-	// File operations
+	// File operations (left side)
 	openBtn  *widget.Button
 	saveBtn  *widget.Button
 	resetBtn *widget.Button
 
-	// Zoom controls
-	zoomSlider *widget.Slider
-	zoomLabel  *widget.Label
-	zoomIn     *widget.Button
-	zoomOut    *widget.Button
+	// Zoom controls (center)
+	zoomSlider     *widget.Slider
+	zoomLabel      *widget.Label
+	zoomInBtn      *widget.Button
+	zoomOutBtn     *widget.Button
+	zoomPercentage *widget.Label
 
-	// View toggles
-	singleBtn  *widget.Button
-	splitBtn   *widget.Button
-	overlayBtn *widget.Button
+	// View toggles (right side)
+	singleViewBtn  *widget.Button
+	splitViewBtn   *widget.Button
+	overlayViewBtn *widget.Button
 
 	currentZoom float64
 	currentView string
@@ -67,6 +68,10 @@ func NewToolbar(imageData *core.ImageData, loader *io.ImageLoader, pipeline *cor
 }
 
 func (tb *Toolbar) initializeUI() {
+	// Title
+	titleLabel := widget.NewLabelWithStyle("Image Restoration Suite v2.0", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
+	titleLabel.Resize(fyne.NewSize(300, 30))
+
 	// File operation buttons (left side)
 	tb.openBtn = widget.NewButtonWithIcon("OPEN IMAGE", theme.FolderOpenIcon(), tb.openImage)
 	tb.openBtn.Resize(fyne.NewSize(120, 40))
@@ -86,20 +91,24 @@ func (tb *Toolbar) initializeUI() {
 	tb.resetBtn.Importance = widget.HighImportance
 	tb.resetBtn.Disable()
 
-	fileButtons := container.NewHBox(
+	leftSection := container.NewHBox(
+		titleLabel,
+		widget.NewSeparator(),
 		tb.openBtn,
 		tb.saveBtn,
 		tb.resetBtn,
 	)
 
 	// Zoom controls (center)
-	tb.zoomOut = widget.NewButtonWithIcon("", theme.ZoomOutIcon(), func() {
+	zoomLabel := widget.NewLabel("Zoom:")
+
+	tb.zoomOutBtn = widget.NewButtonWithIcon("", theme.ZoomOutIcon(), func() {
 		newZoom := tb.currentZoom - 0.25
 		if newZoom >= 0.25 {
 			tb.setZoom(newZoom)
 		}
 	})
-	tb.zoomOut.Resize(fyne.NewSize(24, 24))
+	tb.zoomOutBtn.Resize(fyne.NewSize(24, 24))
 
 	tb.zoomSlider = widget.NewSlider(0.25, 4.0)
 	tb.zoomSlider.SetValue(1.0)
@@ -109,65 +118,67 @@ func (tb *Toolbar) initializeUI() {
 		tb.setZoom(value)
 	}
 
-	tb.zoomIn = widget.NewButtonWithIcon("", theme.ZoomInIcon(), func() {
+	tb.zoomInBtn = widget.NewButtonWithIcon("", theme.ZoomInIcon(), func() {
 		newZoom := tb.currentZoom + 0.25
 		if newZoom <= 4.0 {
 			tb.setZoom(newZoom)
 		}
 	})
-	tb.zoomIn.Resize(fyne.NewSize(24, 24))
+	tb.zoomInBtn.Resize(fyne.NewSize(24, 24))
 
-	tb.zoomLabel = widget.NewLabel("100%")
-	tb.zoomLabel.Resize(fyne.NewSize(50, 25))
+	tb.zoomPercentage = widget.NewLabel("100%")
+	tb.zoomPercentage.Resize(fyne.NewSize(50, 25))
 
-	zoomControls := container.NewHBox(
-		widget.NewLabel("Zoom:"),
-		tb.zoomOut,
+	centerSection := container.NewHBox(
+		zoomLabel,
+		tb.zoomOutBtn,
 		tb.zoomSlider,
-		tb.zoomIn,
-		tb.zoomLabel,
+		tb.zoomInBtn,
+		tb.zoomPercentage,
 	)
 
 	// View toggle buttons (right side)
-	tb.singleBtn = widget.NewButtonWithIcon("", theme.ViewFullScreenIcon(), func() {
+	viewLabel := widget.NewLabel("View:")
+
+	tb.singleViewBtn = widget.NewButtonWithIcon("", theme.ViewFullScreenIcon(), func() {
 		tb.setView("single")
 	})
-	tb.singleBtn.Resize(fyne.NewSize(24, 24))
+	tb.singleViewBtn.Resize(fyne.NewSize(24, 24))
 
-	tb.splitBtn = widget.NewButtonWithIcon("", theme.ListIcon(), func() {
+	tb.splitViewBtn = widget.NewButtonWithIcon("", theme.ListIcon(), func() {
 		tb.setView("split")
 	})
-	tb.splitBtn.Resize(fyne.NewSize(24, 24))
-	tb.splitBtn.Importance = widget.HighImportance
+	tb.splitViewBtn.Resize(fyne.NewSize(24, 24))
+	tb.splitViewBtn.Importance = widget.HighImportance // Default active
 
-	tb.overlayBtn = widget.NewButtonWithIcon("", theme.ViewRestoreIcon(), func() {
+	tb.overlayViewBtn = widget.NewButtonWithIcon("", theme.ViewRestoreIcon(), func() {
 		tb.setView("overlay")
 	})
-	tb.overlayBtn.Resize(fyne.NewSize(24, 24))
+	tb.overlayViewBtn.Resize(fyne.NewSize(24, 24))
 
-	viewControls := container.NewHBox(
-		widget.NewLabel("View:"),
-		tb.singleBtn,
-		tb.splitBtn,
-		tb.overlayBtn,
+	rightSection := container.NewHBox(
+		viewLabel,
+		tb.singleViewBtn,
+		tb.splitViewBtn,
+		tb.overlayViewBtn,
 	)
 
-	// Main toolbar layout with proper spacing
+	// Main toolbar layout with proper spacing and fixed height
 	tb.container = container.NewBorder(
 		nil, nil,
-		fileButtons,  // left
-		viewControls, // right
-		zoomControls, // center
+		leftSection,   // left
+		rightSection,  // right
+		centerSection, // center
 	)
 
-	// Set fixed height to 50px as per specification
+	// Set background color and fixed height to 50px as per specification
 	tb.container.Resize(fyne.NewSize(1600, 50))
 }
 
 func (tb *Toolbar) setZoom(zoom float64) {
 	tb.currentZoom = zoom
 	tb.zoomSlider.SetValue(zoom)
-	tb.zoomLabel.SetText(fmt.Sprintf("%.0f%%", zoom*100))
+	tb.zoomPercentage.SetText(fmt.Sprintf("%.0f%%", zoom*100))
 	if tb.onZoomChanged != nil {
 		tb.onZoomChanged(zoom)
 	}
@@ -177,24 +188,24 @@ func (tb *Toolbar) setView(view string) {
 	tb.currentView = view
 
 	// Reset button importance
-	tb.singleBtn.Importance = widget.MediumImportance
-	tb.splitBtn.Importance = widget.MediumImportance
-	tb.overlayBtn.Importance = widget.MediumImportance
+	tb.singleViewBtn.Importance = widget.MediumImportance
+	tb.splitViewBtn.Importance = widget.MediumImportance
+	tb.overlayViewBtn.Importance = widget.MediumImportance
 
 	// Highlight active view
 	switch view {
 	case "single":
-		tb.singleBtn.Importance = widget.HighImportance
+		tb.singleViewBtn.Importance = widget.HighImportance
 	case "split":
-		tb.splitBtn.Importance = widget.HighImportance
+		tb.splitViewBtn.Importance = widget.HighImportance
 	case "overlay":
-		tb.overlayBtn.Importance = widget.HighImportance
+		tb.overlayViewBtn.Importance = widget.HighImportance
 	}
 
 	// Refresh buttons
-	tb.singleBtn.Refresh()
-	tb.splitBtn.Refresh()
-	tb.overlayBtn.Refresh()
+	tb.singleViewBtn.Refresh()
+	tb.splitViewBtn.Refresh()
+	tb.overlayViewBtn.Refresh()
 
 	if tb.onViewChanged != nil {
 		tb.onViewChanged(view)
@@ -245,6 +256,13 @@ func (tb *Toolbar) saveImage() {
 		defer writer.Close()
 
 		filepath := writer.URI().Path()
+
+		// Process full resolution first
+		if _, err := tb.pipeline.ProcessFullResolution(); err != nil {
+			tb.logger.Error("Failed to process full resolution", "error", err)
+			return
+		}
+
 		processed := tb.imageData.GetProcessed()
 		defer processed.Close()
 

@@ -1,6 +1,6 @@
 [Details]
 Icon = "icon.png"
-Name = "Advanced Image Processing"
+Name = "Image Restoration Suite"
 ID = "com.strauhmanis.advanced-image-processing"
 Version = "2.0.0"
 Build = 1
