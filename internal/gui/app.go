@@ -29,18 +29,18 @@ type Application struct {
 	loader        *io.ImageLoader
 
 	// GUI components following Perfect UI spec
-	leftPanel   *LeftPanel   // 300px wide control hub
-	centerPanel *CenterPanel // 1000px wide image workspace
-	rightPanel  *RightPanel  // 300px wide feedback panel
+	toolbar     *Toolbar     // Top toolbar (50px height)
+	leftPanel   *LeftPanel   // 250px wide control sidebar
+	centerPanel *CenterPanel // Central image display area
+	rightPanel  *RightPanel  // 250px wide metrics sidebar
 
 	// Layout containers
 	mainContainer *fyne.Container
-	mainSplit     *container.Split
 }
 
 func NewApplication(app fyne.App, logger *slog.Logger, debugMode bool) *Application {
 	window := app.NewWindow("Advanced Image Processing v2.0")
-	window.Resize(fyne.NewSize(1600, 1000)) // Exact specification size
+	window.Resize(fyne.NewSize(1600, 900))
 	window.CenterOnScreen()
 
 	appInstance := &Application{
@@ -67,32 +67,35 @@ func (a *Application) initializeCore() {
 }
 
 func (a *Application) initializeComponents() {
-	// Initialize panels following Perfect UI specification
-	a.leftPanel = NewLeftPanel(a.pipeline, a.regionManager, a.imageData, a.loader, a.logger)
+	a.toolbar = NewToolbar(a.imageData, a.loader, a.pipeline, a.logger)
+	a.leftPanel = NewLeftPanel(a.pipeline, a.regionManager, a.imageData, a.logger)
 	a.centerPanel = NewCenterPanel(a.imageData, a.regionManager, a.logger)
 	a.rightPanel = NewRightPanel(a.logger)
 }
 
 func (a *Application) setupLayout() {
-	// Perfect UI Layout: Left (300px) | Center (1000px) | Right (300px)
-
-	// Get panel containers
+	// Perfect UI Layout: Toolbar (top) | Left (250px) | Center | Right (250px)
 	leftContent := a.leftPanel.GetContainer()
 	centerContent := a.centerPanel.GetContainer()
 	rightContent := a.rightPanel.GetContainer()
+	toolbarContent := a.toolbar.GetContainer()
 
-	// Create three-panel layout with exact proportions
-	// Left: 18.75% (300/1600), Center: 62.5% (1000/1600), Right: 18.75% (300/1600)
-
-	// Right split (center + right)
+	// Create horizontal split: Left | Center | Right
 	rightSplit := container.NewHSplit(centerContent, rightContent)
-	rightSplit.SetOffset(0.769) // 1000/1300 = center / (center + right)
+	rightSplit.SetOffset(0.8) // Center gets 80% of remaining space
 
-	// Main split (left + [center+right])
-	a.mainSplit = container.NewHSplit(leftContent, rightSplit)
-	a.mainSplit.SetOffset(0.1875) // 300/1600 = left / total
+	mainSplit := container.NewHSplit(leftContent, rightSplit)
+	mainSplit.SetOffset(0.2) // Left gets 20% of total space
 
-	a.mainContainer = container.NewBorder(nil, nil, nil, nil, a.mainSplit)
+	// Main container with toolbar at top
+	a.mainContainer = container.NewBorder(
+		toolbarContent, // top
+		nil,            // bottom
+		nil,            // left
+		nil,            // right
+		mainSplit,      // center
+	)
+
 	a.window.SetContent(a.mainContainer)
 }
 
@@ -108,12 +111,8 @@ func (a *Application) setupCallbacks() {
 		},
 	)
 
-	// Left panel callbacks
-	a.leftPanel.SetCallbacks(
-		func(layerMode bool) {
-			a.pipeline.SetProcessingMode(layerMode)
-			a.centerPanel.SetProcessingMode(layerMode)
-		},
+	// Toolbar callbacks
+	a.toolbar.SetCallbacks(
 		func(filepath string) {
 			a.onImageLoaded(filepath)
 		},
@@ -123,16 +122,23 @@ func (a *Application) setupCallbacks() {
 		func() {
 			a.onReset()
 		},
+		func(zoom float64) {
+			a.centerPanel.SetZoom(zoom)
+		},
+		func(viewMode string) {
+			a.centerPanel.SetViewMode(viewMode)
+		},
+	)
+
+	// Left panel callbacks
+	a.leftPanel.SetCallbacks(
+		func(layerMode bool) {
+			a.pipeline.SetProcessingMode(layerMode)
+		},
 	)
 
 	// Center panel callbacks
 	a.centerPanel.SetCallbacks(
-		func(tool string) {
-			// Tool selection handled
-		},
-		func(zoom float64) {
-			// Zoom change handled
-		},
 		func(hasSelection bool) {
 			a.leftPanel.UpdateSelectionState(hasSelection)
 		},
@@ -208,26 +214,28 @@ type PerfectUITheme struct{}
 func (t *PerfectUITheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
 	switch name {
 	case theme.ColorNameBackground:
-		return color.RGBA{R: 245, G: 245, B: 245, A: 255} // #F5F5F5
+		return color.RGBA{R: 255, G: 255, B: 255, A: 255} // #FFFFFF
 	case theme.ColorNameForeground:
-		return color.RGBA{R: 51, G: 51, B: 51, A: 255} // #333333
+		return color.RGBA{R: 0, G: 0, B: 0, A: 255} // #000000
 	case theme.ColorNamePrimary:
-		return color.RGBA{R: 0, G: 120, B: 212, A: 255} // #0078D4
+		return color.RGBA{R: 0, G: 123, B: 255, A: 255} // #007BFF
 	case theme.ColorNameFocus:
-		return color.RGBA{R: 0, G: 120, B: 212, A: 255} // #0078D4
+		return color.RGBA{R: 0, G: 86, B: 179, A: 255} // #0056B3
 	case theme.ColorNameHover:
-		return color.RGBA{R: 230, G: 230, B: 230, A: 255} // Light hover
+		return color.RGBA{R: 0, G: 86, B: 179, A: 255} // #0056B3
 	case theme.ColorNameSuccess:
 		return color.RGBA{R: 40, G: 167, B: 69, A: 255} // #28A745
 	case theme.ColorNameError:
-		return color.RGBA{R: 220, G: 53, B: 69, A: 255} // #DC3545
+		return color.RGBA{R: 220, G: 20, B: 60, A: 255} // #DC143C
 	case theme.ColorNameWarning:
 		return color.RGBA{R: 255, G: 193, B: 7, A: 255} // #FFC107
 	case theme.ColorNameInputBackground:
-		return color.RGBA{R: 255, G: 255, B: 255, A: 255} // White
+		return color.RGBA{R: 255, G: 255, B: 255, A: 255} // #FFFFFF
 	case theme.ColorNameButton:
-		return color.RGBA{R: 0, G: 120, B: 212, A: 255} // #0078D4
+		return color.RGBA{R: 0, G: 123, B: 255, A: 255} // #007BFF
 	case theme.ColorNameDisabledButton:
+		return color.RGBA{R: 211, G: 211, B: 211, A: 255} // #D3D3D3
+	case theme.ColorNameSeparator:
 		return color.RGBA{R: 211, G: 211, B: 211, A: 255} // #D3D3D3
 	default:
 		return theme.DefaultTheme().Color(name, variant)
@@ -247,13 +255,13 @@ func (t *PerfectUITheme) Size(name fyne.ThemeSizeName) float32 {
 	case theme.SizeNamePadding:
 		return 5
 	case theme.SizeNameInlineIcon:
-		return 20
+		return 16
 	case theme.SizeNameText:
-		return 14
-	case theme.SizeNameCaptionText:
 		return 12
+	case theme.SizeNameCaptionText:
+		return 10
 	case theme.SizeNameHeadingText:
-		return 14 // Bold via style, not size
+		return 16
 	default:
 		return theme.DefaultTheme().Size(name)
 	}
