@@ -315,6 +315,57 @@ func (d *GUIDebugger) LogCurrentBuildIssues() {
 	d.LogBuildError("saveDialog.SetFilter", "parameter type", "storage.FileFilter", "[]string")
 }
 
+// Left Panel specific debug methods
+func (d *GUIDebugger) LogLayerAddAttempt(algorithm string, params map[string]interface{}) {
+	d.LogUIInteraction("LeftPanel", "layer_add_attempt", map[string]interface{}{
+		"algorithm": algorithm,
+		"params":    params,
+	})
+}
+
+func (d *GUIDebugger) LogLayerAddComplete(layerID string, success bool, err error) {
+	data := map[string]interface{}{
+		"layer_id": layerID,
+		"success":  success,
+	}
+	if err != nil {
+		data["error"] = err.Error()
+	}
+	d.LogUIInteraction("LeftPanel", "layer_add_complete", data)
+}
+
+func (d *GUIDebugger) LogLayerOperation(operation, layerID, algorithm string, params map[string]interface{}, success bool, err error, duration time.Duration) {
+	data := map[string]interface{}{
+		"operation": operation,
+		"layer_id":  layerID,
+		"algorithm": algorithm,
+		"params":    params,
+		"success":   success,
+		"duration":  duration,
+	}
+	if err != nil {
+		data["error"] = err.Error()
+	}
+	d.LogUIInteraction("LeftPanel", "layer_operation", data)
+}
+
+func (d *GUIDebugger) LogProcessingEvent(event, mode string, layerCount int, details map[string]interface{}) {
+	data := map[string]interface{}{
+		"event":       event,
+		"mode":        mode,
+		"layer_count": layerCount,
+		"details":     details,
+	}
+	d.LogUIInteraction("LeftPanel", "processing_event", data)
+}
+
+func (d *GUIDebugger) LogPreviewTrigger(reason string, layerCount int) {
+	d.LogUIInteraction("LeftPanel", "preview_trigger", map[string]interface{}{
+		"reason":      reason,
+		"layer_count": layerCount,
+	})
+}
+
 // Status reporting
 func (d *GUIDebugger) PrintStatus() {
 	if !d.enabled {

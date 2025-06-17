@@ -17,12 +17,6 @@ import (
 	"advanced-image-processing/internal/core"
 )
 
-// Import the debug system
-var GlobalGUIDebugger interface {
-	LogImageOperation(operation string, success bool, details map[string]interface{})
-	LogUIInteraction(component, action string, data map[string]interface{})
-}
-
 type CenterPanel struct {
 	imageData     *core.ImageData
 	regionManager *core.RegionManager
