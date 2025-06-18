@@ -24,7 +24,7 @@ func NewImagePipeline() *ImagePipeline {
 		debugMemory:     NewDebugMemory(),
 		initialized:     false,
 	}
-	// Initialize with empty Mats to prevent segfaults
+	// Initialize with empty Mats - never call methods on these until properly set
 	pipeline.originalImage = gocv.NewMat()
 	pipeline.processedImage = gocv.NewMat()
 	pipeline.previewImage = gocv.NewMat()
@@ -37,21 +37,23 @@ func NewImagePipeline() *ImagePipeline {
 func (p *ImagePipeline) SetOriginalImage(img gocv.Mat) {
 	p.debugPipeline.LogSetOriginalStart()
 
-	// Close existing images first
-	if p.initialized && !p.originalImage.Empty() {
-		p.debugPipeline.LogSetOriginalStep("closing existing original image")
-		p.originalImage.Close()
-		p.debugMemory.LogMatCleanup("originalImage")
-	}
-	if p.initialized && !p.processedImage.Empty() {
-		p.debugPipeline.LogSetOriginalStep("closing existing processed image")
-		p.processedImage.Close()
-		p.debugMemory.LogMatCleanup("processedImage")
-	}
-	if p.initialized && !p.previewImage.Empty() {
-		p.debugPipeline.LogSetOriginalStep("closing existing preview image")
-		p.previewImage.Close()
-		p.debugMemory.LogMatCleanup("previewImage")
+	// Close existing images first if they exist
+	if p.initialized {
+		if !p.originalImage.Empty() {
+			p.debugPipeline.LogSetOriginalStep("closing existing original image")
+			p.originalImage.Close()
+			p.debugMemory.LogMatCleanup("originalImage")
+		}
+		if !p.processedImage.Empty() {
+			p.debugPipeline.LogSetOriginalStep("closing existing processed image")
+			p.processedImage.Close()
+			p.debugMemory.LogMatCleanup("processedImage")
+		}
+		if !p.previewImage.Empty() {
+			p.debugPipeline.LogSetOriginalStep("closing existing preview image")
+			p.previewImage.Close()
+			p.debugMemory.LogMatCleanup("previewImage")
+		}
 	}
 
 	// Clear existing transformations when loading a new image
@@ -169,7 +171,9 @@ func (p *ImagePipeline) processImage() {
 	p.debugPipeline.LogProcessComplete()
 }
 
-func (p *ImagePipeline) processPreview() {
+func (p *ImagePipeline) ProcessPreview() {
+	p.processPreview()
+}
 	p.debugPipeline.LogProcessStart()
 	if !p.initialized {
 		p.debugPipeline.LogProcessEarlyReturn("preview not initialized")

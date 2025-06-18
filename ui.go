@@ -374,6 +374,11 @@ func (ui *ImageRestorationUI) showTransformationParameters(transformation Transf
 }
 
 func (ui *ImageRestorationUI) onParameterChanged() {
+	ui.debugGUI.LogUIEvent("onParameterChanged called - triggering preview reprocessing")
+	// Trigger preview reprocessing when parameters change
+	if ui.pipeline.initialized {
+		ui.pipeline.ProcessPreview()
+	}
 	ui.updateUI()
 }
 

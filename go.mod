@@ -3,7 +3,6 @@ module image-restoration-suite
 go 1.24
 
 require (
-	fyne.io/fyne v1.4.3
 	fyne.io/fyne/v2 v2.6.1
 	gocv.io/x/gocv v0.41.0
 )
