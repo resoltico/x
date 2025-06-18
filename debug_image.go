@@ -13,7 +13,7 @@ type DebugImage struct {
 
 func NewDebugImage() *DebugImage {
 	return &DebugImage{
-		enabled: true, // Set to false to disable debug output for production
+		enabled: false, // Set to false to disable debug output for production
 	}
 }
 

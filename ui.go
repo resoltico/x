@@ -265,9 +265,16 @@ func (ui *ImageRestorationUI) openImage() {
 		size := mat.Size()
 		ui.debugGUI.LogImageInfo(size[1], size[0], mat.Channels())
 
+		// Clean up existing transformations before setting new image
+		ui.pipeline.ClearTransformations()
 		ui.pipeline.SetOriginalImage(mat)
 		ui.updateUI()
 		ui.updateWindowTitle(reader.URI().Name())
+
+		// Reset parameters panel and clear list selections when new image is loaded
+		ui.parametersContainer.Objects[0] = widget.NewLabel("Select a Transformation")
+		ui.parametersContainer.Refresh()
+		ui.transformationsList.UnselectAll()
 
 		ui.debugGUI.Log("Image loaded successfully")
 	}, ui.window)
@@ -276,7 +283,7 @@ func (ui *ImageRestorationUI) openImage() {
 func (ui *ImageRestorationUI) saveImage() {
 	ui.debugGUI.LogButtonClick("SAVE IMAGE")
 
-	if !ui.pipeline.initialized || ui.pipeline.originalImage.Empty() {
+	if !ui.pipeline.HasImage() {
 		dialog.ShowInformation("No Image", "Please load an image first", ui.window)
 		return
 	}
@@ -335,10 +342,19 @@ func (ui *ImageRestorationUI) resetTransformations() {
 	ui.updateUI()
 	ui.parametersContainer.Objects[0] = widget.NewLabel("Select a Transformation")
 	ui.parametersContainer.Refresh()
+	ui.transformationsList.UnselectAll()
 }
 
 func (ui *ImageRestorationUI) onTransformationSelected(id widget.ListItemID) {
 	ui.debugGUI.LogListSelection("available transformations", int(id), "2D Otsu")
+
+	// Check if image is loaded before allowing transformation selection
+	if !ui.pipeline.HasImage() {
+		ui.debugGUI.Log("Cannot apply transformation: no image loaded")
+		dialog.ShowInformation("No Image", "Please load an image before applying transformations", ui.window)
+		ui.availableTransformationsList.UnselectAll()
+		return
+	}
 
 	switch id {
 	case 0: // 2D Otsu
@@ -365,6 +381,10 @@ func (ui *ImageRestorationUI) onAppliedTransformationSelected(id widget.ListItem
 
 func (ui *ImageRestorationUI) removeTransformation(id int) {
 	ui.pipeline.RemoveTransformation(id)
+	// Clear selection since the list has changed
+	ui.transformationsList.UnselectAll()
+	ui.parametersContainer.Objects[0] = widget.NewLabel("Select a Transformation")
+	ui.parametersContainer.Refresh()
 	ui.updateUI()
 }
 
@@ -377,7 +397,7 @@ func (ui *ImageRestorationUI) showTransformationParameters(transformation Transf
 func (ui *ImageRestorationUI) onParameterChanged() {
 	ui.debugGUI.LogUIEvent("onParameterChanged called - triggering preview reprocessing")
 	// Trigger preview reprocessing when parameters change
-	if ui.pipeline.initialized {
+	if ui.pipeline.HasImage() {
 		ui.pipeline.ProcessPreview()
 	}
 	ui.updateUI()
@@ -394,7 +414,7 @@ func (ui *ImageRestorationUI) updateUI() {
 func (ui *ImageRestorationUI) updateImageDisplay() {
 	ui.debugGUI.LogUIEvent("updateImageDisplay called")
 
-	if ui.pipeline.initialized && !ui.pipeline.originalImage.Empty() {
+	if ui.pipeline.HasImage() && !ui.pipeline.originalImage.Empty() {
 		ui.debugGUI.LogUIEvent("updateImageDisplay: converting original image")
 
 		// Convert original image
@@ -501,7 +521,7 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 }
 
 func (ui *ImageRestorationUI) updateImageInfo() {
-	if ui.pipeline.initialized && !ui.pipeline.originalImage.Empty() {
+	if ui.pipeline.HasImage() && !ui.pipeline.originalImage.Empty() {
 		size := ui.pipeline.originalImage.Size()
 		channels := ui.pipeline.originalImage.Channels()
 

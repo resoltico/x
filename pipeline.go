@@ -34,6 +34,10 @@ func NewImagePipeline() *ImagePipeline {
 	return pipeline
 }
 
+func (p *ImagePipeline) HasImage() bool {
+	return p.initialized && !p.originalImage.Empty()
+}
+
 func (p *ImagePipeline) SetOriginalImage(img gocv.Mat) {
 	p.debugPipeline.LogSetOriginalStart()
 
@@ -56,13 +60,6 @@ func (p *ImagePipeline) SetOriginalImage(img gocv.Mat) {
 		}
 	}
 
-	// Clear existing transformations when loading a new image
-	p.debugPipeline.LogSetOriginalStep("clearing existing transformations")
-	for _, transform := range p.transformations {
-		transform.Close()
-	}
-	p.transformations = make([]Transformation, 0)
-
 	// Set up new image
 	p.originalImage = img.Clone()
 	p.processedImage = p.originalImage.Clone()
@@ -76,6 +73,10 @@ func (p *ImagePipeline) SetOriginalImage(img gocv.Mat) {
 }
 
 func (p *ImagePipeline) AddTransformation(transformation Transformation) {
+	if !p.HasImage() {
+		p.debugPipeline.Log("Cannot add transformation: no image loaded")
+		return
+	}
 	p.transformations = append(p.transformations, transformation)
 	p.processImage()
 	p.processPreview()
@@ -85,22 +86,27 @@ func (p *ImagePipeline) RemoveTransformation(index int) {
 	if index >= 0 && index < len(p.transformations) {
 		p.transformations[index].Close()
 		p.transformations = append(p.transformations[:index], p.transformations[index+1:]...)
+		if p.HasImage() {
+			p.processImage()
+			p.processPreview()
+		}
+	}
+}
+
+func (p *ImagePipeline) ClearTransformations() {
+	p.debugPipeline.Log("Clearing all transformations")
+	for _, transform := range p.transformations {
+		transform.Close()
+	}
+	p.transformations = make([]Transformation, 0)
+	if p.HasImage() {
 		p.processImage()
 		p.processPreview()
 	}
 }
 
-func (p *ImagePipeline) ClearTransformations() {
-	for _, transform := range p.transformations {
-		transform.Close()
-	}
-	p.transformations = make([]Transformation, 0)
-	p.processImage()
-	p.processPreview()
-}
-
 func (p *ImagePipeline) GetProcessedImage() gocv.Mat {
-	if !p.initialized {
+	if !p.HasImage() {
 		p.debugPipeline.LogGetProcessedImage("not initialized, returning empty Mat")
 		return gocv.NewMat()
 	}
@@ -112,7 +118,7 @@ func (p *ImagePipeline) GetProcessedImage() gocv.Mat {
 }
 
 func (p *ImagePipeline) GetPreviewImage() gocv.Mat {
-	if !p.initialized {
+	if !p.HasImage() {
 		p.debugPipeline.LogGetProcessedImage("preview not initialized, returning empty Mat")
 		return gocv.NewMat()
 	}
@@ -125,7 +131,7 @@ func (p *ImagePipeline) GetPreviewImage() gocv.Mat {
 
 func (p *ImagePipeline) processImage() {
 	p.debugPipeline.LogProcessStart()
-	if !p.initialized {
+	if !p.HasImage() {
 		p.debugPipeline.LogProcessEarlyReturn("not initialized")
 		return
 	}
@@ -177,7 +183,7 @@ func (p *ImagePipeline) ProcessPreview() {
 
 func (p *ImagePipeline) processPreview() {
 	p.debugPipeline.LogProcessStart()
-	if !p.initialized {
+	if !p.HasImage() {
 		p.debugPipeline.LogProcessEarlyReturn("preview not initialized")
 		return
 	}
@@ -218,7 +224,7 @@ func (p *ImagePipeline) processPreview() {
 }
 
 func (p *ImagePipeline) CalculatePSNR() float64 {
-	if !p.initialized || p.originalImage.Empty() || p.processedImage.Empty() {
+	if !p.HasImage() || p.originalImage.Empty() || p.processedImage.Empty() {
 		return 0.0
 	}
 
@@ -255,7 +261,7 @@ func (p *ImagePipeline) CalculatePSNR() float64 {
 }
 
 func (p *ImagePipeline) CalculateSSIM() float64 {
-	if !p.initialized || p.originalImage.Empty() || p.processedImage.Empty() {
+	if !p.HasImage() || p.originalImage.Empty() || p.processedImage.Empty() {
 		return 0.0
 	}
 
