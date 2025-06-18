@@ -31,13 +31,15 @@ type ImageRestorationUI struct {
 	psnrLabel                    *widget.Label
 	ssimLabel                    *widget.Label
 	debugGUI                     *DebugGUI
+	debugRender                  *DebugRender
 }
 
 func NewImageRestorationUI(window fyne.Window) *ImageRestorationUI {
 	ui := &ImageRestorationUI{
-		window:   window,
-		pipeline: NewImagePipeline(),
-		debugGUI: NewDebugGUI(),
+		window:      window,
+		pipeline:    NewImagePipeline(),
+		debugGUI:    NewDebugGUI(),
+		debugRender: NewDebugRender(),
 	}
 	return ui
 }
@@ -119,10 +121,14 @@ func (ui *ImageRestorationUI) createCenterPanel() fyne.CanvasObject {
 	ui.originalImage = canvas.NewImageFromImage(image.NewRGBA(image.Rect(0, 0, 1, 1)))
 	ui.originalImage.FillMode = canvas.ImageFillContain
 	ui.originalImage.ScaleMode = canvas.ImageScaleSmooth
+	// Set a fixed minimum size to prevent scroll container expansion
+	ui.originalImage.SetMinSize(fyne.NewSize(400, 300))
 
 	ui.previewImage = canvas.NewImageFromImage(image.NewRGBA(image.Rect(0, 0, 1, 1)))
 	ui.previewImage.FillMode = canvas.ImageFillContain
 	ui.previewImage.ScaleMode = canvas.ImageScaleSmooth
+	// Set a fixed minimum size to prevent scroll container expansion
+	ui.previewImage.SetMinSize(fyne.NewSize(400, 300))
 
 	ui.originalScroll = container.NewScroll(ui.originalImage)
 	ui.previewScroll = container.NewScroll(ui.previewImage)
@@ -369,29 +375,46 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 		}
 		ui.debugGUI.LogImageConversion("original", true, "")
 
-		// Convert processed image
+		// Convert processed image and FORCE consistent format
 		processedMat := ui.pipeline.GetProcessedImage()
 		if processedMat.Empty() {
 			ui.debugGUI.LogUIEvent("updateImageDisplay: processed image is empty")
 			return
 		}
-		processedImg, err := processedMat.ToImage()
-		if err != nil {
-			ui.debugGUI.LogImageConversion("processed", false, err.Error())
-			return
+
+		var processedImg image.Image
+		originalChannels := ui.pipeline.originalImage.Channels()
+		processedChannels := processedMat.Channels()
+
+		if originalChannels != processedChannels {
+			ui.debugGUI.LogImageFormatChange("processed", originalChannels, processedChannels)
+			ui.debugRender.Log("FORCING CONSISTENT FORMAT: Converting grayscale to RGBA at Go image level")
+
+			// Convert grayscale back to RGBA at the Go image level to prevent GPU texture format differences
+			processedColor := gocv.NewMat()
+			defer processedColor.Close()
+			gocv.CvtColor(processedMat, &processedColor, gocv.ColorGrayToBGR)
+
+			var err error
+			processedImg, err = processedColor.ToImage()
+			if err != nil {
+				ui.debugGUI.LogImageConversion("processed_rgba_converted", false, err.Error())
+				return
+			}
+			ui.debugRender.Log("SUCCESS: Processed image converted to RGBA format for consistent GPU texture handling")
+		} else {
+			var err error
+			processedImg, err = processedMat.ToImage()
+			if err != nil {
+				ui.debugGUI.LogImageConversion("processed", false, err.Error())
+				return
+			}
 		}
 		ui.debugGUI.LogImageConversion("processed", true, "")
 
-		// Get actual image dimensions
-		originalBounds := originalImg.Bounds()
-		processedBounds := processedImg.Bounds()
-
 		// Update images
 		ui.originalImage.Image = originalImg
-		ui.debugGUI.LogImageCanvasProperties("originalImage", 0, 0, originalBounds.Dx(), originalBounds.Dy())
-
 		ui.previewImage.Image = processedImg
-		ui.debugGUI.LogImageCanvasProperties("previewImage", 0, 0, processedBounds.Dx(), processedBounds.Dy())
 
 		// Refresh images and scroll containers
 		ui.originalImage.Refresh()

@@ -54,7 +54,7 @@ vcpkg install opencv
 ### 1. Clone the Repository
 ```bash
 git clone <repository-url>
-cd advanced-image-processing
+cd image-restoration-suite
 ```
 
 ### 2. Verify Dependencies
@@ -131,7 +131,7 @@ The application includes comprehensive debugging capabilities that output to the
 ## Project Structure
 
 ```
-advanced-image-processing/
+image-restoration-suite/
 ├── go.mod                  # Go module dependencies
 ├── main.go                 # Application entry point
 ├── ui.go                   # Main UI implementation
@@ -141,6 +141,7 @@ advanced-image-processing/
 ├── debug_gui.go           # GUI debug output (terminal only)
 ├── debug_pipeline.go      # Pipeline debug output (terminal only)
 ├── debug_image.go         # Image processing debug output (terminal only)
+├── debug_memory.go        # Memory management debug output (terminal only)
 └── README.md              # This file
 ```
 

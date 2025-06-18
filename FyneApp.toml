@@ -1,0 +1,14 @@
+Website = "https://github.com/ervinsstrauhmanis/image-restoration-suite"
+
+[Details]
+  Icon = "icon.png"
+  Name = "Image Restoration Suite"
+  ID = "com.imagerestoration.suite"
+  Version = "1.0.0"
+  Build = 1
+
+[LinuxAndBSD]
+  GenericName = "Image Processing Tool"
+  Categories = ["Graphics", "Photography"]
+  Comment = "Advanced image restoration and processing suite for historical documents and illustrations."
+  Keywords = ["image", "restoration", "processing", "opencv", "otsu"]

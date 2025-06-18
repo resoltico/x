@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 	"runtime"
+
+	"fyne.io/fyne/v2"
 )
 
 type DebugGUI struct {
@@ -203,6 +205,52 @@ func (d *DebugGUI) LogImageCanvasProperties(canvasName string, canvasWidth, canv
 		return
 	}
 	log.Printf("[GUI DEBUG] Canvas '%s': image=%dx%d", canvasName, imageWidth, imageHeight)
+}
+
+func (d *DebugGUI) LogCanvasSizeIssue(canvasName string, expectedSize, actualSize fyne.Size) {
+	if !d.enabled {
+		return
+	}
+	log.Printf("[GUI DEBUG] Canvas size issue '%s': expected=%.0fx%.0f, actual=%.0fx%.0f",
+		canvasName, expectedSize.Width, expectedSize.Height, actualSize.Width, actualSize.Height)
+}
+
+func (d *DebugGUI) LogImageFormatChange(imageName string, fromChannels, toChannels int) {
+	if !d.enabled {
+		return
+	}
+	log.Printf("[GUI DEBUG] Image format change '%s': %d channels -> %d channels",
+		imageName, fromChannels, toChannels)
+}
+
+func (d *DebugGUI) LogCanvasResize(canvasName string, width, height float32, reason string) {
+	if !d.enabled {
+		return
+	}
+	log.Printf("[GUI DEBUG] Canvas '%s' resize to %.0fx%.0f - reason: %s", canvasName, width, height, reason)
+}
+
+func (d *DebugGUI) LogScrollContainerSize(containerName string, contentWidth, contentHeight, viewWidth, viewHeight float32) {
+	if !d.enabled {
+		return
+	}
+	log.Printf("[GUI DEBUG] Scroll container '%s': content=%.0fx%.0f, view=%.0fx%.0f",
+		containerName, contentWidth, contentHeight, viewWidth, viewHeight)
+}
+
+func (d *DebugGUI) LogImageMinSize(imageName string, minWidth, minHeight float32) {
+	if !d.enabled {
+		return
+	}
+	log.Printf("[GUI DEBUG] Image '%s' MinSize: %.0fx%.0f", imageName, minWidth, minHeight)
+}
+
+func (d *DebugGUI) LogLayoutRefresh(componentName string, beforeSize, afterSize fyne.Size) {
+	if !d.enabled {
+		return
+	}
+	log.Printf("[GUI DEBUG] Layout refresh '%s': before=%.0fx%.0f, after=%.0fx%.0f",
+		componentName, beforeSize.Width, beforeSize.Height, afterSize.Width, afterSize.Height)
 }
 
 func (d *DebugGUI) LogSaveOperation(filename, extension string, hasProcessedImage bool) {

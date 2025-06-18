@@ -1,0 +1,79 @@
+[4:05:49 AM] % go run .
+# image-restoration-suite
+ld: warning: ignoring duplicate libraries: '-lobjc'
+2025/06/18 04:05:52 [MEMORY DEBUG] Mat 'originalImage' created
+2025/06/18 04:05:52 [MEMORY DEBUG] Mat 'processedImage' created
+2025/06/18 04:05:54 [GUI DEBUG] Button clicked: OPEN IMAGE
+2025/06/18 04:05:59 [GUI DEBUG] File operation: open - Ut feritur ferit.png
+2025/06/18 04:05:59 [GUI DEBUG] Image Info - Size: 1400x995, Channels: 3
+2025/06/18 04:05:59 [PIPELINE DEBUG] SetOriginalImage called
+2025/06/18 04:05:59 [PIPELINE DEBUG] SetOriginalImage: clearing existing transformations
+2025/06/18 04:05:59 [PIPELINE DEBUG] Image 'original': 1400x995, 3 channels, type 16, size 4179000 bytes
+2025/06/18 04:05:59 [PIPELINE DEBUG] processImage called
+2025/06/18 04:05:59 [PIPELINE DEBUG] processImage: checking if processedImage needs reset
+2025/06/18 04:05:59 [PIPELINE DEBUG] processImage: closing existing processedImage
+2025/06/18 04:05:59 [MEMORY DEBUG] Mat 'processedImage' cleaned up
+2025/06/18 04:05:59 [PIPELINE DEBUG] processImage: cloning original image
+2025/06/18 04:05:59 [PIPELINE DEBUG] processImage: applying 0 transformations
+2025/06/18 04:05:59 [PIPELINE DEBUG] processImage: completed successfully
+2025/06/18 04:05:59 [PIPELINE DEBUG] Operation 'processImage' took 716.209µs
+2025/06/18 04:05:59 [PIPELINE DEBUG] Pipeline Stats:
+2025/06/18 04:05:59 [PIPELINE DEBUG]   Original size: 1400x995
+2025/06/18 04:05:59 [PIPELINE DEBUG]   Processed size: 1400x995
+2025/06/18 04:05:59 [PIPELINE DEBUG]   Number of transformations: 0
+2025/06/18 04:05:59 [PIPELINE DEBUG]   Total processing time: 0s
+2025/06/18 04:05:59 [PIPELINE DEBUG] Memory - Alloc: 23.73 MB, TotalAlloc: 95.28 MB, Sys: 70.14 MB, NumGC: 8
+2025/06/18 04:05:59 [GUI DEBUG] UI Event: updateImageDisplay called
+2025/06/18 04:05:59 [GUI DEBUG] UI Event: updateImageDisplay: converting original image
+2025/06/18 04:05:59 [GUI DEBUG] Image conversion successful: original
+2025/06/18 04:05:59 [GUI DEBUG] Image conversion successful: processed
+2025/06/18 04:05:59 [GUI DEBUG] Canvas refreshed: originalImage
+2025/06/18 04:05:59 [GUI DEBUG] Canvas refreshed: previewImage
+2025/06/18 04:05:59 [GUI DEBUG] UI Event: updateImageDisplay: completed successfully
+2025/06/18 04:05:59 [GUI DEBUG] Image loaded successfully
+2025/06/18 04:06:03 [GUI DEBUG] List 'available transformations' selection: ID=0, Name='2D Otsu'
+2025/06/18 04:06:03 [PIPELINE DEBUG] processImage called
+2025/06/18 04:06:03 [PIPELINE DEBUG] processImage: checking if processedImage needs reset
+2025/06/18 04:06:03 [PIPELINE DEBUG] processImage: closing existing processedImage
+2025/06/18 04:06:03 [MEMORY DEBUG] Mat 'processedImage' cleaned up
+2025/06/18 04:06:03 [PIPELINE DEBUG] processImage: cloning original image
+2025/06/18 04:06:03 [PIPELINE DEBUG] processImage: applying 1 transformations
+2025/06/18 04:06:03 [IMAGE DEBUG] 2D Otsu - Starting binarization
+2025/06/18 04:06:03 [IMAGE DEBUG] Color conversion: BGR -> Grayscale
+2025/06/18 04:06:03 [IMAGE DEBUG] Mat 'grayscale': 1400x995, channels=1, type=0, elemSize=1
+2025/06/18 04:06:08 [IMAGE DEBUG] Applied filter: BilateralFilter with params: [radius=-1 sigmaColor=80 sigmaSpace=80]
+2025/06/18 04:06:08 [IMAGE DEBUG] 2D Otsu - Constructing 2D histogram
+2025/06/18 04:06:09 [IMAGE DEBUG] 2D Otsu - Finding optimal thresholds
+2025/06/18 04:06:15 [IMAGE DEBUG] Optimal thresholds found: s=117, t=139, variance=11257.756091
+2025/06/18 04:06:15 [IMAGE DEBUG] 2D Otsu - Binarizing image
+2025/06/18 04:06:15 [IMAGE DEBUG] 2D Otsu - Postprocessing
+2025/06/18 04:06:15 [IMAGE DEBUG] Morphological operation: Close, kernel size: 3x3
+2025/06/18 04:06:15 [IMAGE DEBUG] Morphological operation: Open, kernel size: 3x3
+2025/06/18 04:06:15 [IMAGE DEBUG] Mat 'final_binary': 1400x995, channels=1, type=0, elemSize=1
+2025/06/18 04:06:15 [IMAGE DEBUG] 2D Otsu - Completed
+2025/06/18 04:06:15 [PIPELINE DEBUG] Operation 'transformation_0_2D Otsu' took 12.269452292s
+2025/06/18 04:06:15 [PIPELINE DEBUG] Transformation '2D Otsu' applied in 12.269452292s
+2025/06/18 04:06:15 [PIPELINE DEBUG]   Before: 1400x995, 3 channels
+2025/06/18 04:06:15 [PIPELINE DEBUG]   After:  1400x995, 1 channels
+2025/06/18 04:06:15 [PIPELINE DEBUG] processImage: completed successfully
+2025/06/18 04:06:15 [PIPELINE DEBUG] Operation 'processImage' took 12.270555375s
+2025/06/18 04:06:15 [PIPELINE DEBUG] Pipeline Stats:
+2025/06/18 04:06:15 [PIPELINE DEBUG]   Original size: 1400x995
+2025/06/18 04:06:15 [PIPELINE DEBUG]   Processed size: 1400x995
+2025/06/18 04:06:15 [PIPELINE DEBUG]   Number of transformations: 1
+2025/06/18 04:06:15 [PIPELINE DEBUG]   Total processing time: 12.269452292s
+2025/06/18 04:06:15 [PIPELINE DEBUG] Memory - Alloc: 66.54 MB, TotalAlloc: 145.58 MB, Sys: 110.21 MB, NumGC: 10
+2025/06/18 04:06:15 [GUI DEBUG] Applied Transformation: 2D Otsu with params: map[epsilon:0.02 morphKernelSize:3 windowRadius:5]
+2025/06/18 04:06:15 [GUI DEBUG] Transformation '2D Otsu' applied successfully
+2025/06/18 04:06:15 [GUI DEBUG] UI Event: updateImageDisplay called
+2025/06/18 04:06:15 [GUI DEBUG] UI Event: updateImageDisplay: converting original image
+2025/06/18 04:06:15 [GUI DEBUG] Image conversion successful: original
+2025/06/18 04:06:15 [GUI DEBUG] Image format change 'processed': 3 channels -> 1 channels
+2025/06/18 04:06:15 [RENDER DEBUG] FORCING CONSISTENT FORMAT: Converting grayscale to RGBA at Go image level
+2025/06/18 04:06:15 [RENDER DEBUG] SUCCESS: Processed image converted to RGBA format for consistent GPU texture handling
+2025/06/18 04:06:15 [GUI DEBUG] Image conversion successful: processed
+2025/06/18 04:06:15 [GUI DEBUG] Canvas refreshed: originalImage
+2025/06/18 04:06:15 [GUI DEBUG] Canvas refreshed: previewImage
+2025/06/18 04:06:15 [GUI DEBUG] UI Event: updateImageDisplay: completed successfully
+2025/06/18 04:06:15 [GUI DEBUG] List 'available transformations' unselected/cleared
+
