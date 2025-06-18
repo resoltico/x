@@ -12,7 +12,6 @@ type ImagePipeline struct {
 	processedImage  gocv.Mat
 	transformations []Transformation
 	debugPipeline   *DebugPipeline
-	debugImage      *DebugImage
 	debugMemory     *DebugMemory
 	initialized     bool
 }
@@ -21,7 +20,6 @@ func NewImagePipeline() *ImagePipeline {
 	pipeline := &ImagePipeline{
 		transformations: make([]Transformation, 0),
 		debugPipeline:   NewDebugPipeline(),
-		debugImage:      NewDebugImage(),
 		debugMemory:     NewDebugMemory(),
 		initialized:     false,
 	}
@@ -50,15 +48,15 @@ func (p *ImagePipeline) SetOriginalImage(img gocv.Mat) {
 
 	// Clear existing transformations when loading a new image
 	p.debugPipeline.LogSetOriginalStep("clearing existing transformations")
-	p.transformations = make([]Transformation, 0) // Clear without calling processImage
+	p.transformations = make([]Transformation, 0)
 
 	// Set up new image
 	p.originalImage = img.Clone()
-	p.processedImage = p.originalImage.Clone() // Initialize with original, not empty Mat
+	p.processedImage = p.originalImage.Clone()
 	p.initialized = true
 	p.debugPipeline.LogImageStats("original", p.originalImage)
 
-	// Now process the image with no transformations (will just keep original)
+	// Process the image with no transformations
 	p.processImage()
 }
 

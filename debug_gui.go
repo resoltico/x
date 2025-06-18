@@ -100,21 +100,6 @@ func (d *DebugGUI) LogTransformationApplication(transformationName string, succe
 	}
 }
 
-// Enhanced zoom logging
-func (d *DebugGUI) LogZoomOperation(operation string, oldZoom, newZoom float64) {
-	if !d.enabled {
-		return
-	}
-	log.Printf("[GUI DEBUG] Zoom %s: %.1f%% -> %.1f%%", operation, oldZoom*100, newZoom*100)
-}
-
-func (d *DebugGUI) LogZoomChange(oldZoom, newZoom float64) {
-	if !d.enabled {
-		return
-	}
-	log.Printf("[GUI DEBUG] Zoom changed from %.1f%% to %.1f%%", oldZoom*100, newZoom*100)
-}
-
 func (d *DebugGUI) LogFileOperation(operation, filename string) {
 	if !d.enabled {
 		return
@@ -206,7 +191,6 @@ func (d *DebugGUI) LogUIStructure(description string) {
 	log.Printf("[GUI DEBUG] UI Structure: %s", description)
 }
 
-// Enhanced canvas and image logging
 func (d *DebugGUI) LogImageCanvasResize(canvasName string, width, height float32) {
 	if !d.enabled {
 		return
@@ -218,10 +202,9 @@ func (d *DebugGUI) LogImageCanvasProperties(canvasName string, canvasWidth, canv
 	if !d.enabled {
 		return
 	}
-	log.Printf("[GUI DEBUG] Canvas '%s': canvas=%.0fx%.0f, image=%dx%d", canvasName, canvasWidth, canvasHeight, imageWidth, imageHeight)
+	log.Printf("[GUI DEBUG] Canvas '%s': image=%dx%d", canvasName, imageWidth, imageHeight)
 }
 
-// Enhanced save operation logging
 func (d *DebugGUI) LogSaveOperation(filename, extension string, hasProcessedImage bool) {
 	if !d.enabled {
 		return

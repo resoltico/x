@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"image"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -21,11 +20,11 @@ type ImageRestorationUI struct {
 	pipeline                     *ImagePipeline
 	originalImage                *canvas.Image
 	previewImage                 *canvas.Image
+	originalScroll               *container.Scroll
+	previewScroll                *container.Scroll
 	transformationsList          *widget.List
 	availableTransformationsList *widget.List
 	parametersContainer          *fyne.Container
-	zoomEntry                    *widget.Entry
-	zoomLevel                    float64
 	imageInfoLabel               *widget.RichText
 	psnrProgress                 *widget.ProgressBar
 	ssimProgress                 *widget.ProgressBar
@@ -36,10 +35,9 @@ type ImageRestorationUI struct {
 
 func NewImageRestorationUI(window fyne.Window) *ImageRestorationUI {
 	ui := &ImageRestorationUI{
-		window:    window,
-		pipeline:  NewImagePipeline(),
-		zoomLevel: 1.0,
-		debugGUI:  NewDebugGUI(),
+		window:   window,
+		pipeline: NewImagePipeline(),
+		debugGUI: NewDebugGUI(),
 	}
 	return ui
 }
@@ -74,32 +72,13 @@ func (ui *ImageRestorationUI) createToolbar() fyne.CanvasObject {
 	resetBtn := widget.NewButtonWithIcon("Reset", theme.ViewRefreshIcon(), ui.resetTransformations)
 	resetBtn.Importance = widget.HighImportance
 
-	// Zoom controls
-	zoomLabel := widget.NewLabel("Zoom:")
-	ui.zoomEntry = widget.NewEntry()
-	ui.zoomEntry.SetText("100")
-	ui.zoomEntry.OnSubmitted = ui.onZoomChanged
-	ui.zoomEntry.Resize(fyne.NewSize(60, 30))
-
-	zoomOutBtn := widget.NewButtonWithIcon("", theme.ZoomOutIcon(), ui.zoomOut)
-	zoomInBtn := widget.NewButtonWithIcon("", theme.ZoomInIcon(), ui.zoomIn)
-
-	zoomContainer := container.NewHBox(
-		zoomLabel,
-		ui.zoomEntry,
-		widget.NewLabel("%"),
-		zoomOutBtn,
-		zoomInBtn,
-	)
-
 	leftSection := container.NewHBox(openBtn, saveBtn, resetBtn)
-	centerSection := container.NewCenter(zoomContainer)
 
 	toolbar := container.NewBorder(
 		nil, nil,
 		leftSection,
 		nil,
-		centerSection,
+		nil,
 	)
 
 	toolbarCard := container.NewPadded(toolbar)
@@ -145,16 +124,19 @@ func (ui *ImageRestorationUI) createCenterPanel() fyne.CanvasObject {
 	ui.previewImage.FillMode = canvas.ImageFillContain
 	ui.previewImage.ScaleMode = canvas.ImageScaleSmooth
 
+	ui.originalScroll = container.NewScroll(ui.originalImage)
+	ui.previewScroll = container.NewScroll(ui.previewImage)
+
 	originalContainer := container.NewBorder(
 		widget.NewCard("", "Original", nil),
 		nil, nil, nil,
-		container.NewScroll(ui.originalImage),
+		ui.originalScroll,
 	)
 
 	previewContainer := container.NewBorder(
 		widget.NewCard("", "Preview", nil),
 		nil, nil, nil,
-		container.NewScroll(ui.previewImage),
+		ui.previewScroll,
 	)
 
 	imagesSplit := container.NewHSplit(originalContainer, previewContainer)
@@ -271,7 +253,6 @@ func (ui *ImageRestorationUI) openImage() {
 func (ui *ImageRestorationUI) saveImage() {
 	ui.debugGUI.LogButtonClick("SAVE IMAGE")
 	if !ui.pipeline.initialized || ui.pipeline.originalImage.Empty() {
-		ui.debugGUI.Log("Save attempt with no image loaded")
 		dialog.ShowInformation("No Image", "Please load an image first", ui.window)
 		return
 	}
@@ -292,13 +273,10 @@ func (ui *ImageRestorationUI) saveImage() {
 		ui.debugGUI.LogFileExtensionCheck(filename, ext, ext != "")
 
 		if ext == "" {
-			// No extension provided, add .png
 			filePath = filePath + ".png"
 			filename = filename + ".png"
 			ui.debugGUI.Log("Added .png extension to filename")
 		} else if ext != ".png" && ext != ".jpg" && ext != ".jpeg" && ext != ".tiff" && ext != ".tif" {
-			// Unsupported extension, force to .png
-			ui.debugGUI.Log(fmt.Sprintf("Unsupported extension %s, forcing to .png", ext))
 			filePath = strings.TrimSuffix(filePath, ext) + ".png"
 			filename = strings.TrimSuffix(filename, ext) + ".png"
 		}
@@ -317,7 +295,6 @@ func (ui *ImageRestorationUI) saveImage() {
 		if !success {
 			err := fmt.Errorf("failed to write image to %s", filePath)
 			ui.debugGUI.LogSaveResult(filename, false, err.Error())
-			ui.debugGUI.LogError(err)
 			dialog.ShowError(err, ui.window)
 		} else {
 			ui.debugGUI.LogSaveResult(filename, true, "")
@@ -332,32 +309,6 @@ func (ui *ImageRestorationUI) resetTransformations() {
 	ui.updateUI()
 	ui.parametersContainer.Objects[0] = widget.NewLabel("Select a Transformation")
 	ui.parametersContainer.Refresh()
-	ui.debugGUI.LogUIRefresh("parameters container")
-}
-
-func (ui *ImageRestorationUI) onZoomChanged(text string) {
-	if value, err := strconv.ParseFloat(text, 64); err == nil && value > 0 {
-		oldZoom := ui.zoomLevel
-		ui.zoomLevel = value / 100.0
-		ui.debugGUI.LogZoomOperation("manual entry", oldZoom, ui.zoomLevel)
-		ui.updateImageDisplay()
-	}
-}
-
-func (ui *ImageRestorationUI) zoomIn() {
-	oldZoom := ui.zoomLevel
-	ui.zoomLevel *= 1.2
-	ui.debugGUI.LogZoomOperation("zoom in", oldZoom, ui.zoomLevel)
-	ui.zoomEntry.SetText(fmt.Sprintf("%.0f", ui.zoomLevel*100))
-	ui.updateImageDisplay()
-}
-
-func (ui *ImageRestorationUI) zoomOut() {
-	oldZoom := ui.zoomLevel
-	ui.zoomLevel /= 1.2
-	ui.debugGUI.LogZoomOperation("zoom out", oldZoom, ui.zoomLevel)
-	ui.zoomEntry.SetText(fmt.Sprintf("%.0f", ui.zoomLevel*100))
-	ui.updateImageDisplay()
 }
 
 func (ui *ImageRestorationUI) onTransformationSelected(id widget.ListItemID) {
@@ -409,6 +360,7 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 	ui.debugGUI.LogUIEvent("updateImageDisplay called")
 	if ui.pipeline.initialized && !ui.pipeline.originalImage.Empty() {
 		ui.debugGUI.LogUIEvent("updateImageDisplay: converting original image")
+
 		// Convert original image
 		originalImg, err := ui.pipeline.originalImage.ToImage()
 		if err != nil {
@@ -417,26 +369,6 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 		}
 		ui.debugGUI.LogImageConversion("original", true, "")
 
-		// Log image properties
-		bounds := originalImg.Bounds()
-		ui.debugGUI.LogImageDisplay("original", bounds.Dx(), bounds.Dy(), originalImg != nil)
-
-		ui.debugGUI.LogUIEvent("updateImageDisplay: setting original image")
-		ui.originalImage.Image = originalImg
-
-		// Apply zoom by resizing the canvas
-		baseWidth := float32(600)
-		baseHeight := float32(450)
-		zoomedWidth := baseWidth * float32(ui.zoomLevel)
-		zoomedHeight := baseHeight * float32(ui.zoomLevel)
-
-		ui.originalImage.Resize(fyne.NewSize(zoomedWidth, zoomedHeight))
-		ui.debugGUI.LogImageCanvasResize("originalImage", zoomedWidth, zoomedHeight)
-		ui.debugGUI.LogImageCanvasProperties("originalImage", zoomedWidth, zoomedHeight, bounds.Dx(), bounds.Dy())
-		ui.originalImage.Refresh()
-		ui.debugGUI.LogCanvasRefresh("originalImage")
-
-		ui.debugGUI.LogUIEvent("updateImageDisplay: converting processed image")
 		// Convert processed image
 		processedMat := ui.pipeline.GetProcessedImage()
 		if processedMat.Empty() {
@@ -450,27 +382,26 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 		}
 		ui.debugGUI.LogImageConversion("processed", true, "")
 
-		// Log processed image properties
-		bounds = processedImg.Bounds()
-		ui.debugGUI.LogImageDisplay("processed", bounds.Dx(), bounds.Dy(), processedImg != nil)
+		// Get actual image dimensions
+		originalBounds := originalImg.Bounds()
+		processedBounds := processedImg.Bounds()
 
-		ui.debugGUI.LogUIEvent("updateImageDisplay: setting processed image")
+		// Update images
+		ui.originalImage.Image = originalImg
+		ui.debugGUI.LogImageCanvasProperties("originalImage", 0, 0, originalBounds.Dx(), originalBounds.Dy())
+
 		ui.previewImage.Image = processedImg
+		ui.debugGUI.LogImageCanvasProperties("previewImage", 0, 0, processedBounds.Dx(), processedBounds.Dy())
 
-		// Apply zoom to processed image as well
-		ui.previewImage.Resize(fyne.NewSize(zoomedWidth, zoomedHeight))
-		ui.debugGUI.LogImageCanvasResize("previewImage", zoomedWidth, zoomedHeight)
-		ui.debugGUI.LogImageCanvasProperties("previewImage", zoomedWidth, zoomedHeight, bounds.Dx(), bounds.Dy())
+		// Refresh images and scroll containers
+		ui.originalImage.Refresh()
 		ui.previewImage.Refresh()
+		ui.originalScroll.Refresh()
+		ui.previewScroll.Refresh()
+
+		ui.debugGUI.LogCanvasRefresh("originalImage")
 		ui.debugGUI.LogCanvasRefresh("previewImage")
-
-		// Force container refresh
-		ui.window.Content().Refresh()
-		ui.debugGUI.LogContainerRefresh("main window content")
-
 		ui.debugGUI.LogUIEvent("updateImageDisplay: completed successfully")
-	} else {
-		ui.debugGUI.LogUIEvent("updateImageDisplay: pipeline not initialized or original image empty")
 	}
 }
 
