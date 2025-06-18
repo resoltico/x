@@ -6,7 +6,7 @@ A modern image processing application built with Go and Fyne, featuring advanced
 
 - **Modern GUI**: Built with Fyne v2.6.1 for cross-platform compatibility
 - **Image Processing**: Powered by OpenCV 4.11.0 through GoCV bindings
-- **Real-time Preview**: Live preview of transformations with zoom controls
+- **Real-time Preview**: Live preview of transformations
 - **Quality Metrics**: PSNR and SSIM calculations for processed images
 - **Extensible Architecture**: Modular transformation system for easy algorithm additions
 
@@ -123,7 +123,7 @@ The application includes comprehensive debugging capabilities that output to the
 1. **Open Image**: Click "OPEN IMAGE" to load an image file
 2. **Apply Transformations**: Select "2D Otsu" from the transformations list
 3. **Adjust Parameters**: Fine-tune parameters using sliders in the Parameters panel
-4. **Preview Results**: View real-time preview with zoom controls
+4. **Preview Results**: View real-time preview
 5. **Monitor Quality**: Check PSNR and SSIM metrics in the right panel
 6. **Save Result**: Click "SAVE IMAGE" to export the processed image
 7. **Reset**: Use "Reset" button to clear all transformations
