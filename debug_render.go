@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"image"
+	"image/color"
 	"log"
 	"runtime"
 
@@ -599,7 +600,7 @@ func (d *DebugRender) LogConversionMethodComparison(matName string, mat gocv.Mat
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
 			val := mat.GetUCharAt(y, x)
-			img3.SetGray(x, y, image.Gray{Y: val})
+			img3.SetGray(x, y, color.Gray{Y: val})
 		}
 	}
 
@@ -618,4 +619,18 @@ func (d *DebugRender) Enable() {
 
 func (d *DebugRender) Disable() {
 	d.enabled = false
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }

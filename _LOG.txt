@@ -1,5 +1,7 @@
-[2:07:31 PM] % go build -o image-restoration-suite .
+[2:11:12 PM] % go build -o image-restoration-suite .
 # image-restoration-suite
-./debug_render.go:602:23: cannot use image.Gray{…} (value of struct type image.Gray) as "image/color".Gray value in argument to img3.SetGray
-./debug_render.go:602:34: unknown field Y in struct literal of type image.Gray
-[2:07:56 PM] % 
+./debug_render.go:624:6: min redeclared in this block
+	./debug_image.go:531:6: other declaration of min
+./debug_render.go:631:6: max redeclared in this block
+	./debug_image.go:538:6: other declaration of max
+[2:11:26 PM] % 
