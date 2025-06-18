@@ -1,4 +1,4 @@
-package transformations
+package main
 
 import (
 	"fmt"
@@ -10,13 +10,11 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 	"gocv.io/x/gocv"
-
-	"image-restoration-suite/internal/debug"
 )
 
 // TwoDOtsu implements 2D Otsu thresholding with guided filtering
 type TwoDOtsu struct {
-	debugImage      *debug.ImageDebugger
+	debugImage      *DebugImage
 	windowRadius    int
 	epsilon         float64
 	morphKernelSize int
@@ -31,9 +29,9 @@ type TwoDOtsu struct {
 }
 
 // NewTwoDOtsu creates a new 2D Otsu transformation
-func NewTwoDOtsu(debugger *debug.ImageDebugger) *TwoDOtsu {
+func NewTwoDOtsu() *TwoDOtsu {
 	return &TwoDOtsu{
-		debugImage:      debugger,
+		debugImage:      NewDebugImage(),
 		windowRadius:    5,
 		epsilon:         0.02,
 		morphKernelSize: 3,
@@ -42,7 +40,7 @@ func NewTwoDOtsu(debugger *debug.ImageDebugger) *TwoDOtsu {
 	}
 }
 
-func (t *TwoDOtsu) GetName() string {
+func (t *TwoDOtsu) Name() string {
 	return "2D Otsu"
 }
 
@@ -65,10 +63,6 @@ func (t *TwoDOtsu) SetParameters(params map[string]interface{}) {
 		t.morphKernelSize = kernel
 	}
 	t.invalidateCache()
-}
-
-func (t *TwoDOtsu) SetParameterChangeCallback(callback func()) {
-	t.onParameterChanged = callback
 }
 
 func (t *TwoDOtsu) Apply(src gocv.Mat) gocv.Mat {
@@ -112,6 +106,17 @@ func (t *TwoDOtsu) ApplyPreview(src gocv.Mat) gocv.Mat {
 	return result
 }
 
+func (t *TwoDOtsu) GetParametersWidget(onParameterChanged func()) fyne.CanvasObject {
+	t.onParameterChanged = onParameterChanged
+	return t.createParameterUI()
+}
+
+func (t *TwoDOtsu) Close() {
+	if !t.cachedResult.Empty() {
+		t.cachedResult.Close()
+	}
+}
+
 func (t *TwoDOtsu) compareParams(current map[string]interface{}) bool {
 	if len(current) != len(t.cachedParams) {
 		return false
@@ -142,11 +147,11 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
 	defer workingImage.Close()
 
 	// Convert to grayscale
-	t.debugImage.LogAlgorithmStep("Color conversion", "BGR -> Grayscale")
+	t.debugImage.LogColorConversion("BGR", "Grayscale")
 	grayscale := gocv.NewMat()
 	defer grayscale.Close()
 	gocv.CvtColor(workingImage, &grayscale, gocv.ColorBGRToGray)
-	t.debugImage.LogMatProperties("grayscale", grayscale)
+	t.debugImage.LogMatInfo("grayscale", grayscale)
 
 	// Apply guided filter for smoother guided image
 	guided := t.applyGuidedFilter(grayscale)
@@ -171,7 +176,7 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
 		result = processed
 	}
 
-	t.debugImage.LogMatProperties("final_binary", result)
+	t.debugImage.LogMatInfo("final_binary", result)
 	t.debugImage.LogAlgorithmStep("2D Otsu", "Completed")
 
 	return result
@@ -249,7 +254,7 @@ func (t *TwoDOtsu) applyGuidedFilter(src gocv.Mat) gocv.Mat {
 	resultFloat.ConvertTo(&result, gocv.MatTypeCV8U)
 
 	t.debugImage.LogAlgorithmStep("GuidedFilter", fmt.Sprintf("Result: %dx%d, channels=%d", result.Cols(), result.Rows(), result.Channels()))
-	t.debugImage.LogAlgorithmStep("Applied filter", fmt.Sprintf("GuidedFilter with params: [radius=%d epsilon=%.3f]", t.windowRadius, t.epsilon))
+	t.debugImage.LogFilter("GuidedFilter", fmt.Sprintf("radius=%d epsilon=%.3f", t.windowRadius, t.epsilon))
 
 	return result
 }
@@ -276,7 +281,7 @@ func (t *TwoDOtsu) apply2DOtsu(gray, guided gocv.Mat) gocv.Mat {
 	t.debugImage.LogAlgorithmStep("2D Otsu", "Finding optimal thresholds")
 	bestS, bestT, maxVariance := t.findOptimalThresholds(hist, len(grayData))
 
-	t.debugImage.LogAlgorithmStep("", fmt.Sprintf("Optimal thresholds found: s=%d, t=%d, variance=%f", bestS, bestT, maxVariance))
+	t.debugImage.LogOptimalThresholds(bestS, bestT, maxVariance)
 
 	// Apply thresholding
 	t.debugImage.LogAlgorithmStep("2D Otsu", "Binarizing image")
@@ -366,8 +371,8 @@ func (t *TwoDOtsu) calculateBetweenClassVariance(hist [256][256]int, s, t, total
 
 func (t *TwoDOtsu) applyMorphologicalOps(src gocv.Mat) gocv.Mat {
 	if t.morphKernelSize <= 1 {
-		t.debugImage.LogAlgorithmStep("", fmt.Sprintf("Morphological operation: Close, kernel size: %dx%d", t.morphKernelSize, t.morphKernelSize))
-		t.debugImage.LogAlgorithmStep("", fmt.Sprintf("Morphological operation: Open, kernel size: %dx%d", t.morphKernelSize, t.morphKernelSize))
+		t.debugImage.LogMorphology("Close", t.morphKernelSize)
+		t.debugImage.LogMorphology("Open", t.morphKernelSize)
 		return src.Clone()
 	}
 
@@ -375,20 +380,20 @@ func (t *TwoDOtsu) applyMorphologicalOps(src gocv.Mat) gocv.Mat {
 	defer kernel.Close()
 
 	// Closing (dilation followed by erosion)
-	t.debugImage.LogAlgorithmStep("", fmt.Sprintf("Morphological operation: Close, kernel size: %dx%d", t.morphKernelSize, t.morphKernelSize))
+	t.debugImage.LogMorphology("Close", t.morphKernelSize)
 	closed := gocv.NewMat()
 	defer closed.Close()
 	gocv.MorphologyEx(src, &closed, gocv.MorphClose, kernel, image.Point{X: -1, Y: -1}, 1, gocv.BorderConstant, color.RGBA{0, 0, 0, 0})
 
 	// Opening (erosion followed by dilation)
-	t.debugImage.LogAlgorithmStep("", fmt.Sprintf("Morphological operation: Open, kernel size: %dx%d", t.morphKernelSize, t.morphKernelSize))
+	t.debugImage.LogMorphology("Open", t.morphKernelSize)
 	result := gocv.NewMat()
 	gocv.MorphologyEx(closed, &result, gocv.MorphOpen, kernel, image.Point{X: -1, Y: -1}, 1, gocv.BorderConstant, color.RGBA{0, 0, 0, 0})
 
 	return result
 }
 
-func (t *TwoDOtsu) CreateParameterUI() *fyne.Container {
+func (t *TwoDOtsu) createParameterUI() *fyne.Container {
 	// Window Radius parameter
 	radiusLabel := widget.NewLabel("Window Radius (1-20):")
 	radiusEntry := widget.NewEntry()
@@ -455,17 +460,4 @@ func (t *TwoDOtsu) CreateParameterUI() *fyne.Container {
 
 func (t *TwoDOtsu) invalidateCache() {
 	t.cacheValid = false
-}
-
-func (t *TwoDOtsu) Reset() {
-	t.windowRadius = 5
-	t.epsilon = 0.02
-	t.morphKernelSize = 3
-	t.invalidateCache()
-}
-
-func (t *TwoDOtsu) Cleanup() {
-	if !t.cachedResult.Empty() {
-		t.cachedResult.Close()
-	}
 }

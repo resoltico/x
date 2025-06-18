@@ -174,6 +174,8 @@ func (p *ImagePipeline) processImage() {
 func (p *ImagePipeline) ProcessPreview() {
 	p.processPreview()
 }
+
+func (p *ImagePipeline) processPreview() {
 	p.debugPipeline.LogProcessStart()
 	if !p.initialized {
 		p.debugPipeline.LogProcessEarlyReturn("preview not initialized")

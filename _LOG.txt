@@ -1,4 +1,29 @@
-[9:31:08 AM] % go build -o image-restoration-suite .
-twod_otsu.go:14:2: package image-restoration-suite/internal/debug is not in std (/opt/homebrew/Cellar/go/1.24.4/libexec/src/image-restoration-suite/internal/debug)
-found packages main (debug_gui.go) and transformations (twod_otsu.go) in /Users/erst/Library/CloudStorage/Dropbox/Websites/x
-[9:31:14 AM] % 
+[9:35:09 AM] % go build -o image-restoration-suite .
+# image-restoration-suite
+./twod_otsu.go:172:89: undefined: gocv.InterpolationNearest
+./twod_otsu.go:202:82: too many arguments in call to gocv.BoxFilter
+	have (gocv.Mat, *gocv.Mat, number, image.Point, image.Point, bool, gocv.BorderType)
+	want (gocv.Mat, *gocv.Mat, int, image.Point)
+./twod_otsu.go:208:49: too many arguments in call to gocv.Multiply
+	have (gocv.Mat, gocv.Mat, *gocv.Mat, number, number)
+	want (gocv.Mat, gocv.Mat, *gocv.Mat)
+./twod_otsu.go:209:85: too many arguments in call to gocv.BoxFilter
+	have (gocv.Mat, *gocv.Mat, number, image.Point, image.Point, bool, gocv.BorderType)
+	want (gocv.Mat, *gocv.Mat, int, image.Point)
+./twod_otsu.go:216:45: too many arguments in call to gocv.Multiply
+	have (gocv.Mat, gocv.Mat, *gocv.Mat, number, number)
+	want (gocv.Mat, gocv.Mat, *gocv.Mat)
+./twod_otsu.go:224:7: undefined: gocv.AddFloat
+./twod_otsu.go:225:37: too many arguments in call to gocv.Divide
+	have (gocv.Mat, gocv.Mat, *gocv.Mat, number, number)
+	want (gocv.Mat, gocv.Mat, *gocv.Mat)
+./twod_otsu.go:231:33: too many arguments in call to gocv.Multiply
+	have (gocv.Mat, gocv.Mat, *gocv.Mat, number, number)
+	want (gocv.Mat, gocv.Mat, *gocv.Mat)
+./twod_otsu.go:237:75: too many arguments in call to gocv.BoxFilter
+	have (gocv.Mat, *gocv.Mat, number, image.Point, image.Point, bool, gocv.BorderType)
+	want (gocv.Mat, *gocv.Mat, int, image.Point)
+./twod_otsu.go:323:73: t redeclared in this block
+	./twod_otsu.go:323:7: other declaration of t
+./twod_otsu.go:237:75: too many errors
+[9:35:54 AM] % 
