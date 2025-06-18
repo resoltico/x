@@ -17,7 +17,7 @@ type DebugRender struct {
 
 func NewDebugRender() *DebugRender {
 	return &DebugRender{
-		enabled: true, // Set to true to enable terminal debug output for rendering operations
+		enabled: true, // Set to false to disable render debugging
 	}
 }
 
@@ -301,6 +301,10 @@ func (d *DebugRender) LogPixelAnalysis(stage string, origImg, prevImg *canvas.Im
 	}
 
 	log.Printf("[RENDER DEBUG] === END PIXEL ANALYSIS %s ===", stage)
+}
+
+func (d *DebugRender) IsEnabled() bool {
+	return d.enabled
 }
 
 func (d *DebugRender) Enable() {

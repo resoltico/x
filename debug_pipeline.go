@@ -35,7 +35,7 @@ type OperationLog struct {
 
 func NewDebugPipeline() *DebugPipeline {
 	return &DebugPipeline{
-		enabled:    true, // Set to true to enable pipeline debugging
+		enabled:    true, // Set to false to disable pipeline debugging
 		timings:    make(map[string]time.Time),
 		imageStats: make(map[string]ImageStats),
 		operations: make([]OperationLog, 0),

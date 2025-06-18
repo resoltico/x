@@ -9,7 +9,7 @@ type DebugMemory struct {
 }
 
 func NewDebugMemory() *DebugMemory {
-	return &DebugMemory{enabled: true}
+	return &DebugMemory{enabled: true} // Set to false to disable debug output for production
 }
 
 func (d *DebugMemory) Log(message string) {

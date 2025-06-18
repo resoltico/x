@@ -33,7 +33,9 @@ func (t *TwoDOtsu) Name() string {
 }
 
 func (t *TwoDOtsu) Apply(input gocv.Mat) gocv.Mat {
-	t.debugImage.LogAlgorithmStep("2D Otsu", "Starting binarization")
+	if t.debugImage.IsEnabled() {
+		t.debugImage.LogAlgorithmStep("2D Otsu", "Starting binarization")
+	}
 
 	// Step 1: Preprocessing
 	gray := gocv.NewMat()
@@ -41,21 +43,29 @@ func (t *TwoDOtsu) Apply(input gocv.Mat) gocv.Mat {
 
 	if input.Channels() == 3 {
 		gocv.CvtColor(input, &gray, gocv.ColorBGRToGray)
-		t.debugImage.LogColorConversion("BGR", "Grayscale")
+		if t.debugImage.IsEnabled() {
+			t.debugImage.LogColorConversion("BGR", "Grayscale")
+		}
 	} else {
 		gray = input.Clone()
 	}
-	t.debugImage.LogMatInfo("grayscale", gray)
+	if t.debugImage.IsEnabled() {
+		t.debugImage.LogMatInfo("grayscale", gray)
+	}
 
 	// Apply bilateral filter as approximation for guided filter
 	guided := gocv.NewMat()
 	defer guided.Close()
 
 	gocv.BilateralFilter(gray, &guided, -1, 80, 80)
-	t.debugImage.LogFilter("BilateralFilter", "radius=-1", "sigmaColor=80", "sigmaSpace=80")
+	if t.debugImage.IsEnabled() {
+		t.debugImage.LogFilter("BilateralFilter", "radius=-1", "sigmaColor=80", "sigmaSpace=80")
+	}
 
 	// Step 2: Construct 2D Histogram
-	t.debugImage.LogAlgorithmStep("2D Otsu", "Constructing 2D histogram")
+	if t.debugImage.IsEnabled() {
+		t.debugImage.LogAlgorithmStep("2D Otsu", "Constructing 2D histogram")
+	}
 	hist := make([][]float64, 256)
 	for i := range hist {
 		hist[i] = make([]float64, 256)
@@ -80,7 +90,9 @@ func (t *TwoDOtsu) Apply(input gocv.Mat) gocv.Mat {
 	}
 
 	// Step 3-6: Find Optimal Thresholds
-	t.debugImage.LogAlgorithmStep("2D Otsu", "Finding optimal thresholds")
+	if t.debugImage.IsEnabled() {
+		t.debugImage.LogAlgorithmStep("2D Otsu", "Finding optimal thresholds")
+	}
 	maxVariance := 0.0
 	bestS, bestT := 128, 128 // Default thresholds
 
@@ -139,10 +151,14 @@ func (t *TwoDOtsu) Apply(input gocv.Mat) gocv.Mat {
 		}
 	}
 
-	t.debugImage.LogOptimalThresholds(bestS, bestT, maxVariance)
+	if t.debugImage.IsEnabled() {
+		t.debugImage.LogOptimalThresholds(bestS, bestT, maxVariance)
+	}
 
 	// Step 7: Binarize Image
-	t.debugImage.LogAlgorithmStep("2D Otsu", "Binarizing image")
+	if t.debugImage.IsEnabled() {
+		t.debugImage.LogAlgorithmStep("2D Otsu", "Binarizing image")
+	}
 	binary := gocv.NewMatWithSize(rows, cols, gocv.MatTypeCV8U)
 
 	for i := 0; i < rows; i++ {
@@ -158,7 +174,9 @@ func (t *TwoDOtsu) Apply(input gocv.Mat) gocv.Mat {
 	}
 
 	// Step 8: Postprocessing
-	t.debugImage.LogAlgorithmStep("2D Otsu", "Postprocessing")
+	if t.debugImage.IsEnabled() {
+		t.debugImage.LogAlgorithmStep("2D Otsu", "Postprocessing")
+	}
 	kernel := gocv.GetStructuringElement(gocv.MorphRect,
 		image.Pt(t.morphKernelSize, t.morphKernelSize))
 	defer kernel.Close()
@@ -166,15 +184,18 @@ func (t *TwoDOtsu) Apply(input gocv.Mat) gocv.Mat {
 	processed := gocv.NewMat()
 	gocv.MorphologyEx(binary, &processed, gocv.MorphClose, kernel)
 	binary.Close()
-	t.debugImage.LogMorphology("Close", t.morphKernelSize)
+	if t.debugImage.IsEnabled() {
+		t.debugImage.LogMorphology("Close", t.morphKernelSize)
+	}
 
 	final := gocv.NewMat()
 	gocv.MorphologyEx(processed, &final, gocv.MorphOpen, kernel)
 	processed.Close()
-	t.debugImage.LogMorphology("Open", t.morphKernelSize)
-
-	t.debugImage.LogMatInfo("final_binary", final)
-	t.debugImage.LogAlgorithmStep("2D Otsu", "Completed")
+	if t.debugImage.IsEnabled() {
+		t.debugImage.LogMorphology("Open", t.morphKernelSize)
+		t.debugImage.LogMatInfo("final_binary", final)
+		t.debugImage.LogAlgorithmStep("2D Otsu", "Completed")
+	}
 
 	return final
 }

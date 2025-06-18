@@ -13,7 +13,7 @@ type DebugGUI struct {
 
 func NewDebugGUI() *DebugGUI {
 	return &DebugGUI{
-		enabled: true, // Set to true to enable terminal debug output for GUI operations
+		enabled: true, // Set to false to disable debug output for production
 	}
 }
 
@@ -283,6 +283,45 @@ func (d *DebugGUI) LogUIRefreshTrigger(component string, reason string) {
 		return
 	}
 	log.Printf("[GUI DEBUG] UI refresh triggered: %s (%s)", component, reason)
+}
+
+func (d *DebugGUI) LogLayoutPositions(componentName string, pos fyne.Position, size fyne.Size) {
+	if !d.enabled {
+		return
+	}
+	log.Printf("[GUI DEBUG] Layout '%s': pos=(%.1f,%.1f), size=(%.1fx%.1f)",
+		componentName, pos.X, pos.Y, size.Width, size.Height)
+}
+
+func (d *DebugGUI) LogTextSizeChange(componentName, oldText, newText string, oldSize, newSize fyne.Size) {
+	if !d.enabled {
+		return
+	}
+	log.Printf("[GUI DEBUG] Text size change '%s': '%s'->'%s', size (%.1fx%.1f)->(%.1fx%.1f)",
+		componentName, oldText, newText, oldSize.Width, oldSize.Height, newSize.Width, newSize.Height)
+}
+
+func (d *DebugGUI) LogProgressBarChange(componentName string, oldValue, newValue float64) {
+	if !d.enabled {
+		return
+	}
+	log.Printf("[GUI DEBUG] Progress bar '%s': %.3f -> %.3f", componentName, oldValue, newValue)
+}
+
+func (d *DebugGUI) LogQualityMetricsUpdate(psnr, ssim float64, hasTransformations bool) {
+	if !d.enabled {
+		return
+	}
+	log.Printf("[GUI DEBUG] Quality metrics update: PSNR=%.2f, SSIM=%.4f, hasTransformations=%t",
+		psnr, ssim, hasTransformations)
+}
+
+func (d *DebugGUI) LogPanelSizes(leftWidth, centerWidth, rightWidth, totalHeight float32) {
+	if !d.enabled {
+		return
+	}
+	log.Printf("[GUI DEBUG] Panel sizes: left=%.0f, center=%.0f, right=%.0f, height=%.0f",
+		leftWidth, centerWidth, rightWidth, totalHeight)
 }
 
 func (d *DebugGUI) IsEnabled() bool {
