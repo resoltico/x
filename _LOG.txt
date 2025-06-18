@@ -1,139 +1,229 @@
-[1:14:39 PM] % go run .
+[1:32:56 PM] % go run .
 # image-restoration-suite
 ld: warning: ignoring duplicate libraries: '-lobjc'
-2025/06/18 13:14:42 [MEMORY DEBUG] Mat 'originalImage' created
-2025/06/18 13:14:42 [MEMORY DEBUG] Mat 'processedImage' created
-2025/06/18 13:14:42 [MEMORY DEBUG] Mat 'previewImage' created
-2025/06/18 13:14:44 [GUI DEBUG] Button clicked: OPEN IMAGE
-2025/06/18 13:14:47 [GUI DEBUG] File operation: open - Ut feritur ferit.png
-2025/06/18 13:14:47 [GUI DEBUG] Image Info - Size: 1400x995, Channels: 3
-2025/06/18 13:14:47 [PIPELINE DEBUG] SetOriginalImage called
-2025/06/18 13:14:47 [PIPELINE DEBUG] SetOriginalImage: clearing existing transformations
-2025/06/18 13:14:47 [PIPELINE DEBUG] Image 'original': 1400x995, 3 channels, type 16, size 4179000 bytes
-2025/06/18 13:14:47 [PIPELINE DEBUG] processImage called
-2025/06/18 13:14:47 [PIPELINE DEBUG] processImage: checking if processedImage needs reset
-2025/06/18 13:14:47 [PIPELINE DEBUG] processImage: closing existing processedImage
-2025/06/18 13:14:47 [MEMORY DEBUG] Mat 'processedImage' cleaned up
-2025/06/18 13:14:47 [PIPELINE DEBUG] processImage: cloning original image
-2025/06/18 13:14:47 [PIPELINE DEBUG] processImage: applying 0 transformations
-2025/06/18 13:14:47 [PIPELINE DEBUG] processImage: completed successfully
-2025/06/18 13:14:47 [PIPELINE DEBUG] Operation 'processImage' took 578.75µs
-2025/06/18 13:14:47 [PIPELINE DEBUG] Pipeline Stats:
-2025/06/18 13:14:47 [PIPELINE DEBUG]   Original size: 1400x995
-2025/06/18 13:14:47 [PIPELINE DEBUG]   Processed size: 1400x995
-2025/06/18 13:14:47 [PIPELINE DEBUG]   Number of transformations: 0
-2025/06/18 13:14:47 [PIPELINE DEBUG]   Total processing time: 0s
-2025/06/18 13:14:47 [PIPELINE DEBUG] Memory - Alloc: 91.13 MB, TotalAlloc: 94.43 MB, Sys: 102.52 MB, NumGC: 5
-2025/06/18 13:14:47 [PIPELINE DEBUG] processImage called
-2025/06/18 13:14:47 [MEMORY DEBUG] Mat 'previewImage' cleaned up
-2025/06/18 13:14:47 [PIPELINE DEBUG] Operation 'processPreview' took 527.958µs
-2025/06/18 13:14:47 [PIPELINE DEBUG] Pipeline Stats:
-2025/06/18 13:14:47 [PIPELINE DEBUG]   Original size: 1400x995
-2025/06/18 13:14:47 [PIPELINE DEBUG]   Processed size: 1400x995
-2025/06/18 13:14:47 [PIPELINE DEBUG]   Number of transformations: 0
-2025/06/18 13:14:47 [PIPELINE DEBUG]   Total processing time: 0s
-2025/06/18 13:14:47 [GUI DEBUG] UI Event: updateImageDisplay called
-2025/06/18 13:14:47 [GUI DEBUG] UI Event: updateImageDisplay: converting original image
-2025/06/18 13:14:47 [GUI DEBUG] Image conversion successful: original
-2025/06/18 13:14:47 [GUI DEBUG] Image conversion successful: preview
-2025/06/18 13:14:47 [GUI DEBUG] Canvas refreshed: originalImage
-2025/06/18 13:14:47 [GUI DEBUG] Canvas refreshed: previewImage
-2025/06/18 13:14:47 [GUI DEBUG] UI Event: updateImageDisplay: completed successfully
-2025/06/18 13:14:47 [GUI DEBUG] Layout 'leftPanel': pos=(0.0,0.0), size=(1592.0x44.0)
-2025/06/18 13:14:47 [GUI DEBUG] Layout 'rightPanel': pos=(1427.2,48.0), size=(164.8x844.0)
-2025/06/18 13:14:47 [GUI DEBUG] Quality metrics update: PSNR=0.00, SSIM=0.0000, hasTransformations=false
-2025/06/18 13:14:47 [GUI DEBUG] Layout 'rightPanel_after': pos=(1427.2,48.0), size=(164.8x844.0)
-2025/06/18 13:14:47 [GUI DEBUG] Image loaded successfully
-2025/06/18 13:14:52 [GUI DEBUG] List 'available transformations' selection: ID=0, Name='2D Otsu'
-2025/06/18 13:14:52 [PIPELINE DEBUG] processImage called
-2025/06/18 13:14:52 [PIPELINE DEBUG] processImage: checking if processedImage needs reset
-2025/06/18 13:14:52 [PIPELINE DEBUG] processImage: closing existing processedImage
-2025/06/18 13:14:52 [MEMORY DEBUG] Mat 'processedImage' cleaned up
-2025/06/18 13:14:52 [PIPELINE DEBUG] processImage: cloning original image
-2025/06/18 13:14:52 [PIPELINE DEBUG] processImage: applying 1 transformations
-2025/06/18 13:14:52 [IMAGE DEBUG] 2D Otsu - Starting binarization (scale: 1.00)
-2025/06/18 13:14:52 [IMAGE DEBUG] Color conversion: BGR -> Grayscale
-2025/06/18 13:14:52 [IMAGE DEBUG] Mat 'grayscale': 1400x995, channels=1, type=0, elemSize=1
-2025/06/18 13:14:52 [IMAGE DEBUG] GuidedFilter - Starting guided filter implementation
-2025/06/18 13:14:52 [IMAGE DEBUG] GuidedFilter - Input: 1400x995, channels=1
-2025/06/18 13:14:52 [IMAGE DEBUG] GuidedFilter - Using box filter with kernel 11x11
-2025/06/18 13:14:52 [IMAGE DEBUG] GuidedFilter - Result: 1400x995, channels=1
-2025/06/18 13:14:52 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
-2025/06/18 13:14:52 [IMAGE DEBUG] 2D Otsu - Constructing 2D histogram
-2025/06/18 13:14:52 [IMAGE DEBUG] 2D Otsu - Gray dimensions: 1400x995
-2025/06/18 13:14:52 [IMAGE DEBUG] 2D Otsu - Guided dimensions: 1400x995
-2025/06/18 13:14:52 [IMAGE DEBUG] 2D Otsu - Processing 1393000 pixels
-2025/06/18 13:14:52 [IMAGE DEBUG] 2D Otsu - Finding optimal thresholds
-2025/06/18 13:14:58 [IMAGE DEBUG] Optimal thresholds found: s=129, t=145, variance=12637.610930
-2025/06/18 13:14:58 [IMAGE DEBUG] 2D Otsu - Binarizing image
-2025/06/18 13:14:58 [IMAGE DEBUG] 2D Otsu - Postprocessing
-2025/06/18 13:14:58 [IMAGE DEBUG] Morphological operation: Close, kernel size: 3x3
-2025/06/18 13:14:58 [IMAGE DEBUG] Morphological operation: Open, kernel size: 3x3
-2025/06/18 13:14:58 [IMAGE DEBUG] Mat 'final_binary': 1400x995, channels=1, type=0, elemSize=1
-2025/06/18 13:14:58 [IMAGE DEBUG] 2D Otsu - Completed
-2025/06/18 13:14:58 [PIPELINE DEBUG] Operation 'transformation_0_2D Otsu' took 5.385874333s
-2025/06/18 13:14:58 [PIPELINE DEBUG] Transformation '2D Otsu' applied in 5.385874333s
-2025/06/18 13:14:58 [PIPELINE DEBUG]   Before: 1400x995, 3 channels
-2025/06/18 13:14:58 [PIPELINE DEBUG]   After:  1400x995, 1 channels
-2025/06/18 13:14:58 [PIPELINE DEBUG] processImage: completed successfully
-2025/06/18 13:14:58 [PIPELINE DEBUG] Operation 'processImage' took 5.387347125s
-2025/06/18 13:14:58 [PIPELINE DEBUG] Pipeline Stats:
-2025/06/18 13:14:58 [PIPELINE DEBUG]   Original size: 1400x995
-2025/06/18 13:14:58 [PIPELINE DEBUG]   Processed size: 1400x995
-2025/06/18 13:14:58 [PIPELINE DEBUG]   Number of transformations: 1
-2025/06/18 13:14:58 [PIPELINE DEBUG]   Total processing time: 5.385874333s
-2025/06/18 13:14:58 [PIPELINE DEBUG] Memory - Alloc: 73.83 MB, TotalAlloc: 152.04 MB, Sys: 138.65 MB, NumGC: 6
-2025/06/18 13:14:58 [PIPELINE DEBUG] processImage called
-2025/06/18 13:14:58 [MEMORY DEBUG] Mat 'previewImage' cleaned up
-2025/06/18 13:14:58 [IMAGE DEBUG] 2D Otsu Preview - Starting preview application
-2025/06/18 13:14:58 [IMAGE DEBUG] 2D Otsu - Starting binarization (scale: 0.50)
-2025/06/18 13:14:58 [IMAGE DEBUG] 2D Otsu - Scaled to 700x497
-2025/06/18 13:14:58 [IMAGE DEBUG] Color conversion: BGR -> Grayscale
-2025/06/18 13:14:58 [IMAGE DEBUG] Mat 'grayscale': 700x497, channels=1, type=0, elemSize=1
-2025/06/18 13:14:58 [IMAGE DEBUG] GuidedFilter - Starting guided filter implementation
-2025/06/18 13:14:58 [IMAGE DEBUG] GuidedFilter - Input: 700x497, channels=1
-2025/06/18 13:14:58 [IMAGE DEBUG] GuidedFilter - Using box filter with kernel 11x11
-2025/06/18 13:14:58 [IMAGE DEBUG] GuidedFilter - Result: 700x497, channels=1
-2025/06/18 13:14:58 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
-2025/06/18 13:14:58 [IMAGE DEBUG] 2D Otsu - Constructing 2D histogram
-2025/06/18 13:14:58 [IMAGE DEBUG] 2D Otsu - Gray dimensions: 700x497
-2025/06/18 13:14:58 [IMAGE DEBUG] 2D Otsu - Guided dimensions: 700x497
-2025/06/18 13:14:58 [IMAGE DEBUG] 2D Otsu - Processing 347900 pixels
-2025/06/18 13:14:58 [IMAGE DEBUG] 2D Otsu - Finding optimal thresholds
-2025/06/18 13:15:03 [IMAGE DEBUG] Optimal thresholds found: s=140, t=145, variance=11975.739244
-2025/06/18 13:15:03 [IMAGE DEBUG] 2D Otsu - Binarizing image
-2025/06/18 13:15:03 [IMAGE DEBUG] 2D Otsu - Postprocessing
-2025/06/18 13:15:03 [IMAGE DEBUG] Morphological operation: Close, kernel size: 3x3
-2025/06/18 13:15:03 [IMAGE DEBUG] Morphological operation: Open, kernel size: 3x3
-2025/06/18 13:15:03 [IMAGE DEBUG] 2D Otsu - Scaled back to original size
-2025/06/18 13:15:03 [IMAGE DEBUG] Mat 'final_binary': 1400x995, channels=1, type=0, elemSize=1
-2025/06/18 13:15:03 [IMAGE DEBUG] 2D Otsu - Completed
-2025/06/18 13:15:03 [IMAGE DEBUG] 2D Otsu Preview - Preview processing completed
-2025/06/18 13:15:03 [PIPELINE DEBUG] Operation 'preview_transformation_0_2D Otsu' took 5.244762833s
-2025/06/18 13:15:03 [PIPELINE DEBUG] Transformation '2D Otsu (preview)' applied in 5.244762833s
-2025/06/18 13:15:03 [PIPELINE DEBUG]   Before: 1400x995, 3 channels
-2025/06/18 13:15:03 [PIPELINE DEBUG]   After:  1400x995, 1 channels
-2025/06/18 13:15:03 [PIPELINE DEBUG] Operation 'processPreview' took 5.245340167s
-2025/06/18 13:15:03 [PIPELINE DEBUG] Pipeline Stats:
-2025/06/18 13:15:03 [PIPELINE DEBUG]   Original size: 1400x995
-2025/06/18 13:15:03 [PIPELINE DEBUG]   Processed size: 1400x995
-2025/06/18 13:15:03 [PIPELINE DEBUG]   Number of transformations: 1
-2025/06/18 13:15:03 [PIPELINE DEBUG]   Total processing time: 10.630637166s
-2025/06/18 13:15:03 [GUI DEBUG] Applied Transformation: 2D Otsu with params: map[epsilon:0.02 morphKernelSize:3 windowRadius:5]
-2025/06/18 13:15:03 [GUI DEBUG] Transformation '2D Otsu' applied successfully
-2025/06/18 13:15:03 [GUI DEBUG] UI Event: updateImageDisplay called
-2025/06/18 13:15:03 [GUI DEBUG] UI Event: updateImageDisplay: converting original image
-2025/06/18 13:15:03 [GUI DEBUG] Image conversion successful: original
-2025/06/18 13:15:03 [GUI DEBUG] Image format change 'preview': 3 channels -> 1 channels
-2025/06/18 13:15:03 [RENDER DEBUG] FORCING CONSISTENT FORMAT: Converting grayscale to RGBA at Go image level
-2025/06/18 13:15:03 [RENDER DEBUG] SUCCESS: Preview image converted to RGBA format for consistent GPU texture handling
-2025/06/18 13:15:03 [GUI DEBUG] Image conversion successful: preview
-2025/06/18 13:15:03 [GUI DEBUG] Canvas refreshed: originalImage
-2025/06/18 13:15:03 [GUI DEBUG] Canvas refreshed: previewImage
-2025/06/18 13:15:03 [GUI DEBUG] UI Event: updateImageDisplay: completed successfully
-2025/06/18 13:15:03 [GUI DEBUG] Layout 'leftPanel': pos=(0.0,0.0), size=(1592.0x44.0)
-2025/06/18 13:15:03 [GUI DEBUG] Layout 'rightPanel': pos=(1387.4,48.0), size=(204.6x844.0)
-2025/06/18 13:15:03 [GUI DEBUG] Quality metrics update: PSNR=24.56, SSIM=0.0002, hasTransformations=true
-2025/06/18 13:15:03 [GUI DEBUG] Layout 'rightPanel_after': pos=(1387.4,48.0), size=(204.6x844.0)
-2025/06/18 13:15:03 [GUI DEBUG] List 'available transformations' unselected/cleared
+2025/06/18 13:32:58 [MEMORY DEBUG] Mat 'originalImage' created
+2025/06/18 13:32:58 [MEMORY DEBUG] Mat 'processedImage' created
+2025/06/18 13:32:58 [MEMORY DEBUG] Mat 'previewImage' created
+2025/06/18 13:33:00 [GUI DEBUG] Button clicked: OPEN IMAGE
+2025/06/18 13:33:03 [GUI DEBUG] File operation: open - Ut feritur ferit.png
+2025/06/18 13:33:03 [GUI DEBUG] Image Info - Size: 1400x995, Channels: 3
+2025/06/18 13:33:03 [PIPELINE DEBUG] SetOriginalImage called
+2025/06/18 13:33:03 [PIPELINE DEBUG] SetOriginalImage: clearing existing transformations
+2025/06/18 13:33:03 [PIPELINE DEBUG] Image 'original': 1400x995, 3 channels, type 16, size 4179000 bytes
+2025/06/18 13:33:03 [PIPELINE DEBUG] processImage called
+2025/06/18 13:33:03 [PIPELINE DEBUG] processImage: checking if processedImage needs reset
+2025/06/18 13:33:03 [PIPELINE DEBUG] processImage: closing existing processedImage
+2025/06/18 13:33:03 [MEMORY DEBUG] Mat 'processedImage' cleaned up
+2025/06/18 13:33:03 [PIPELINE DEBUG] processImage: cloning original image
+2025/06/18 13:33:03 [PIPELINE DEBUG] processImage: applying 0 transformations
+2025/06/18 13:33:03 [PIPELINE DEBUG] processImage: completed successfully
+2025/06/18 13:33:03 [PIPELINE DEBUG] Operation 'processImage' took 1.181375ms
+2025/06/18 13:33:03 [PIPELINE DEBUG] Pipeline Stats:
+2025/06/18 13:33:03 [PIPELINE DEBUG]   Original size: 1400x995
+2025/06/18 13:33:03 [PIPELINE DEBUG]   Processed size: 1400x995
+2025/06/18 13:33:03 [PIPELINE DEBUG]   Number of transformations: 0
+2025/06/18 13:33:03 [PIPELINE DEBUG]   Total processing time: 0s
+2025/06/18 13:33:03 [PIPELINE DEBUG] Memory - Alloc: 18.60 MB, TotalAlloc: 94.36 MB, Sys: 69.58 MB, NumGC: 8
+2025/06/18 13:33:03 [PIPELINE DEBUG] processImage called
+2025/06/18 13:33:03 [MEMORY DEBUG] Mat 'previewImage' cleaned up
+2025/06/18 13:33:03 [PIPELINE DEBUG] Operation 'processPreview' took 571.042µs
+2025/06/18 13:33:03 [PIPELINE DEBUG] Pipeline Stats:
+2025/06/18 13:33:03 [PIPELINE DEBUG]   Original size: 1400x995
+2025/06/18 13:33:03 [PIPELINE DEBUG]   Processed size: 1400x995
+2025/06/18 13:33:03 [PIPELINE DEBUG]   Number of transformations: 0
+2025/06/18 13:33:03 [PIPELINE DEBUG]   Total processing time: 0s
+2025/06/18 13:33:03 [GUI DEBUG] UI Event: updateImageDisplay called
+2025/06/18 13:33:03 [GUI DEBUG] UI Event: updateImageDisplay: converting original image
+2025/06/18 13:33:03 [GUI DEBUG] Image conversion successful: original
+2025/06/18 13:33:03 [RENDER DEBUG] Image 'original' properties: bounds=(0,0,1400,995), size=1400x995
+2025/06/18 13:33:03 [RENDER DEBUG] Image 'original' format: RGBA
+2025/06/18 13:33:03 [RENDER DEBUG] Mat 'preview' conversion: 1400x995, channels=3, type=16
+2025/06/18 13:33:03 [RENDER DEBUG] Mat 'preview' conversion to image.Image: SUCCESS
+2025/06/18 13:33:03 [GUI DEBUG] Image conversion successful: preview
+2025/06/18 13:33:03 [RENDER DEBUG] Image 'preview' properties: bounds=(0,0,1400,995), size=1400x995
+2025/06/18 13:33:03 [RENDER DEBUG] Image 'preview' format: RGBA
+2025/06/18 13:33:03 [GUI DEBUG] Canvas refreshed: originalImage
+2025/06/18 13:33:03 [GUI DEBUG] Canvas refreshed: previewImage
+2025/06/18 13:33:03 [GUI DEBUG] UI Event: updateImageDisplay: completed successfully
+2025/06/18 13:33:03 [GUI DEBUG] Layout 'leftPanel': pos=(0.0,0.0), size=(1592.0x44.0)
+2025/06/18 13:33:03 [GUI DEBUG] Layout 'rightPanel': pos=(1427.2,48.0), size=(164.8x844.0)
+2025/06/18 13:33:03 [GUI DEBUG] Quality metrics update: PSNR=0.00, SSIM=0.0000, hasTransformations=false
+2025/06/18 13:33:03 [GUI DEBUG] Layout 'rightPanel_after': pos=(1427.2,48.0), size=(164.8x844.0)
+2025/06/18 13:33:03 [GUI DEBUG] Image loaded successfully
+2025/06/18 13:33:05 [GUI DEBUG] List 'available transformations' selection: ID=0, Name='2D Otsu'
+2025/06/18 13:33:05 [PIPELINE DEBUG] processImage called
+2025/06/18 13:33:05 [PIPELINE DEBUG] processImage: checking if processedImage needs reset
+2025/06/18 13:33:05 [PIPELINE DEBUG] processImage: closing existing processedImage
+2025/06/18 13:33:05 [MEMORY DEBUG] Mat 'processedImage' cleaned up
+2025/06/18 13:33:05 [PIPELINE DEBUG] processImage: cloning original image
+2025/06/18 13:33:05 [PIPELINE DEBUG] processImage: applying 1 transformations
+2025/06/18 13:33:05 [IMAGE DEBUG] 2D Otsu - Starting binarization (scale: 1.00)
+2025/06/18 13:33:05 [IMAGE DEBUG] Color conversion: BGR -> Grayscale
+2025/06/18 13:33:05 [IMAGE DEBUG] Mat 'grayscale': 1400x995, channels=1, type=0, elemSize=1
+2025/06/18 13:33:05 [IMAGE DEBUG] Histogram analysis for 'input_grayscale':
+2025/06/18 13:33:05 [IMAGE DEBUG]   Min value: 4, Max value: 255, Range: 251
+2025/06/18 13:33:05 [IMAGE DEBUG]   Dominant value: 255 (538153 pixels, 38.6%)
+2025/06/18 13:33:05 [IMAGE DEBUG]   Range 0-63: 253678 pixels (18.2%)
+2025/06/18 13:33:05 [IMAGE DEBUG]   Range 64-127: 86787 pixels (6.2%)
+2025/06/18 13:33:05 [IMAGE DEBUG]   Range 128-191: 156015 pixels (11.2%)
+2025/06/18 13:33:05 [IMAGE DEBUG]   Range 192-255: 896520 pixels (64.4%)
+2025/06/18 13:33:05 [IMAGE DEBUG] GuidedFilter - Starting guided filter implementation
+2025/06/18 13:33:05 [IMAGE DEBUG] GuidedFilter - Input: 1400x995, channels=1
+2025/06/18 13:33:05 [IMAGE DEBUG] GuidedFilter - Using box filter with kernel 11x11
+2025/06/18 13:33:06 [IMAGE DEBUG] GuidedFilter - Result: 1400x995, channels=1
+2025/06/18 13:33:06 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/18 13:33:06 [IMAGE DEBUG] Histogram analysis for 'guided_filter':
+2025/06/18 13:33:06 [IMAGE DEBUG]   Min value: 5, Max value: 255, Range: 250
+2025/06/18 13:33:06 [IMAGE DEBUG]   Dominant value: 255 (414032 pixels, 29.7%)
+2025/06/18 13:33:06 [IMAGE DEBUG]   Range 0-63: 236027 pixels (16.9%)
+2025/06/18 13:33:06 [IMAGE DEBUG]   Range 64-127: 101827 pixels (7.3%)
+2025/06/18 13:33:06 [IMAGE DEBUG]   Range 128-191: 170799 pixels (12.3%)
+2025/06/18 13:33:06 [IMAGE DEBUG]   Range 192-255: 884347 pixels (63.5%)
+2025/06/18 13:33:06 [IMAGE DEBUG] 2D Otsu - Constructing 2D histogram
+2025/06/18 13:33:06 [IMAGE DEBUG] 2D Otsu - Gray dimensions: 1400x995
+2025/06/18 13:33:06 [IMAGE DEBUG] 2D Otsu - Guided dimensions: 1400x995
+2025/06/18 13:33:06 [IMAGE DEBUG] 2D Otsu - Processing 1393000 pixels
+2025/06/18 13:33:06 [IMAGE DEBUG] 2D Otsu - Finding optimal thresholds
+2025/06/18 13:33:11 [IMAGE DEBUG] Optimal thresholds found: s=129, t=145, variance=12637.610930
+2025/06/18 13:33:11 [IMAGE DEBUG] Mat 'gray_before_binarization' pixel distribution (first 10000 pixels):
+2025/06/18 13:33:11 [IMAGE DEBUG]   Value 255: 10000 pixels (100.0%)
+2025/06/18 13:33:11 [IMAGE DEBUG] Mat 'guided_before_binarization' pixel distribution (first 10000 pixels):
+2025/06/18 13:33:11 [IMAGE DEBUG]   Value 255: 10000 pixels (100.0%)
+2025/06/18 13:33:11 [IMAGE DEBUG] 2D Otsu - Binarizing image
+2025/06/18 13:33:11 [IMAGE DEBUG] 2D Otsu - Binarization result: 366890 foreground, 1026110 background pixels
+2025/06/18 13:33:11 [IMAGE DEBUG] Binarization result: gray+guided -> binary
+2025/06/18 13:33:11 [IMAGE DEBUG] Mat 'gray+guided_input' pixel distribution (first 10000 pixels):
+2025/06/18 13:33:11 [IMAGE DEBUG]   Value 255: 10000 pixels (100.0%)
+2025/06/18 13:33:11 [IMAGE DEBUG] Mat 'binary_output' pixel distribution (first 10000 pixels):
+2025/06/18 13:33:11 [IMAGE DEBUG]   Value 0: 10000 pixels (100.0%)
+2025/06/18 13:33:11 [IMAGE DEBUG] WARNING: Output image is ALL BLACK
+2025/06/18 13:33:11 [IMAGE DEBUG] Threshold analysis for 'gray+guided' with s=129, t=145:
+2025/06/18 13:33:11 [IMAGE DEBUG]   Below s(129): 0 (0.0%)
+2025/06/18 13:33:11 [IMAGE DEBUG]   Between s-t: 0 (0.0%)
+2025/06/18 13:33:11 [IMAGE DEBUG]   Above t(145): 10000 (100.0%)
+2025/06/18 13:33:11 [IMAGE DEBUG]   Exactly s: 0, Exactly t: 0
+2025/06/18 13:33:11 [IMAGE DEBUG] 2D Otsu - Postprocessing
+2025/06/18 13:33:11 [IMAGE DEBUG] Morphological operation: Close, kernel size: 3x3
+2025/06/18 13:33:11 [IMAGE DEBUG] Morphological operation: Open, kernel size: 3x3
+2025/06/18 13:33:11 [IMAGE DEBUG] Mat 'final_binary': 1400x995, channels=1, type=0, elemSize=1
+2025/06/18 13:33:11 [IMAGE DEBUG] Mat 'final_output' pixel distribution (first 10000 pixels):
+2025/06/18 13:33:11 [IMAGE DEBUG]   Value 0: 10000 pixels (100.0%)
+2025/06/18 13:33:11 [IMAGE DEBUG] 2D Otsu - Completed
+2025/06/18 13:33:11 [PIPELINE DEBUG] Operation 'transformation_0_2D Otsu' took 5.39394375s
+2025/06/18 13:33:11 [PIPELINE DEBUG] Transformation '2D Otsu' applied in 5.39394375s
+2025/06/18 13:33:11 [PIPELINE DEBUG]   Before: 1400x995, 3 channels
+2025/06/18 13:33:11 [PIPELINE DEBUG]   After:  1400x995, 1 channels
+2025/06/18 13:33:11 [PIPELINE DEBUG] processImage: completed successfully
+2025/06/18 13:33:11 [PIPELINE DEBUG] Operation 'processImage' took 5.395468541s
+2025/06/18 13:33:11 [PIPELINE DEBUG] Pipeline Stats:
+2025/06/18 13:33:11 [PIPELINE DEBUG]   Original size: 1400x995
+2025/06/18 13:33:11 [PIPELINE DEBUG]   Processed size: 1400x995
+2025/06/18 13:33:11 [PIPELINE DEBUG]   Number of transformations: 1
+2025/06/18 13:33:11 [PIPELINE DEBUG]   Total processing time: 5.39394375s
+2025/06/18 13:33:11 [PIPELINE DEBUG] Memory - Alloc: 86.05 MB, TotalAlloc: 164.19 MB, Sys: 117.90 MB, NumGC: 10
+2025/06/18 13:33:11 [PIPELINE DEBUG] processImage called
+2025/06/18 13:33:11 [MEMORY DEBUG] Mat 'previewImage' cleaned up
+2025/06/18 13:33:11 [IMAGE DEBUG] 2D Otsu Preview - Starting preview application
+2025/06/18 13:33:11 [IMAGE DEBUG] 2D Otsu - Starting binarization (scale: 0.50)
+2025/06/18 13:33:11 [IMAGE DEBUG] 2D Otsu - Scaled to 700x497
+2025/06/18 13:33:11 [IMAGE DEBUG] Color conversion: BGR -> Grayscale
+2025/06/18 13:33:11 [IMAGE DEBUG] Mat 'grayscale': 700x497, channels=1, type=0, elemSize=1
+2025/06/18 13:33:11 [IMAGE DEBUG] Histogram analysis for 'input_grayscale':
+2025/06/18 13:33:11 [IMAGE DEBUG]   Min value: 4, Max value: 255, Range: 251
+2025/06/18 13:33:11 [IMAGE DEBUG]   Dominant value: 255 (128165 pixels, 36.8%)
+2025/06/18 13:33:11 [IMAGE DEBUG]   Range 0-63: 62303 pixels (17.9%)
+2025/06/18 13:33:11 [IMAGE DEBUG]   Range 64-127: 23067 pixels (6.6%)
+2025/06/18 13:33:11 [IMAGE DEBUG]   Range 128-191: 36770 pixels (10.6%)
+2025/06/18 13:33:11 [IMAGE DEBUG]   Range 192-255: 225760 pixels (64.9%)
+2025/06/18 13:33:11 [IMAGE DEBUG] GuidedFilter - Starting guided filter implementation
+2025/06/18 13:33:11 [IMAGE DEBUG] GuidedFilter - Input: 700x497, channels=1
+2025/06/18 13:33:11 [IMAGE DEBUG] GuidedFilter - Using box filter with kernel 11x11
+2025/06/18 13:33:11 [IMAGE DEBUG] GuidedFilter - Result: 700x497, channels=1
+2025/06/18 13:33:11 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/18 13:33:11 [IMAGE DEBUG] Histogram analysis for 'guided_filter':
+2025/06/18 13:33:11 [IMAGE DEBUG]   Min value: 10, Max value: 255, Range: 245
+2025/06/18 13:33:11 [IMAGE DEBUG]   Dominant value: 255 (92335 pixels, 26.5%)
+2025/06/18 13:33:11 [IMAGE DEBUG]   Range 0-63: 56056 pixels (16.1%)
+2025/06/18 13:33:11 [IMAGE DEBUG]   Range 64-127: 27917 pixels (8.0%)
+2025/06/18 13:33:11 [IMAGE DEBUG]   Range 128-191: 47264 pixels (13.6%)
+2025/06/18 13:33:11 [IMAGE DEBUG]   Range 192-255: 216663 pixels (62.3%)
+2025/06/18 13:33:11 [IMAGE DEBUG] 2D Otsu - Constructing 2D histogram
+2025/06/18 13:33:11 [IMAGE DEBUG] 2D Otsu - Gray dimensions: 700x497
+2025/06/18 13:33:11 [IMAGE DEBUG] 2D Otsu - Guided dimensions: 700x497
+2025/06/18 13:33:11 [IMAGE DEBUG] 2D Otsu - Processing 347900 pixels
+2025/06/18 13:33:11 [IMAGE DEBUG] 2D Otsu - Finding optimal thresholds
+2025/06/18 13:33:16 [IMAGE DEBUG] Optimal thresholds found: s=140, t=145, variance=11975.739244
+2025/06/18 13:33:16 [IMAGE DEBUG] Mat 'gray_before_binarization' pixel distribution (first 10000 pixels):
+2025/06/18 13:33:16 [IMAGE DEBUG]   Value 255: 10000 pixels (100.0%)
+2025/06/18 13:33:16 [IMAGE DEBUG] Mat 'guided_before_binarization' pixel distribution (first 10000 pixels):
+2025/06/18 13:33:16 [IMAGE DEBUG]   Value 251: 107 pixels (1.1%)
+2025/06/18 13:33:16 [IMAGE DEBUG]   Value 250: 68 pixels (0.7%)
+2025/06/18 13:33:16 [IMAGE DEBUG]   Value 249: 22 pixels (0.2%)
+2025/06/18 13:33:16 [IMAGE DEBUG]   Value 255: 9175 pixels (91.8%)
+2025/06/18 13:33:16 [IMAGE DEBUG]   Value 254: 279 pixels (2.8%)
+2025/06/18 13:33:16 [IMAGE DEBUG]   Value 253: 195 pixels (1.9%)
+2025/06/18 13:33:16 [IMAGE DEBUG]   Value 252: 154 pixels (1.5%)
+2025/06/18 13:33:16 [IMAGE DEBUG] 2D Otsu - Binarizing image
+2025/06/18 13:33:16 [IMAGE DEBUG] 2D Otsu - Binarization result: 92749 foreground, 255151 background pixels
+2025/06/18 13:33:16 [IMAGE DEBUG] Binarization result: gray+guided -> binary
+2025/06/18 13:33:16 [IMAGE DEBUG] Mat 'gray+guided_input' pixel distribution (first 10000 pixels):
+2025/06/18 13:33:16 [IMAGE DEBUG]   Value 255: 10000 pixels (100.0%)
+2025/06/18 13:33:16 [IMAGE DEBUG] Mat 'binary_output' pixel distribution (first 10000 pixels):
+2025/06/18 13:33:16 [IMAGE DEBUG]   Value 0: 10000 pixels (100.0%)
+2025/06/18 13:33:16 [IMAGE DEBUG] WARNING: Output image is ALL BLACK
+2025/06/18 13:33:16 [IMAGE DEBUG] Threshold analysis for 'gray+guided' with s=140, t=145:
+2025/06/18 13:33:16 [IMAGE DEBUG]   Below s(140): 0 (0.0%)
+2025/06/18 13:33:16 [IMAGE DEBUG]   Between s-t: 0 (0.0%)
+2025/06/18 13:33:16 [IMAGE DEBUG]   Above t(145): 10000 (100.0%)
+2025/06/18 13:33:16 [IMAGE DEBUG]   Exactly s: 0, Exactly t: 0
+2025/06/18 13:33:16 [IMAGE DEBUG] 2D Otsu - Postprocessing
+2025/06/18 13:33:16 [IMAGE DEBUG] Morphological operation: Close, kernel size: 3x3
+2025/06/18 13:33:16 [IMAGE DEBUG] Morphological operation: Open, kernel size: 3x3
+2025/06/18 13:33:16 [IMAGE DEBUG] 2D Otsu - Scaled back to original size
+2025/06/18 13:33:16 [IMAGE DEBUG] Mat 'final_binary': 1400x995, channels=1, type=0, elemSize=1
+2025/06/18 13:33:16 [IMAGE DEBUG] Mat 'final_output' pixel distribution (first 10000 pixels):
+2025/06/18 13:33:16 [IMAGE DEBUG]   Value 0: 10000 pixels (100.0%)
+2025/06/18 13:33:16 [IMAGE DEBUG] 2D Otsu - Completed
+2025/06/18 13:33:16 [IMAGE DEBUG] 2D Otsu Preview - Preview processing completed
+2025/06/18 13:33:16 [PIPELINE DEBUG] Operation 'preview_transformation_0_2D Otsu' took 5.269134875s
+2025/06/18 13:33:16 [PIPELINE DEBUG] Transformation '2D Otsu (preview)' applied in 5.269134875s
+2025/06/18 13:33:16 [PIPELINE DEBUG]   Before: 1400x995, 3 channels
+2025/06/18 13:33:16 [PIPELINE DEBUG]   After:  1400x995, 1 channels
+2025/06/18 13:33:16 [PIPELINE DEBUG] Operation 'processPreview' took 5.269672833s
+2025/06/18 13:33:16 [PIPELINE DEBUG] Pipeline Stats:
+2025/06/18 13:33:16 [PIPELINE DEBUG]   Original size: 1400x995
+2025/06/18 13:33:16 [PIPELINE DEBUG]   Processed size: 1400x995
+2025/06/18 13:33:16 [PIPELINE DEBUG]   Number of transformations: 1
+2025/06/18 13:33:16 [PIPELINE DEBUG]   Total processing time: 10.663078625s
+2025/06/18 13:33:16 [GUI DEBUG] Applied Transformation: 2D Otsu with params: map[epsilon:0.02 morphKernelSize:3 windowRadius:5]
+2025/06/18 13:33:16 [GUI DEBUG] Transformation '2D Otsu' applied successfully
+2025/06/18 13:33:16 [GUI DEBUG] UI Event: updateImageDisplay called
+2025/06/18 13:33:16 [GUI DEBUG] UI Event: updateImageDisplay: converting original image
+2025/06/18 13:33:16 [GUI DEBUG] Image conversion successful: original
+2025/06/18 13:33:16 [RENDER DEBUG] Image 'original' properties: bounds=(0,0,1400,995), size=1400x995
+2025/06/18 13:33:16 [RENDER DEBUG] Image 'original' format: RGBA
+2025/06/18 13:33:16 [GUI DEBUG] Image format change 'preview': 3 channels -> 1 channels
+2025/06/18 13:33:16 [RENDER DEBUG] BINARY IMAGE ANALYSIS for 'preview':
+2025/06/18 13:33:16 [RENDER DEBUG]   Size: 1400x995, Channels: 1, Type: 0
+2025/06/18 13:33:16 [RENDER DEBUG]   Unique values in first 1000 pixels: map[0:1000]
+2025/06/18 13:33:16 [RENDER DEBUG]   Is binary (0/255 only): true
+2025/06/18 13:33:16 [RENDER DEBUG]   Direct ToImage() SUCCESS
+2025/06/18 13:33:16 [RENDER DEBUG] Image 'preview_direct' properties: bounds=(0,0,1400,995), size=1400x995
+2025/06/18 13:33:16 [RENDER DEBUG] Image 'preview_direct' format: GRAY
+2025/06/18 13:33:16 [RENDER DEBUG] Image 'preview_direct' sample gray values: [0 0 0]
+2025/06/18 13:33:16 [RENDER DEBUG] CONVERTING BINARY/GRAYSCALE TO 3-CHANNEL
+2025/06/18 13:33:16 [RENDER DEBUG] Mat 'preview_converted' conversion: 1400x995, channels=3, type=16
+2025/06/18 13:33:16 [RENDER DEBUG] Mat 'preview_converted' conversion to image.Image: SUCCESS
+2025/06/18 13:33:16 [RENDER DEBUG] SUCCESS: Binary image converted to 3-channel BGR for display
+2025/06/18 13:33:16 [GUI DEBUG] Image conversion successful: preview
+2025/06/18 13:33:16 [RENDER DEBUG] Image 'preview' properties: bounds=(0,0,1400,995), size=1400x995
+2025/06/18 13:33:16 [RENDER DEBUG] Image 'preview' format: RGBA
+2025/06/18 13:33:16 [GUI DEBUG] Canvas refreshed: originalImage
+2025/06/18 13:33:16 [GUI DEBUG] Canvas refreshed: previewImage
+2025/06/18 13:33:16 [GUI DEBUG] UI Event: updateImageDisplay: completed successfully
+2025/06/18 13:33:16 [GUI DEBUG] Layout 'leftPanel': pos=(0.0,0.0), size=(1592.0x44.0)
+2025/06/18 13:33:16 [GUI DEBUG] Layout 'rightPanel': pos=(1387.4,48.0), size=(204.6x844.0)
+2025/06/18 13:33:16 [GUI DEBUG] Quality metrics update: PSNR=24.56, SSIM=0.0002, hasTransformations=true
+2025/06/18 13:33:16 [GUI DEBUG] Layout 'rightPanel_after': pos=(1387.4,48.0), size=(204.6x844.0)
+2025/06/18 13:33:16 [GUI DEBUG] List 'available transformations' unselected/cleared
 

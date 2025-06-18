@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"gocv.io/x/gocv"
 )
 
 type DebugRender struct {
@@ -33,6 +34,68 @@ func (d *DebugRender) LogError(err error) {
 		return
 	}
 	log.Println("[RENDER ERROR]", err)
+}
+
+func (d *DebugRender) LogMatToImageConversion(matName string, mat gocv.Mat, success bool, errorMsg string) {
+	if !d.enabled {
+		return
+	}
+
+	if !mat.Empty() {
+		size := mat.Size()
+		channels := mat.Channels()
+		matType := mat.Type()
+		log.Printf("[RENDER DEBUG] Mat '%s' conversion: %dx%d, channels=%d, type=%d",
+			matName, size[1], size[0], channels, int(matType))
+
+		// Check if it's a binary image
+		if channels == 1 {
+			// Sample some pixel values to understand the data
+			data := mat.ToBytes()
+			if len(data) > 100 {
+				log.Printf("[RENDER DEBUG] Mat '%s' sample pixels: [%d, %d, %d, %d, %d]",
+					matName, data[0], data[1], data[2], data[3], data[4])
+			}
+		}
+	}
+
+	if success {
+		log.Printf("[RENDER DEBUG] Mat '%s' conversion to image.Image: SUCCESS", matName)
+	} else {
+		log.Printf("[RENDER DEBUG] Mat '%s' conversion to image.Image: FAILED - %s", matName, errorMsg)
+	}
+}
+
+func (d *DebugRender) LogImageProperties(imgName string, img image.Image) {
+	if !d.enabled || img == nil {
+		return
+	}
+
+	bounds := img.Bounds()
+	log.Printf("[RENDER DEBUG] Image '%s' properties: bounds=(%d,%d,%d,%d), size=%dx%d",
+		imgName, bounds.Min.X, bounds.Min.Y, bounds.Max.X, bounds.Max.Y, bounds.Dx(), bounds.Dy())
+
+	// Check image format
+	switch img.(type) {
+	case *image.RGBA:
+		log.Printf("[RENDER DEBUG] Image '%s' format: RGBA", imgName)
+	case *image.Gray:
+		log.Printf("[RENDER DEBUG] Image '%s' format: GRAY", imgName)
+		// Sample some pixel values for grayscale
+		grayImg := img.(*image.Gray)
+		if bounds.Dx() > 10 && bounds.Dy() > 10 {
+			samples := []uint8{
+				grayImg.GrayAt(5, 5).Y,
+				grayImg.GrayAt(10, 10).Y,
+				grayImg.GrayAt(15, 15).Y,
+			}
+			log.Printf("[RENDER DEBUG] Image '%s' sample gray values: %v", imgName, samples)
+		}
+	case *image.NRGBA:
+		log.Printf("[RENDER DEBUG] Image '%s' format: NRGBA", imgName)
+	default:
+		log.Printf("[RENDER DEBUG] Image '%s' format: %T", imgName, img)
+	}
 }
 
 func (d *DebugRender) LogCanvasObjectDetails(name string, obj fyne.CanvasObject) {
@@ -72,6 +135,99 @@ func (d *DebugRender) LogImageDetails(name string, img *canvas.Image) {
 		log.Printf("[RENDER DEBUG] Image '%s': image bounds=(%d,%d,%d,%d), size=%dx%d",
 			name, bounds.Min.X, bounds.Min.Y, bounds.Max.X, bounds.Max.Y,
 			bounds.Dx(), bounds.Dy())
+
+		// Check if the underlying image is black
+		d.LogImageBlackPixelAnalysis(name, img.Image)
+	}
+}
+
+func (d *DebugRender) LogImageBlackPixelAnalysis(name string, img image.Image) {
+	if !d.enabled || img == nil {
+		return
+	}
+
+	bounds := img.Bounds()
+	if bounds.Dx() < 10 || bounds.Dy() < 10 {
+		return
+	}
+
+	// Sample pixels at different locations
+	samplePoints := []image.Point{
+		{bounds.Min.X + 5, bounds.Min.Y + 5},
+		{bounds.Min.X + bounds.Dx()/2, bounds.Min.Y + bounds.Dy()/2},
+		{bounds.Max.X - 5, bounds.Max.Y - 5},
+	}
+
+	log.Printf("[RENDER DEBUG] Image '%s' pixel sampling:", name)
+	for i, pt := range samplePoints {
+		switch typedImg := img.(type) {
+		case *image.RGBA:
+			rgba := typedImg.RGBAAt(pt.X, pt.Y)
+			log.Printf("[RENDER DEBUG]   Sample %d at (%d,%d): RGBA(%d,%d,%d,%d)",
+				i, pt.X, pt.Y, rgba.R, rgba.G, rgba.B, rgba.A)
+		case *image.Gray:
+			gray := typedImg.GrayAt(pt.X, pt.Y)
+			log.Printf("[RENDER DEBUG]   Sample %d at (%d,%d): Gray(%d)",
+				i, pt.X, pt.Y, gray.Y)
+		case *image.NRGBA:
+			nrgba := typedImg.NRGBAAt(pt.X, pt.Y)
+			log.Printf("[RENDER DEBUG]   Sample %d at (%d,%d): NRGBA(%d,%d,%d,%d)",
+				i, pt.X, pt.Y, nrgba.R, nrgba.G, nrgba.B, nrgba.A)
+		default:
+			rgba := img.At(pt.X, pt.Y)
+			log.Printf("[RENDER DEBUG]   Sample %d at (%d,%d): %T(%v)",
+				i, pt.X, pt.Y, rgba, rgba)
+		}
+	}
+}
+
+func (d *DebugRender) LogBinaryImageConversionIssue(matName string, mat gocv.Mat) {
+	if !d.enabled || mat.Empty() {
+		return
+	}
+
+	if mat.Channels() != 1 {
+		return // Not a binary/grayscale image
+	}
+
+	log.Printf("[RENDER DEBUG] BINARY IMAGE ANALYSIS for '%s':", matName)
+
+	size := mat.Size()
+	log.Printf("[RENDER DEBUG]   Size: %dx%d, Channels: %d, Type: %d",
+		size[1], size[0], mat.Channels(), int(mat.Type()))
+
+	// Get raw bytes and analyze
+	data := mat.ToBytes()
+	if len(data) == 0 {
+		log.Printf("[RENDER DEBUG]   ERROR: No data in Mat")
+		return
+	}
+
+	// Count unique values
+	valueCount := make(map[uint8]int)
+	for _, val := range data[:min(1000, len(data))] { // Sample first 1000 pixels
+		valueCount[val]++
+	}
+
+	log.Printf("[RENDER DEBUG]   Unique values in first 1000 pixels: %v", valueCount)
+
+	// Check if it's truly binary (only 0 and 255)
+	isBinary := true
+	for val := range valueCount {
+		if val != 0 && val != 255 {
+			isBinary = false
+			break
+		}
+	}
+	log.Printf("[RENDER DEBUG]   Is binary (0/255 only): %t", isBinary)
+
+	// Try direct conversion
+	img, err := mat.ToImage()
+	if err != nil {
+		log.Printf("[RENDER DEBUG]   Direct ToImage() FAILED: %v", err)
+	} else {
+		log.Printf("[RENDER DEBUG]   Direct ToImage() SUCCESS")
+		d.LogImageProperties(matName+"_direct", img)
 	}
 }
 

@@ -403,8 +403,9 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 			return
 		}
 		ui.debugGUI.LogImageConversion("original", true, "")
+		ui.debugRender.LogImageProperties("original", originalImg)
 
-		// Convert preview image (optimized) and handle format consistency
+		// Convert preview image - handle binary images properly
 		previewMat := ui.pipeline.GetPreviewImage()
 		if previewMat.Empty() {
 			ui.debugGUI.LogUIEvent("updateImageDisplay: preview image is empty")
@@ -417,29 +418,52 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 
 		if originalChannels != previewChannels {
 			ui.debugGUI.LogImageFormatChange("preview", originalChannels, previewChannels)
-			ui.debugRender.Log("FORCING CONSISTENT FORMAT: Converting grayscale to RGBA at Go image level")
+			ui.debugRender.LogBinaryImageConversionIssue("preview", previewMat)
 
-			// Convert grayscale back to RGBA at the Go image level
-			previewColor := gocv.NewMat()
-			defer previewColor.Close()
-			gocv.CvtColor(previewMat, &previewColor, gocv.ColorGrayToBGR)
+			if previewChannels == 1 && originalChannels == 3 {
+				// For binary/grayscale images, convert to proper 3-channel format
+				ui.debugRender.Log("CONVERTING BINARY/GRAYSCALE TO 3-CHANNEL")
 
-			var err error
-			previewImg, err = previewColor.ToImage()
-			if err != nil {
-				ui.debugGUI.LogImageConversion("preview_rgba_converted", false, err.Error())
-				return
+				// Create a 3-channel image from the binary image
+				previewColor := gocv.NewMat()
+				defer previewColor.Close()
+
+				// Use the proper OpenCV color conversion
+				gocv.CvtColor(previewMat, &previewColor, gocv.ColorGrayToBGR)
+
+				var err error
+				previewImg, err = previewColor.ToImage()
+				if err != nil {
+					ui.debugGUI.LogImageConversion("preview_converted", false, err.Error())
+					ui.debugRender.LogMatToImageConversion("preview_converted", previewColor, false, err.Error())
+					return
+				}
+				ui.debugRender.LogMatToImageConversion("preview_converted", previewColor, true, "")
+				ui.debugRender.Log("SUCCESS: Binary image converted to 3-channel BGR for display")
+			} else {
+				// Fallback for other channel mismatches
+				var err error
+				previewImg, err = previewMat.ToImage()
+				if err != nil {
+					ui.debugGUI.LogImageConversion("preview_fallback", false, err.Error())
+					ui.debugRender.LogMatToImageConversion("preview_fallback", previewMat, false, err.Error())
+					return
+				}
+				ui.debugRender.LogMatToImageConversion("preview_fallback", previewMat, true, "")
 			}
-			ui.debugRender.Log("SUCCESS: Preview image converted to RGBA format for consistent GPU texture handling")
 		} else {
 			var err error
 			previewImg, err = previewMat.ToImage()
 			if err != nil {
 				ui.debugGUI.LogImageConversion("preview", false, err.Error())
+				ui.debugRender.LogMatToImageConversion("preview", previewMat, false, err.Error())
 				return
 			}
+			ui.debugRender.LogMatToImageConversion("preview", previewMat, true, "")
 		}
+
 		ui.debugGUI.LogImageConversion("preview", true, "")
+		ui.debugRender.LogImageProperties("preview", previewImg)
 
 		// Update only image content, not canvas properties
 		ui.originalImage.Image = originalImg

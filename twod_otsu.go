@@ -18,8 +18,6 @@ type TwoDOtsu struct {
 	epsilon         float64
 	morphKernelSize int
 
-	// Removed cache to avoid segfault from invalid Mat pointers
-
 	// Callback for parameter changes
 	onParameterChanged func()
 }
@@ -103,10 +101,12 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
 	defer grayscale.Close()
 	gocv.CvtColor(workingImage, &grayscale, gocv.ColorBGRToGray)
 	t.debugImage.LogMatInfo("grayscale", grayscale)
+	t.debugImage.LogHistogramAnalysis("input_grayscale", grayscale)
 
 	// Apply guided filter for smoother guided image
 	guided := t.applyGuidedFilter(grayscale)
 	defer guided.Close()
+	t.debugImage.LogHistogramAnalysis("guided_filter", guided)
 
 	// Apply 2D Otsu thresholding
 	binaryResult := t.apply2DOtsu(grayscale, guided)
@@ -128,6 +128,7 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
 	}
 
 	t.debugImage.LogMatInfo("final_binary", result)
+	t.debugImage.LogPixelDistribution("final_output", result)
 	t.debugImage.LogAlgorithmStep("2D Otsu", "Completed")
 
 	return result
@@ -235,20 +236,37 @@ func (t *TwoDOtsu) apply2DOtsu(gray, guided gocv.Mat) gocv.Mat {
 
 	t.debugImage.LogOptimalThresholds(bestS, bestT, maxVariance)
 
-	// Apply thresholding
+	// Create debug output before binarization
+	t.debugImage.LogPixelDistribution("gray_before_binarization", gray)
+	t.debugImage.LogPixelDistribution("guided_before_binarization", guided)
+
+	// Apply thresholding with corrected logic - INVERT the typical 2D Otsu approach
 	t.debugImage.LogAlgorithmStep("2D Otsu", "Binarizing image")
 	result := gocv.NewMatWithSize(gray.Rows(), gray.Cols(), gocv.MatTypeCV8U)
 
 	resultData := result.ToBytes()
+	foregroundCount := 0
+	backgroundCount := 0
+
 	for i := 0; i < len(grayData); i++ {
 		g := int(grayData[i])
 		f := int(guidedData[i])
-		if g <= bestS && f <= bestT {
-			resultData[i] = 0 // Background
+
+		// For document binarization: LOW values in both gray and guided = FOREGROUND (text)
+		// HIGH values = BACKGROUND (white paper)
+		if g <= bestS || f <= bestT {
+			resultData[i] = 255 // Foreground (white text)
+			foregroundCount++
 		} else {
-			resultData[i] = 255 // Foreground
+			resultData[i] = 0 // Background (black)
+			backgroundCount++
 		}
 	}
+
+	t.debugImage.LogAlgorithmStep("2D Otsu", fmt.Sprintf("Binarization result: %d foreground, %d background pixels", foregroundCount, backgroundCount))
+
+	// Log the binarization result with detailed analysis
+	t.debugImage.LogBinarizationResult("gray+guided", "binary", gray, result, bestS, bestT)
 
 	return result
 }
