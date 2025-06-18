@@ -242,9 +242,7 @@ func (ui *ImageRestorationUI) createRightPanel() fyne.CanvasObject {
 }
 
 func (ui *ImageRestorationUI) openImage() {
-	if ui.debugGUI.IsEnabled() {
-		ui.debugGUI.LogButtonClick("OPEN IMAGE")
-	}
+	ui.debugGUI.LogButtonClick("OPEN IMAGE")
 
 	dialog.ShowFileOpen(func(reader fyne.URIReadCloser, err error) {
 		if err != nil || reader == nil {
@@ -252,40 +250,30 @@ func (ui *ImageRestorationUI) openImage() {
 		}
 		defer reader.Close()
 
-		if ui.debugGUI.IsEnabled() {
-			ui.debugGUI.LogFileOperation("open", reader.URI().Name())
-		}
+		ui.debugGUI.LogFileOperation("open", reader.URI().Name())
 
 		// Load image using OpenCV
 		mat := gocv.IMRead(reader.URI().Path(), gocv.IMReadColor)
 		if mat.Empty() {
 			err := fmt.Errorf("failed to load image")
-			if ui.debugGUI.IsEnabled() {
-				ui.debugGUI.LogError(err)
-			}
+			ui.debugGUI.LogError(err)
 			dialog.ShowError(err, ui.window)
 			return
 		}
 
 		size := mat.Size()
-		if ui.debugGUI.IsEnabled() {
-			ui.debugGUI.LogImageInfo(size[1], size[0], mat.Channels())
-		}
+		ui.debugGUI.LogImageInfo(size[1], size[0], mat.Channels())
 
 		ui.pipeline.SetOriginalImage(mat)
 		ui.updateUI()
 		ui.updateWindowTitle(reader.URI().Name())
 
-		if ui.debugGUI.IsEnabled() {
-			ui.debugGUI.Log("Image loaded successfully")
-		}
+		ui.debugGUI.Log("Image loaded successfully")
 	}, ui.window)
 }
 
 func (ui *ImageRestorationUI) saveImage() {
-	if ui.debugGUI.IsEnabled() {
-		ui.debugGUI.LogButtonClick("SAVE IMAGE")
-	}
+	ui.debugGUI.LogButtonClick("SAVE IMAGE")
 
 	if !ui.pipeline.initialized || ui.pipeline.originalImage.Empty() {
 		dialog.ShowInformation("No Image", "Please load an image first", ui.window)
@@ -294,9 +282,7 @@ func (ui *ImageRestorationUI) saveImage() {
 
 	dialog.ShowFileSave(func(writer fyne.URIWriteCloser, err error) {
 		if err != nil || writer == nil {
-			if ui.debugGUI.IsEnabled() {
-				ui.debugGUI.LogError(err)
-			}
+			ui.debugGUI.LogError(err)
 			return
 		}
 		defer writer.Close()
@@ -304,22 +290,16 @@ func (ui *ImageRestorationUI) saveImage() {
 		filename := writer.URI().Name()
 		filePath := writer.URI().Path()
 
-		if ui.debugGUI.IsEnabled() {
-			ui.debugGUI.LogFileOperation("save", filename)
-		}
+		ui.debugGUI.LogFileOperation("save", filename)
 
 		// Check file extension and add .png if missing
 		ext := strings.ToLower(filepath.Ext(filename))
-		if ui.debugGUI.IsEnabled() {
-			ui.debugGUI.LogFileExtensionCheck(filename, ext, ext != "")
-		}
+		ui.debugGUI.LogFileExtensionCheck(filename, ext, ext != "")
 
 		if ext == "" {
 			filePath = filePath + ".png"
 			filename = filename + ".png"
-			if ui.debugGUI.IsEnabled() {
-				ui.debugGUI.Log("Added .png extension to filename")
-			}
+			ui.debugGUI.Log("Added .png extension to filename")
 		} else if ext != ".png" && ext != ".jpg" && ext != ".jpeg" && ext != ".tiff" && ext != ".tif" {
 			filePath = strings.TrimSuffix(filePath, ext) + ".png"
 			filename = strings.TrimSuffix(filename, ext) + ".png"
@@ -327,14 +307,10 @@ func (ui *ImageRestorationUI) saveImage() {
 
 		processedImage := ui.pipeline.GetProcessedImage()
 		hasImage := !processedImage.Empty()
-		if ui.debugGUI.IsEnabled() {
-			ui.debugGUI.LogSaveOperation(filename, filepath.Ext(filename), hasImage)
-		}
+		ui.debugGUI.LogSaveOperation(filename, filepath.Ext(filename), hasImage)
 
 		if !hasImage {
-			if ui.debugGUI.IsEnabled() {
-				ui.debugGUI.LogSaveResult(filename, false, "no processed image available")
-			}
+			ui.debugGUI.LogSaveResult(filename, false, "no processed image available")
 			dialog.ShowError(fmt.Errorf("no processed image available"), ui.window)
 			return
 		}
@@ -342,23 +318,17 @@ func (ui *ImageRestorationUI) saveImage() {
 		success := gocv.IMWrite(filePath, processedImage)
 		if !success {
 			err := fmt.Errorf("failed to write image to %s", filePath)
-			if ui.debugGUI.IsEnabled() {
-				ui.debugGUI.LogSaveResult(filename, false, err.Error())
-			}
+			ui.debugGUI.LogSaveResult(filename, false, err.Error())
 			dialog.ShowError(err, ui.window)
 		} else {
-			if ui.debugGUI.IsEnabled() {
-				ui.debugGUI.LogSaveResult(filename, true, "")
-				ui.debugGUI.Log("Image saved successfully")
-			}
+			ui.debugGUI.LogSaveResult(filename, true, "")
+			ui.debugGUI.Log("Image saved successfully")
 		}
 	}, ui.window)
 }
 
 func (ui *ImageRestorationUI) resetTransformations() {
-	if ui.debugGUI.IsEnabled() {
-		ui.debugGUI.LogButtonClick("Reset")
-	}
+	ui.debugGUI.LogButtonClick("Reset")
 
 	ui.pipeline.ClearTransformations()
 	ui.updateUI()
@@ -367,27 +337,21 @@ func (ui *ImageRestorationUI) resetTransformations() {
 }
 
 func (ui *ImageRestorationUI) onTransformationSelected(id widget.ListItemID) {
-	if ui.debugGUI.IsEnabled() {
-		ui.debugGUI.LogListSelection("available transformations", int(id), "2D Otsu")
-	}
+	ui.debugGUI.LogListSelection("available transformations", int(id), "2D Otsu")
 
 	switch id {
 	case 0: // 2D Otsu
 		transformation := NewTwoDOtsu()
 		ui.pipeline.AddTransformation(transformation)
 
-		if ui.debugGUI.IsEnabled() {
-			ui.debugGUI.LogTransformation(transformation.Name(), transformation.GetParameters())
-			ui.debugGUI.LogTransformationApplication(transformation.Name(), true)
-		}
+		ui.debugGUI.LogTransformation(transformation.Name(), transformation.GetParameters())
+		ui.debugGUI.LogTransformationApplication(transformation.Name(), true)
 
 		ui.updateUI()
 
 		// Clear the selection so it can be clicked again
 		ui.availableTransformationsList.UnselectAll()
-		if ui.debugGUI.IsEnabled() {
-			ui.debugGUI.LogListUnselect("available transformations")
-		}
+		ui.debugGUI.LogListUnselect("available transformations")
 	}
 }
 
@@ -422,91 +386,67 @@ func (ui *ImageRestorationUI) updateUI() {
 }
 
 func (ui *ImageRestorationUI) updateImageDisplay() {
-	if ui.debugGUI.IsEnabled() {
-		ui.debugGUI.LogUIEvent("updateImageDisplay called")
-	}
+	ui.debugGUI.LogUIEvent("updateImageDisplay called")
 
 	if ui.pipeline.initialized && !ui.pipeline.originalImage.Empty() {
-		if ui.debugGUI.IsEnabled() {
-			ui.debugGUI.LogUIEvent("updateImageDisplay: converting original image")
-		}
+		ui.debugGUI.LogUIEvent("updateImageDisplay: converting original image")
 
 		// Convert original image
 		originalImg, err := ui.pipeline.originalImage.ToImage()
 		if err != nil {
-			if ui.debugGUI.IsEnabled() {
-				ui.debugGUI.LogImageConversion("original", false, err.Error())
-			}
+			ui.debugGUI.LogImageConversion("original", false, err.Error())
 			return
 		}
-		if ui.debugGUI.IsEnabled() {
-			ui.debugGUI.LogImageConversion("original", true, "")
-		}
+		ui.debugGUI.LogImageConversion("original", true, "")
 
-		// Convert processed image and handle format consistency
-		processedMat := ui.pipeline.GetProcessedImage()
-		if processedMat.Empty() {
-			if ui.debugGUI.IsEnabled() {
-				ui.debugGUI.LogUIEvent("updateImageDisplay: processed image is empty")
-			}
+		// Convert preview image (optimized) and handle format consistency
+		previewMat := ui.pipeline.GetPreviewImage()
+		if previewMat.Empty() {
+			ui.debugGUI.LogUIEvent("updateImageDisplay: preview image is empty")
 			return
 		}
 
-		var processedImg image.Image
+		var previewImg image.Image
 		originalChannels := ui.pipeline.originalImage.Channels()
-		processedChannels := processedMat.Channels()
+		previewChannels := previewMat.Channels()
 
-		if originalChannels != processedChannels {
-			if ui.debugGUI.IsEnabled() {
-				ui.debugGUI.LogImageFormatChange("processed", originalChannels, processedChannels)
-			}
-			if ui.debugRender.IsEnabled() {
-				ui.debugRender.Log("FORCING CONSISTENT FORMAT: Converting grayscale to RGBA at Go image level")
-			}
+		if originalChannels != previewChannels {
+			ui.debugGUI.LogImageFormatChange("preview", originalChannels, previewChannels)
+			ui.debugRender.Log("FORCING CONSISTENT FORMAT: Converting grayscale to RGBA at Go image level")
 
 			// Convert grayscale back to RGBA at the Go image level
-			processedColor := gocv.NewMat()
-			defer processedColor.Close()
-			gocv.CvtColor(processedMat, &processedColor, gocv.ColorGrayToBGR)
+			previewColor := gocv.NewMat()
+			defer previewColor.Close()
+			gocv.CvtColor(previewMat, &previewColor, gocv.ColorGrayToBGR)
 
 			var err error
-			processedImg, err = processedColor.ToImage()
+			previewImg, err = previewColor.ToImage()
 			if err != nil {
-				if ui.debugGUI.IsEnabled() {
-					ui.debugGUI.LogImageConversion("processed_rgba_converted", false, err.Error())
-				}
+				ui.debugGUI.LogImageConversion("preview_rgba_converted", false, err.Error())
 				return
 			}
-			if ui.debugRender.IsEnabled() {
-				ui.debugRender.Log("SUCCESS: Processed image converted to RGBA format for consistent GPU texture handling")
-			}
+			ui.debugRender.Log("SUCCESS: Preview image converted to RGBA format for consistent GPU texture handling")
 		} else {
 			var err error
-			processedImg, err = processedMat.ToImage()
+			previewImg, err = previewMat.ToImage()
 			if err != nil {
-				if ui.debugGUI.IsEnabled() {
-					ui.debugGUI.LogImageConversion("processed", false, err.Error())
-				}
+				ui.debugGUI.LogImageConversion("preview", false, err.Error())
 				return
 			}
 		}
-		if ui.debugGUI.IsEnabled() {
-			ui.debugGUI.LogImageConversion("processed", true, "")
-		}
+		ui.debugGUI.LogImageConversion("preview", true, "")
 
 		// Update only image content, not canvas properties
 		ui.originalImage.Image = originalImg
-		ui.previewImage.Image = processedImg
+		ui.previewImage.Image = previewImg
 
 		// Selective refresh - only refresh image content
 		ui.originalImage.Refresh()
 		ui.previewImage.Refresh()
 
-		if ui.debugGUI.IsEnabled() {
-			ui.debugGUI.LogCanvasRefresh("originalImage")
-			ui.debugGUI.LogCanvasRefresh("previewImage")
-			ui.debugGUI.LogUIEvent("updateImageDisplay: completed successfully")
-		}
+		ui.debugGUI.LogCanvasRefresh("originalImage")
+		ui.debugGUI.LogCanvasRefresh("previewImage")
+		ui.debugGUI.LogUIEvent("updateImageDisplay: completed successfully")
 	}
 }
 
@@ -521,25 +461,21 @@ func (ui *ImageRestorationUI) updateImageInfo() {
 }
 
 func (ui *ImageRestorationUI) updateQualityMetrics() {
-	if ui.debugGUI.IsEnabled() {
-		// Log panel positions before update
-		leftPos := ui.window.Content().(*fyne.Container).Objects[1].Position()
-		leftSize := ui.window.Content().(*fyne.Container).Objects[1].Size()
-		ui.debugGUI.LogLayoutPositions("leftPanel", leftPos, leftSize)
+	// Log panel positions before update
+	leftPos := ui.window.Content().(*fyne.Container).Objects[1].Position()
+	leftSize := ui.window.Content().(*fyne.Container).Objects[1].Size()
+	ui.debugGUI.LogLayoutPositions("leftPanel", leftPos, leftSize)
 
-		rightPos := ui.window.Content().(*fyne.Container).Objects[3].Position()
-		rightSize := ui.window.Content().(*fyne.Container).Objects[3].Size()
-		ui.debugGUI.LogLayoutPositions("rightPanel", rightPos, rightSize)
-	}
+	rightPos := ui.window.Content().(*fyne.Container).Objects[3].Position()
+	rightSize := ui.window.Content().(*fyne.Container).Objects[3].Size()
+	ui.debugGUI.LogLayoutPositions("rightPanel", rightPos, rightSize)
 
 	if len(ui.pipeline.transformations) > 0 {
 		// Calculate PSNR and SSIM
 		psnr := ui.pipeline.CalculatePSNR()
 		ssim := ui.pipeline.CalculateSSIM()
 
-		if ui.debugGUI.IsEnabled() {
-			ui.debugGUI.LogQualityMetricsUpdate(psnr, ssim, true)
-		}
+		ui.debugGUI.LogQualityMetricsUpdate(psnr, ssim, true)
 
 		ui.psnrLabel.SetText(fmt.Sprintf("PSNR: %.2f dB", psnr))
 		ui.psnrProgress.SetValue(psnr / 50.0) // Normalize to 0-1 range
@@ -547,9 +483,7 @@ func (ui *ImageRestorationUI) updateQualityMetrics() {
 		ui.ssimLabel.SetText(fmt.Sprintf("SSIM: %.4f", ssim))
 		ui.ssimProgress.SetValue(ssim) // SSIM is already 0-1 range
 	} else {
-		if ui.debugGUI.IsEnabled() {
-			ui.debugGUI.LogQualityMetricsUpdate(0, 0, false)
-		}
+		ui.debugGUI.LogQualityMetricsUpdate(0, 0, false)
 
 		ui.psnrLabel.SetText("PSNR: 33.14 dB") // Keep same text length
 		ui.psnrProgress.SetValue(0)
@@ -557,12 +491,10 @@ func (ui *ImageRestorationUI) updateQualityMetrics() {
 		ui.ssimProgress.SetValue(0)
 	}
 
-	if ui.debugGUI.IsEnabled() {
-		// Log panel positions after update
-		rightPos := ui.window.Content().(*fyne.Container).Objects[3].Position()
-		rightSize := ui.window.Content().(*fyne.Container).Objects[3].Size()
-		ui.debugGUI.LogLayoutPositions("rightPanel_after", rightPos, rightSize)
-	}
+	// Log panel positions after update
+	rightPos = ui.window.Content().(*fyne.Container).Objects[3].Position()
+	rightSize = ui.window.Content().(*fyne.Container).Objects[3].Size()
+	ui.debugGUI.LogLayoutPositions("rightPanel_after", rightPos, rightSize)
 }
 
 func (ui *ImageRestorationUI) updateWindowTitle(filename string) {

@@ -10,6 +10,7 @@ import (
 type ImagePipeline struct {
 	originalImage   gocv.Mat
 	processedImage  gocv.Mat
+	previewImage    gocv.Mat
 	transformations []Transformation
 	debugPipeline   *DebugPipeline
 	debugMemory     *DebugMemory
@@ -26,8 +27,10 @@ func NewImagePipeline() *ImagePipeline {
 	// Initialize with empty Mats to prevent segfaults
 	pipeline.originalImage = gocv.NewMat()
 	pipeline.processedImage = gocv.NewMat()
+	pipeline.previewImage = gocv.NewMat()
 	pipeline.debugMemory.LogMatCreation("originalImage")
 	pipeline.debugMemory.LogMatCreation("processedImage")
+	pipeline.debugMemory.LogMatCreation("previewImage")
 	return pipeline
 }
 
@@ -45,36 +48,53 @@ func (p *ImagePipeline) SetOriginalImage(img gocv.Mat) {
 		p.processedImage.Close()
 		p.debugMemory.LogMatCleanup("processedImage")
 	}
+	if p.initialized && !p.previewImage.Empty() {
+		p.debugPipeline.LogSetOriginalStep("closing existing preview image")
+		p.previewImage.Close()
+		p.debugMemory.LogMatCleanup("previewImage")
+	}
 
 	// Clear existing transformations when loading a new image
 	p.debugPipeline.LogSetOriginalStep("clearing existing transformations")
+	for _, transform := range p.transformations {
+		transform.Close()
+	}
 	p.transformations = make([]Transformation, 0)
 
 	// Set up new image
 	p.originalImage = img.Clone()
 	p.processedImage = p.originalImage.Clone()
+	p.previewImage = p.originalImage.Clone()
 	p.initialized = true
 	p.debugPipeline.LogImageStats("original", p.originalImage)
 
 	// Process the image with no transformations
 	p.processImage()
+	p.processPreview()
 }
 
 func (p *ImagePipeline) AddTransformation(transformation Transformation) {
 	p.transformations = append(p.transformations, transformation)
 	p.processImage()
+	p.processPreview()
 }
 
 func (p *ImagePipeline) RemoveTransformation(index int) {
 	if index >= 0 && index < len(p.transformations) {
+		p.transformations[index].Close()
 		p.transformations = append(p.transformations[:index], p.transformations[index+1:]...)
 		p.processImage()
+		p.processPreview()
 	}
 }
 
 func (p *ImagePipeline) ClearTransformations() {
+	for _, transform := range p.transformations {
+		transform.Close()
+	}
 	p.transformations = make([]Transformation, 0)
 	p.processImage()
+	p.processPreview()
 }
 
 func (p *ImagePipeline) GetProcessedImage() gocv.Mat {
@@ -87,6 +107,18 @@ func (p *ImagePipeline) GetProcessedImage() gocv.Mat {
 		return p.originalImage
 	}
 	return p.processedImage
+}
+
+func (p *ImagePipeline) GetPreviewImage() gocv.Mat {
+	if !p.initialized {
+		p.debugPipeline.LogGetProcessedImage("preview not initialized, returning empty Mat")
+		return gocv.NewMat()
+	}
+	if p.previewImage.Empty() {
+		p.debugPipeline.LogGetProcessedImage("preview image empty, returning original")
+		return p.originalImage
+	}
+	return p.previewImage
 }
 
 func (p *ImagePipeline) processImage() {
@@ -135,6 +167,48 @@ func (p *ImagePipeline) processImage() {
 		before.Close()
 	}
 	p.debugPipeline.LogProcessComplete()
+}
+
+func (p *ImagePipeline) processPreview() {
+	p.debugPipeline.LogProcessStart()
+	if !p.initialized {
+		p.debugPipeline.LogProcessEarlyReturn("preview not initialized")
+		return
+	}
+	if p.originalImage.Empty() {
+		p.debugPipeline.LogProcessEarlyReturn("original image is empty for preview")
+		return
+	}
+
+	p.debugPipeline.StartTimer("processPreview")
+	defer func() {
+		p.debugPipeline.EndTimer("processPreview")
+		if p.initialized && !p.previewImage.Empty() {
+			p.debugPipeline.LogPipelineStats(p.originalImage.Size(), p.previewImage.Size(), len(p.transformations))
+		}
+	}()
+
+	// Start with original image
+	if p.initialized && !p.previewImage.Empty() {
+		p.previewImage.Close()
+		p.debugMemory.LogMatCleanup("previewImage")
+	}
+	p.previewImage = p.originalImage.Clone()
+
+	// Apply all transformations sequentially using preview method
+	for i, transformation := range p.transformations {
+		p.debugPipeline.StartTimer(fmt.Sprintf("preview_transformation_%d_%s", i, transformation.Name()))
+
+		before := p.previewImage.Clone()
+		result := transformation.ApplyPreview(p.previewImage)
+		duration := p.debugPipeline.EndTimer(fmt.Sprintf("preview_transformation_%d_%s", i, transformation.Name()))
+
+		p.debugPipeline.LogTransformationApplied(transformation.Name()+" (preview)", before, result, duration)
+
+		p.previewImage.Close()
+		p.previewImage = result
+		before.Close()
+	}
 }
 
 func (p *ImagePipeline) CalculatePSNR() float64 {
@@ -267,6 +341,13 @@ func (p *ImagePipeline) Close() {
 		if !p.processedImage.Empty() {
 			p.processedImage.Close()
 			p.debugMemory.LogMatCleanup("processedImage final")
+		}
+		if !p.previewImage.Empty() {
+			p.previewImage.Close()
+			p.debugMemory.LogMatCleanup("previewImage final")
+		}
+		for _, transform := range p.transformations {
+			transform.Close()
 		}
 	}
 }
