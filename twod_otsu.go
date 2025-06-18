@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"image"
-	"image/color"
 	"strconv"
 
 	"fyne.io/fyne/v2"
@@ -19,10 +18,7 @@ type TwoDOtsu struct {
 	epsilon         float64
 	morphKernelSize int
 
-	// Cache for preview optimization
-	cacheValid   bool
-	cachedParams map[string]interface{}
-	cachedResult gocv.Mat
+	// Removed cache to avoid segfault from invalid Mat pointers
 
 	// Callback for parameter changes
 	onParameterChanged func()
@@ -35,8 +31,6 @@ func NewTwoDOtsu() *TwoDOtsu {
 		windowRadius:    5,
 		epsilon:         0.02,
 		morphKernelSize: 3,
-		cacheValid:      false,
-		cachedParams:    make(map[string]interface{}),
 	}
 }
 
@@ -62,7 +56,6 @@ func (t *TwoDOtsu) SetParameters(params map[string]interface{}) {
 	if kernel, ok := params["morphKernelSize"].(int); ok {
 		t.morphKernelSize = kernel
 	}
-	t.invalidateCache()
 }
 
 func (t *TwoDOtsu) Apply(src gocv.Mat) gocv.Mat {
@@ -72,37 +65,10 @@ func (t *TwoDOtsu) Apply(src gocv.Mat) gocv.Mat {
 func (t *TwoDOtsu) ApplyPreview(src gocv.Mat) gocv.Mat {
 	t.debugImage.LogAlgorithmStep("2D Otsu Preview", "Starting preview application")
 
-	// Check cache validity
-	currentParams := t.GetParameters()
-	paramsEqual := t.compareParams(currentParams)
-
-	t.debugImage.LogAlgorithmStep("2D Otsu Preview", fmt.Sprintf("Cache check: valid=%t, params equal=%t", t.cacheValid, paramsEqual))
-
-	if t.cacheValid && paramsEqual && !t.cachedResult.Empty() {
-		t.debugImage.LogAlgorithmStep("2D Otsu Preview", "Cache hit - returning cached result")
-		result := gocv.NewMat()
-		t.cachedResult.CopyTo(&result)
-		return result
-	}
-
-	t.debugImage.LogAlgorithmStep("2D Otsu Preview", "Cache miss - processing new result")
-
 	// Process with reduced resolution for speed
 	result := t.applyWithScale(src, 0.5)
 
-	// Update cache
-	if !t.cachedResult.Empty() {
-		t.cachedResult.Close()
-	}
-	t.cachedResult = gocv.NewMat()
-	result.CopyTo(&t.cachedResult)
-	t.cacheValid = true
-	t.cachedParams = make(map[string]interface{})
-	for k, v := range currentParams {
-		t.cachedParams[k] = v
-	}
-
-	t.debugImage.LogAlgorithmStep("2D Otsu Preview", "Cache updated successfully")
+	t.debugImage.LogAlgorithmStep("2D Otsu Preview", "Preview processing completed")
 	return result
 }
 
@@ -112,22 +78,7 @@ func (t *TwoDOtsu) GetParametersWidget(onParameterChanged func()) fyne.CanvasObj
 }
 
 func (t *TwoDOtsu) Close() {
-	if !t.cachedResult.Empty() {
-		t.cachedResult.Close()
-	}
-}
-
-func (t *TwoDOtsu) compareParams(current map[string]interface{}) bool {
-	if len(current) != len(t.cachedParams) {
-		return false
-	}
-
-	for k, v := range current {
-		if cachedV, exists := t.cachedParams[k]; !exists || cachedV != v {
-			return false
-		}
-	}
-	return true
+	// Nothing to close anymore since cache is removed
 }
 
 func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
@@ -169,7 +120,7 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
 	var result gocv.Mat
 	if scale != 1.0 {
 		result = gocv.NewMat()
-		gocv.Resize(processed, &result, image.Point{X: src.Cols(), Y: src.Rows()}, 0, 0, gocv.InterpolationNearest)
+		gocv.Resize(processed, &result, image.Point{X: src.Cols(), Y: src.Rows()}, 0, 0, gocv.InterpolationLinear)
 		processed.Close()
 		t.debugImage.LogAlgorithmStep("2D Otsu", "Scaled back to original size")
 	} else {
@@ -199,21 +150,21 @@ func (t *TwoDOtsu) applyGuidedFilter(src gocv.Mat) gocv.Mat {
 	// Mean filters
 	meanI := gocv.NewMat()
 	defer meanI.Close()
-	gocv.BoxFilter(srcFloat, &meanI, -1, image.Point{X: kernelSize, Y: kernelSize}, image.Point{X: -1, Y: -1}, true, gocv.BorderReflect101)
+	gocv.BoxFilter(srcFloat, &meanI, -1, image.Point{X: kernelSize, Y: kernelSize})
 
 	meanII := gocv.NewMat()
 	defer meanII.Close()
 	srcSquared := gocv.NewMat()
 	defer srcSquared.Close()
-	gocv.Multiply(srcFloat, srcFloat, &srcSquared, 1.0, -1)
-	gocv.BoxFilter(srcSquared, &meanII, -1, image.Point{X: kernelSize, Y: kernelSize}, image.Point{X: -1, Y: -1}, true, gocv.BorderReflect101)
+	gocv.Multiply(srcFloat, srcFloat, &srcSquared)
+	gocv.BoxFilter(srcSquared, &meanII, -1, image.Point{X: kernelSize, Y: kernelSize})
 
 	// Variance calculation
 	varI := gocv.NewMat()
 	defer varI.Close()
 	meanISquared := gocv.NewMat()
 	defer meanISquared.Close()
-	gocv.Multiply(meanI, meanI, &meanISquared, 1.0, -1)
+	gocv.Multiply(meanI, meanI, &meanISquared)
 	gocv.Subtract(meanII, meanISquared, &varI)
 
 	// Calculate coefficients
@@ -221,31 +172,32 @@ func (t *TwoDOtsu) applyGuidedFilter(src gocv.Mat) gocv.Mat {
 	defer a.Close()
 	denominator := gocv.NewMat()
 	defer denominator.Close()
-	gocv.AddFloat(varI, t.epsilon, &denominator)
-	gocv.Divide(varI, denominator, &a, 1.0, -1)
+	varI.CopyTo(&denominator)
+	denominator.AddFloat(float32(t.epsilon))
+	gocv.Divide(varI, denominator, &a)
 
 	b := gocv.NewMat()
 	defer b.Close()
 	temp := gocv.NewMat()
 	defer temp.Close()
-	gocv.Multiply(a, meanI, &temp, 1.0, -1)
+	gocv.Multiply(a, meanI, &temp)
 	gocv.Subtract(meanI, temp, &b)
 
 	// Smooth coefficients
 	meanA := gocv.NewMat()
 	defer meanA.Close()
-	gocv.BoxFilter(a, &meanA, -1, image.Point{X: kernelSize, Y: kernelSize}, image.Point{X: -1, Y: -1}, true, gocv.BorderReflect101)
+	gocv.BoxFilter(a, &meanA, -1, image.Point{X: kernelSize, Y: kernelSize})
 
 	meanB := gocv.NewMat()
 	defer meanB.Close()
-	gocv.BoxFilter(b, &meanB, -1, image.Point{X: kernelSize, Y: kernelSize}, image.Point{X: -1, Y: -1}, true, gocv.BorderReflect101)
+	gocv.BoxFilter(b, &meanB, -1, image.Point{X: kernelSize, Y: kernelSize})
 
 	// Final result
 	resultFloat := gocv.NewMat()
 	defer resultFloat.Close()
 	temp1 := gocv.NewMat()
 	defer temp1.Close()
-	gocv.Multiply(meanA, srcFloat, &temp1, 1.0, -1)
+	gocv.Multiply(meanA, srcFloat, &temp1)
 	gocv.Add(temp1, meanB, &resultFloat)
 
 	// Convert back to uint8
@@ -285,8 +237,7 @@ func (t *TwoDOtsu) apply2DOtsu(gray, guided gocv.Mat) gocv.Mat {
 
 	// Apply thresholding
 	t.debugImage.LogAlgorithmStep("2D Otsu", "Binarizing image")
-	result := gocv.NewMat()
-	result.Create(gray.Rows(), gray.Cols(), gocv.MatTypeCV8U)
+	result := gocv.NewMatWithSize(gray.Rows(), gray.Cols(), gocv.MatTypeCV8U)
 
 	resultData := result.ToBytes()
 	for i := 0; i < len(grayData); i++ {
@@ -307,12 +258,12 @@ func (t *TwoDOtsu) findOptimalThresholds(hist [256][256]int, totalPixels int) (i
 	bestS, bestT := 0, 0
 
 	for s := 0; s < 255; s++ {
-		for t := 0; t < 255; t++ {
-			variance := t.calculateBetweenClassVariance(hist, s, t, totalPixels)
+		for threshold := 0; threshold < 255; threshold++ {
+			variance := t.calculateBetweenClassVariance(hist, s, threshold, totalPixels)
 			if variance > maxVariance {
 				maxVariance = variance
 				bestS = s
-				bestT = t
+				bestT = threshold
 			}
 		}
 	}
@@ -320,14 +271,14 @@ func (t *TwoDOtsu) findOptimalThresholds(hist [256][256]int, totalPixels int) (i
 	return bestS, bestT, maxVariance
 }
 
-func (t *TwoDOtsu) calculateBetweenClassVariance(hist [256][256]int, s, t, totalPixels int) float64 {
+func (t *TwoDOtsu) calculateBetweenClassVariance(hist [256][256]int, s, threshold, totalPixels int) float64 {
 	// Calculate class probabilities and means
 	w0, w1 := 0, 0
 	mu0G, mu0F, mu1G, mu1F := 0.0, 0.0, 0.0, 0.0
 
-	// Class 0: g <= s, f <= t
+	// Class 0: g <= s, f <= threshold
 	for g := 0; g <= s; g++ {
-		for f := 0; f <= t; f++ {
+		for f := 0; f <= threshold; f++ {
 			count := hist[g][f]
 			w0 += count
 			mu0G += float64(g * count)
@@ -347,7 +298,7 @@ func (t *TwoDOtsu) calculateBetweenClassVariance(hist [256][256]int, s, t, total
 
 	for g := 0; g < 256; g++ {
 		for f := 0; f < 256; f++ {
-			if g > s || f > t {
+			if g > s || f > threshold {
 				count := hist[g][f]
 				mu1G += float64(g * count)
 				mu1F += float64(f * count)
@@ -383,12 +334,12 @@ func (t *TwoDOtsu) applyMorphologicalOps(src gocv.Mat) gocv.Mat {
 	t.debugImage.LogMorphology("Close", t.morphKernelSize)
 	closed := gocv.NewMat()
 	defer closed.Close()
-	gocv.MorphologyEx(src, &closed, gocv.MorphClose, kernel, image.Point{X: -1, Y: -1}, 1, gocv.BorderConstant, color.RGBA{0, 0, 0, 0})
+	gocv.MorphologyEx(src, &closed, gocv.MorphClose, kernel)
 
 	// Opening (erosion followed by dilation)
 	t.debugImage.LogMorphology("Open", t.morphKernelSize)
 	result := gocv.NewMat()
-	gocv.MorphologyEx(closed, &result, gocv.MorphOpen, kernel, image.Point{X: -1, Y: -1}, 1, gocv.BorderConstant, color.RGBA{0, 0, 0, 0})
+	gocv.MorphologyEx(closed, &result, gocv.MorphOpen, kernel)
 
 	return result
 }
@@ -403,7 +354,6 @@ func (t *TwoDOtsu) createParameterUI() *fyne.Container {
 			oldValue := t.windowRadius
 			t.windowRadius = value
 			t.debugImage.LogAlgorithmStep("2D Otsu Parameters", fmt.Sprintf("Window radius changed: %d -> %d", oldValue, value))
-			t.invalidateCache()
 			if t.onParameterChanged != nil {
 				t.debugImage.LogAlgorithmStep("2D Otsu Parameters", "Calling onParameterChanged callback")
 				t.onParameterChanged()
@@ -422,7 +372,6 @@ func (t *TwoDOtsu) createParameterUI() *fyne.Container {
 			oldValue := t.epsilon
 			t.epsilon = value
 			t.debugImage.LogAlgorithmStep("2D Otsu Parameters", fmt.Sprintf("Epsilon changed: %.3f -> %.3f", oldValue, value))
-			t.invalidateCache()
 			if t.onParameterChanged != nil {
 				t.debugImage.LogAlgorithmStep("2D Otsu Parameters", "Calling onParameterChanged callback")
 				t.onParameterChanged()
@@ -441,7 +390,6 @@ func (t *TwoDOtsu) createParameterUI() *fyne.Container {
 			oldValue := t.morphKernelSize
 			t.morphKernelSize = value
 			t.debugImage.LogAlgorithmStep("2D Otsu Parameters", fmt.Sprintf("Morphological kernel size changed: %d -> %d", oldValue, value))
-			t.invalidateCache()
 			if t.onParameterChanged != nil {
 				t.debugImage.LogAlgorithmStep("2D Otsu Parameters", "Calling onParameterChanged callback")
 				t.onParameterChanged()
@@ -456,8 +404,4 @@ func (t *TwoDOtsu) createParameterUI() *fyne.Container {
 		epsilonLabel, epsilonEntry,
 		kernelLabel, kernelEntry,
 	)
-}
-
-func (t *TwoDOtsu) invalidateCache() {
-	t.cacheValid = false
 }
