@@ -105,6 +105,84 @@ func (d *DebugImage) LogPixelDistribution(name string, mat gocv.Mat) {
 	}
 }
 
+func (d *DebugImage) LogPixelDistributionDetailed(name string, mat gocv.Mat, regions int) {
+	if !d.enabled || mat.Empty() {
+		return
+	}
+
+	data := mat.ToBytes()
+	if len(data) == 0 {
+		return
+	}
+
+	size := mat.Size()
+	width, height := size[1], size[0]
+	channels := mat.Channels()
+
+	log.Printf("[IMAGE DEBUG] DETAILED pixel analysis for '%s':", name)
+	log.Printf("[IMAGE DEBUG]   Dimensions: %dx%d, channels=%d, total pixels=%d", width, height, channels, len(data))
+
+	// Sample from multiple regions to detect spatial distribution issues
+	regionSize := len(data) / regions
+	for r := 0; r < regions; r++ {
+		start := r * regionSize
+		end := start + min(regionSize, 1000) // Sample max 1000 pixels per region
+		if start >= len(data) {
+			break
+		}
+		if end > len(data) {
+			end = len(data)
+		}
+
+		distribution := make(map[uint8]int)
+		for i := start; i < end; i++ {
+			distribution[data[i]]++
+		}
+
+		log.Printf("[IMAGE DEBUG]   Region %d (bytes %d-%d):", r, start, end-1)
+		for val, count := range distribution {
+			percentage := float64(count) / float64(end-start) * 100
+			log.Printf("[IMAGE DEBUG]     Value %d: %d pixels (%.1f%%)", val, count, percentage)
+		}
+	}
+
+	// Check specific coordinates for spatial verification
+	d.LogPixelAtCoordinates(name, mat, [][]int{
+		{0, 0},                          // Top-left corner
+		{width / 2, height / 2},         // Center
+		{width - 1, height - 1},         // Bottom-right corner
+		{width / 4, height / 4},         // Quarter point
+		{3 * width / 4, 3 * height / 4}, // Three-quarter point
+	})
+}
+
+func (d *DebugImage) LogPixelAtCoordinates(name string, mat gocv.Mat, coords [][]int) {
+	if !d.enabled || mat.Empty() {
+		return
+	}
+
+	size := mat.Size()
+	width, height := size[1], size[0]
+	channels := mat.Channels()
+
+	log.Printf("[IMAGE DEBUG] Pixel values at specific coordinates for '%s':", name)
+	for _, coord := range coords {
+		x, y := coord[0], coord[1]
+		if x >= 0 && x < width && y >= 0 && y < height {
+			// Calculate byte offset
+			offset := y*width*channels + x*channels
+			data := mat.ToBytes()
+			if offset < len(data) {
+				if channels == 1 {
+					log.Printf("[IMAGE DEBUG]   At (%d,%d): %d", x, y, data[offset])
+				} else if channels == 3 && offset+2 < len(data) {
+					log.Printf("[IMAGE DEBUG]   At (%d,%d): [%d,%d,%d]", x, y, data[offset], data[offset+1], data[offset+2])
+				}
+			}
+		}
+	}
+}
+
 func (d *DebugImage) LogColorConversion(from, to string) {
 	if !d.enabled {
 		return
@@ -287,14 +365,31 @@ func (d *DebugImage) LogBinarizationResult(inputName, outputName string, inputMa
 	}
 
 	if !outputMat.Empty() {
-		d.LogPixelDistribution(outputName+"_output", outputMat)
+		// Enhanced analysis with detailed regional sampling
+		d.LogPixelDistributionDetailed(outputName+"_output", outputMat, 5)
 
 		// Check if result is all black or all white
 		data := outputMat.ToBytes()
 		if len(data) > 0 {
 			allBlack := true
 			allWhite := true
-			for _, val := range data[:min(1000, len(data))] {
+			mixedCount := 0
+			blackCount := 0
+			whiteCount := 0
+
+			// Sample more thoroughly
+			sampleSize := min(10000, len(data))
+			for i := 0; i < sampleSize; i++ {
+				val := data[i]
+				if val == 0 {
+					blackCount++
+				} else if val == 255 {
+					whiteCount++
+				} else {
+					mixedCount++
+					allBlack = false
+					allWhite = false
+				}
 				if val != 0 {
 					allBlack = false
 				}
@@ -302,6 +397,11 @@ func (d *DebugImage) LogBinarizationResult(inputName, outputName string, inputMa
 					allWhite = false
 				}
 			}
+
+			log.Printf("[IMAGE DEBUG] Sample analysis (%d pixels): Black=%d (%.1f%%), White=%d (%.1f%%), Mixed=%d (%.1f%%)",
+				sampleSize, blackCount, float64(blackCount)/float64(sampleSize)*100,
+				whiteCount, float64(whiteCount)/float64(sampleSize)*100,
+				mixedCount, float64(mixedCount)/float64(sampleSize)*100)
 
 			if allBlack {
 				log.Printf("[IMAGE DEBUG] WARNING: Output image is ALL BLACK")
@@ -371,6 +471,50 @@ func (d *DebugImage) LogHistogramAnalysis(name string, mat gocv.Mat) {
 	}
 }
 
+func (d *DebugImage) LogMatDataValidation(name string, mat gocv.Mat) {
+	if !d.enabled || mat.Empty() {
+		return
+	}
+
+	log.Printf("[IMAGE DEBUG] VALIDATION for Mat '%s':", name)
+
+	// Basic properties
+	size := mat.Size()
+	width, height := size[1], size[0]
+	channels := mat.Channels()
+	dataType := mat.Type()
+
+	log.Printf("[IMAGE DEBUG]   Properties: %dx%d, channels=%d, type=%d", width, height, channels, int(dataType))
+	log.Printf("[IMAGE DEBUG]   Expected data size: %d bytes", width*height*channels)
+
+	// Get raw data
+	data := mat.ToBytes()
+	actualSize := len(data)
+	log.Printf("[IMAGE DEBUG]   Actual data size: %d bytes", actualSize)
+
+	if actualSize == 0 {
+		log.Printf("[IMAGE DEBUG]   ERROR: Mat contains no data!")
+		return
+	}
+
+	// Check data integrity
+	expectedSize := width * height * channels
+	if actualSize != expectedSize {
+		log.Printf("[IMAGE DEBUG]   WARNING: Size mismatch! Expected %d, got %d", expectedSize, actualSize)
+	}
+
+	// Sample data verification
+	log.Printf("[IMAGE DEBUG]   First 10 bytes: %v", data[:min(10, len(data))])
+	log.Printf("[IMAGE DEBUG]   Last 10 bytes: %v", data[max(0, len(data)-10):])
+
+	// Check for pattern consistency
+	uniqueValues := make(map[uint8]bool)
+	for i := 0; i < min(1000, len(data)); i++ {
+		uniqueValues[data[i]] = true
+	}
+	log.Printf("[IMAGE DEBUG]   Unique values in first 1000 bytes: %d", len(uniqueValues))
+}
+
 func (d *DebugImage) IsEnabled() bool {
 	return d.enabled
 }
@@ -386,6 +530,13 @@ func (d *DebugImage) Disable() {
 
 func min(a, b int) int {
 	if a < b {
+		return a
+	}
+	return b
+}
+
+func max(a, b int) int {
+	if a > b {
 		return a
 	}
 	return b

@@ -127,8 +127,10 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
 		result = processed
 	}
 
+	// Final validation
+	t.debugImage.LogMatDataValidation("final_result", result)
 	t.debugImage.LogMatInfo("final_binary", result)
-	t.debugImage.LogPixelDistribution("final_output", result)
+	t.debugImage.LogPixelDistributionDetailed("final_output", result, 5)
 	t.debugImage.LogAlgorithmStep("2D Otsu", "Completed")
 
 	return result
@@ -222,6 +224,10 @@ func (t *TwoDOtsu) apply2DOtsu(gray, guided gocv.Mat) gocv.Mat {
 	t.debugImage.LogAlgorithmStep("2D Otsu", fmt.Sprintf("Guided dimensions: %dx%d", guided.Cols(), guided.Rows()))
 	t.debugImage.LogAlgorithmStep("2D Otsu", fmt.Sprintf("Processing %d pixels", len(grayData)))
 
+	// Validate input data integrity
+	t.debugImage.LogMatDataValidation("gray_input", gray)
+	t.debugImage.LogMatDataValidation("guided_input", guided)
+
 	// Build 2D histogram
 	var hist [256][256]int
 	for i := 0; i < len(grayData); i++ {
@@ -237,35 +243,42 @@ func (t *TwoDOtsu) apply2DOtsu(gray, guided gocv.Mat) gocv.Mat {
 	t.debugImage.LogOptimalThresholds(bestS, bestT, maxVariance)
 
 	// Create debug output before binarization
-	t.debugImage.LogPixelDistribution("gray_before_binarization", gray)
-	t.debugImage.LogPixelDistribution("guided_before_binarization", guided)
+	t.debugImage.LogPixelDistributionDetailed("gray_before_binarization", gray, 3)
+	t.debugImage.LogPixelDistributionDetailed("guided_before_binarization", guided, 3)
 
-	// Apply thresholding with corrected logic - INVERT the typical 2D Otsu approach
-	t.debugImage.LogAlgorithmStep("2D Otsu", "Binarizing image")
-	result := gocv.NewMatWithSize(gray.Rows(), gray.Cols(), gocv.MatTypeCV8U)
+	// Apply thresholding with DIRECT pixel manipulation
+	t.debugImage.LogAlgorithmStep("2D Otsu", "Binarizing image with direct pixel access")
 
-	resultData := result.ToBytes()
+	size := gray.Size()
+	width, height := size[1], size[0]
+	result := gocv.NewMatWithSize(height, width, gocv.MatTypeCV8U)
+
 	foregroundCount := 0
 	backgroundCount := 0
 
-	for i := 0; i < len(grayData); i++ {
-		g := int(grayData[i])
-		f := int(guidedData[i])
+	// Process pixel by pixel using direct coordinate access
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			grayVal := gray.GetUCharAt(y, x)
+			guidedVal := guided.GetUCharAt(y, x)
 
-		// For document binarization: LOW values in both gray and guided = FOREGROUND (text)
-		// HIGH values = BACKGROUND (white paper)
-		if g <= bestS || f <= bestT {
-			resultData[i] = 255 // Foreground (white text)
-			foregroundCount++
-		} else {
-			resultData[i] = 0 // Background (black)
-			backgroundCount++
+			// CORRECTED LOGIC: For document images with white background and dark text
+			// HIGH values in both gray and guided = BACKGROUND (white paper) -> set to 255 (white)
+			// LOW values = FOREGROUND (dark text) -> set to 0 (black)
+			if int(grayVal) > bestS && int(guidedVal) > bestT {
+				result.SetUCharAt(y, x, 255) // Background (white paper)
+				backgroundCount++
+			} else {
+				result.SetUCharAt(y, x, 0) // Foreground (dark text)
+				foregroundCount++
+			}
 		}
 	}
 
 	t.debugImage.LogAlgorithmStep("2D Otsu", fmt.Sprintf("Binarization result: %d foreground, %d background pixels", foregroundCount, backgroundCount))
 
-	// Log the binarization result with detailed analysis
+	// Validate the result with enhanced debugging
+	t.debugImage.LogMatDataValidation("binary_result", result)
 	t.debugImage.LogBinarizationResult("gray+guided", "binary", gray, result, bestS, bestT)
 
 	return result
@@ -294,7 +307,7 @@ func (t *TwoDOtsu) calculateBetweenClassVariance(hist [256][256]int, s, threshol
 	w0, w1 := 0, 0
 	mu0G, mu0F, mu1G, mu1F := 0.0, 0.0, 0.0, 0.0
 
-	// Class 0: g <= s, f <= threshold
+	// Class 0: g <= s, f <= threshold (foreground - dark text)
 	for g := 0; g <= s; g++ {
 		for f := 0; f <= threshold; f++ {
 			count := hist[g][f]
@@ -304,7 +317,7 @@ func (t *TwoDOtsu) calculateBetweenClassVariance(hist [256][256]int, s, threshol
 		}
 	}
 
-	// Class 1: remaining pixels
+	// Class 1: remaining pixels (background - white paper)
 	w1 = totalPixels - w0
 
 	if w0 == 0 || w1 == 0 {

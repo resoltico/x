@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"image"
+	"image/color"
 	"path/filepath"
 	"strings"
 
@@ -405,12 +406,16 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 		ui.debugGUI.LogImageConversion("original", true, "")
 		ui.debugRender.LogImageProperties("original", originalImg)
 
-		// Convert preview image - handle binary images properly
+		// Convert preview image - handle binary images with enhanced debugging
 		previewMat := ui.pipeline.GetPreviewImage()
 		if previewMat.Empty() {
 			ui.debugGUI.LogUIEvent("updateImageDisplay: preview image is empty")
 			return
 		}
+
+		// Enhanced debugging for the problematic conversion
+		ui.debugRender.LogBinaryImageConversionIssue("preview_mat", previewMat)
+		ui.debugRender.LogConversionMethodComparison("preview_comparison", previewMat)
 
 		var previewImg image.Image
 		originalChannels := ui.pipeline.originalImage.Channels()
@@ -418,28 +423,41 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 
 		if originalChannels != previewChannels {
 			ui.debugGUI.LogImageFormatChange("preview", originalChannels, previewChannels)
-			ui.debugRender.LogBinaryImageConversionIssue("preview", previewMat)
 
 			if previewChannels == 1 && originalChannels == 3 {
-				// For binary/grayscale images, convert to proper 3-channel format
-				ui.debugRender.Log("CONVERTING BINARY/GRAYSCALE TO 3-CHANNEL")
+				// ENHANCED CONVERSION: Try multiple methods and compare results
+				ui.debugRender.Log("ATTEMPTING ENHANCED BINARY->RGB CONVERSION")
 
-				// Create a 3-channel image from the binary image
+				// Method 1: Standard OpenCV conversion
 				previewColor := gocv.NewMat()
 				defer previewColor.Close()
-
-				// Use the proper OpenCV color conversion
 				gocv.CvtColor(previewMat, &previewColor, gocv.ColorGrayToBGR)
 
 				var err error
 				previewImg, err = previewColor.ToImage()
 				if err != nil {
-					ui.debugGUI.LogImageConversion("preview_converted", false, err.Error())
-					ui.debugRender.LogMatToImageConversion("preview_converted", previewColor, false, err.Error())
-					return
+					ui.debugGUI.LogImageConversion("preview_method1", false, err.Error())
+					ui.debugRender.LogMatToImageConversion("preview_method1", previewColor, false, err.Error())
+
+					// Method 2: Manual pixel conversion as fallback
+					ui.debugRender.Log("FALLBACK: Manual pixel conversion")
+					size := previewMat.Size()
+					width, height := size[1], size[0]
+					bounds := image.Rect(0, 0, width, height)
+					manualImg := image.NewRGBA(bounds)
+
+					for y := 0; y < height; y++ {
+						for x := 0; x < width; x++ {
+							grayVal := previewMat.GetUCharAt(y, x)
+							manualImg.Set(x, y, color.RGBA{R: grayVal, G: grayVal, B: grayVal, A: 255})
+						}
+					}
+					previewImg = manualImg
+					ui.debugRender.Log("SUCCESS: Manual conversion completed")
+				} else {
+					ui.debugRender.LogMatToImageConversion("preview_method1", previewColor, true, "")
+					ui.debugRender.Log("SUCCESS: Standard OpenCV conversion")
 				}
-				ui.debugRender.LogMatToImageConversion("preview_converted", previewColor, true, "")
-				ui.debugRender.Log("SUCCESS: Binary image converted to 3-channel BGR for display")
 			} else {
 				// Fallback for other channel mismatches
 				var err error
@@ -464,6 +482,9 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 
 		ui.debugGUI.LogImageConversion("preview", true, "")
 		ui.debugRender.LogImageProperties("preview", previewImg)
+
+		// Final content analysis before display
+		ui.debugRender.LogImageContentAnalysis("preview_final", previewImg)
 
 		// Update only image content, not canvas properties
 		ui.originalImage.Image = originalImg
