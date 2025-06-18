@@ -92,8 +92,8 @@ func (ui *ImageRestorationUI) createToolbar() fyne.CanvasObject {
 }
 
 func (ui *ImageRestorationUI) createLeftPanel() fyne.CanvasObject {
-	// Transformations list
-	transformations := []string{"2D Otsu"}
+	// Transformations list - updated to include Lanczos4
+	transformations := []string{"2D Otsu", "Lanczos4 Scaling"}
 
 	ui.availableTransformationsList = widget.NewList(
 		func() int { return len(transformations) },
@@ -346,7 +346,17 @@ func (ui *ImageRestorationUI) resetTransformations() {
 }
 
 func (ui *ImageRestorationUI) onTransformationSelected(id widget.ListItemID) {
-	ui.debugGUI.LogListSelection("available transformations", int(id), "2D Otsu")
+	var transformationName string
+	switch id {
+	case 0:
+		transformationName = "2D Otsu"
+	case 1:
+		transformationName = "Lanczos4 Scaling"
+	default:
+		return
+	}
+
+	ui.debugGUI.LogListSelection("available transformations", int(id), transformationName)
 
 	// Check if image is loaded before allowing transformation selection
 	if !ui.pipeline.HasImage() {
@@ -356,20 +366,26 @@ func (ui *ImageRestorationUI) onTransformationSelected(id widget.ListItemID) {
 		return
 	}
 
+	var transformation Transformation
 	switch id {
 	case 0: // 2D Otsu
-		transformation := NewTwoDOtsu()
-		ui.pipeline.AddTransformation(transformation)
-
-		ui.debugGUI.LogTransformation(transformation.Name(), transformation.GetParameters())
-		ui.debugGUI.LogTransformationApplication(transformation.Name(), true)
-
-		ui.updateUI()
-
-		// Clear the selection so it can be clicked again
-		ui.availableTransformationsList.UnselectAll()
-		ui.debugGUI.LogListUnselect("available transformations")
+		transformation = NewTwoDOtsu()
+	case 1: // Lanczos4 Scaling
+		transformation = NewLanczos4Transform()
+	default:
+		return
 	}
+
+	ui.pipeline.AddTransformation(transformation)
+
+	ui.debugGUI.LogTransformation(transformation.Name(), transformation.GetParameters())
+	ui.debugGUI.LogTransformationApplication(transformation.Name(), true)
+
+	ui.updateUI()
+
+	// Clear the selection so it can be clicked again
+	ui.availableTransformationsList.UnselectAll()
+	ui.debugGUI.LogListUnselect("available transformations")
 }
 
 func (ui *ImageRestorationUI) onAppliedTransformationSelected(id widget.ListItemID) {
