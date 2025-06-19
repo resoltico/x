@@ -88,18 +88,8 @@ func (t *TwoDOtsu) Close() {
 	// No resources to cleanup
 }
 
-func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) (result gocv.Mat) {
-	// Panic recovery for OpenCV operations
-	defer func() {
-		if r := recover(); r != nil {
-			t.debugImage.LogError(fmt.Errorf("panic in 2D Otsu: %v", r))
-			if !result.Empty() {
-				result.Close()
-			}
-			result = gocv.NewMat()
-		}
-	}()
-
+// FIXED: Safe memory management without defer overwrite patterns
+func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
 	t.debugImage.LogAlgorithmStep("2D Otsu", fmt.Sprintf("Starting binarization (scale: %.2f)", scale))
 
 	// Validate input
@@ -115,8 +105,10 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) (result gocv.Mat)
 	morphKernelSize := t.morphKernelSize
 	t.paramMutex.RUnlock()
 
-	// Scale input if needed - avoid defer overwrite pattern
+	// SAFE: Create working image without defer overwrite risk
 	var workingImage gocv.Mat
+	var workingImageOwned bool = false
+
 	if scale != 1.0 {
 		newWidth := int(float64(src.Cols()) * scale)
 		newHeight := int(float64(src.Rows()) * scale)
@@ -128,36 +120,49 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) (result gocv.Mat)
 		}
 
 		workingImage = gocv.NewMat()
+		workingImageOwned = true
 		gocv.Resize(src, &workingImage, image.Point{X: newWidth, Y: newHeight}, 0, 0, gocv.InterpolationLinear)
 		t.debugImage.LogAlgorithmStep("2D Otsu", fmt.Sprintf("Scaled to %dx%d", newWidth, newHeight))
 	} else {
 		workingImage = src.Clone()
+		workingImageOwned = true
 	}
-	defer func() {
-		if !workingImage.Empty() {
-			workingImage.Close()
-		}
-	}()
 
-	// Convert to grayscale if needed - avoid defer overwrite pattern
+	// SAFE: Explicit cleanup function for working image
+	cleanupWorkingImage := func() {
+		if workingImageOwned && !workingImage.Empty() {
+			workingImage.Close()
+			workingImageOwned = false
+		}
+	}
+
+	// Convert to grayscale if needed - SAFE: explicit ownership management
 	t.debugImage.LogColorConversion("Input", "Grayscale")
 	var grayscale gocv.Mat
+	var grayscaleOwned bool = false
 
 	if workingImage.Channels() > 1 {
 		grayscale = gocv.NewMat()
+		grayscaleOwned = true
 		gocv.CvtColor(workingImage, &grayscale, gocv.ColorBGRToGray)
 	} else {
 		grayscale = workingImage.Clone()
+		grayscaleOwned = true
 	}
-	defer func() {
-		if !grayscale.Empty() {
+
+	// SAFE: Cleanup function for grayscale
+	cleanupGrayscale := func() {
+		if grayscaleOwned && !grayscale.Empty() {
 			grayscale.Close()
+			grayscaleOwned = false
 		}
-	}()
+	}
 
 	// Validate grayscale conversion
 	if grayscale.Empty() {
 		t.debugImage.LogAlgorithmStep("2D Otsu", "ERROR: Grayscale conversion failed")
+		cleanupWorkingImage()
+		cleanupGrayscale()
 		return gocv.NewMat()
 	}
 
@@ -166,62 +171,93 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) (result gocv.Mat)
 
 	// Apply guided filter for smoother guided image
 	guided := t.applyGuidedFilter(grayscale, windowRadius, epsilon)
-	defer func() {
-		if !guided.Empty() {
+	guidedOwned := true
+
+	// SAFE: Cleanup function for guided
+	cleanupGuided := func() {
+		if guidedOwned && !guided.Empty() {
 			guided.Close()
+			guidedOwned = false
 		}
-	}()
+	}
 
 	// Validate guided filter result
 	if guided.Empty() {
 		t.debugImage.LogAlgorithmStep("2D Otsu", "ERROR: Guided filter failed, using original")
+		cleanupGuided()
 		guided = grayscale.Clone()
+		guidedOwned = true
 	}
 
 	t.debugImage.LogHistogramAnalysis("guided_filter", guided)
 
 	// Apply 2D Otsu thresholding
 	binaryResult := t.apply2DOtsu(grayscale, guided)
-	defer func() {
-		if !binaryResult.Empty() {
+	binaryOwned := true
+
+	// SAFE: Cleanup function for binary result
+	cleanupBinary := func() {
+		if binaryOwned && !binaryResult.Empty() {
 			binaryResult.Close()
+			binaryOwned = false
 		}
-	}()
+	}
 
 	// Validate binarization result
 	if binaryResult.Empty() {
 		t.debugImage.LogAlgorithmStep("2D Otsu", "ERROR: Binarization failed")
+		cleanupWorkingImage()
+		cleanupGrayscale()
+		cleanupGuided()
+		cleanupBinary()
 		return gocv.NewMat()
 	}
 
 	// Post-processing with morphological operations
 	t.debugImage.LogAlgorithmStep("2D Otsu", "Postprocessing")
 	processed := t.applyMorphologicalOps(binaryResult, morphKernelSize)
-	defer func() {
-		if scale != 1.0 && !processed.Empty() {
-			processed.Close()
-		}
-	}()
+	processedOwned := true
 
-	// Scale back to original size if needed
-	if scale != 1.0 {
-		finalResult := gocv.NewMat()
-		gocv.Resize(processed, &finalResult, image.Point{X: src.Cols(), Y: src.Rows()}, 0, 0, gocv.InterpolationLinear)
-		t.debugImage.LogAlgorithmStep("2D Otsu", "Scaled back to original size")
-		result = finalResult
-	} else {
-		result = processed
+	// SAFE: Cleanup function for processed
+	cleanupProcessed := func() {
+		if processedOwned && !processed.Empty() {
+			processed.Close()
+			processedOwned = false
+		}
 	}
 
+	// SAFE: Handle scaling back if needed
+	var finalResult gocv.Mat
+	if scale != 1.0 {
+		finalResult = gocv.NewMat()
+		gocv.Resize(processed, &finalResult, image.Point{X: src.Cols(), Y: src.Rows()}, 0, 0, gocv.InterpolationLinear)
+		t.debugImage.LogAlgorithmStep("2D Otsu", "Scaled back to original size")
+
+		// Clean up intermediate results since we have a new final result
+		cleanupProcessed()
+	} else {
+		// Transfer ownership to final result
+		finalResult = processed
+		processedOwned = false // Don't clean up - ownership transferred
+	}
+
+	// SAFE: Clean up all intermediate results
+	cleanupWorkingImage()
+	cleanupGrayscale()
+	cleanupGuided()
+	cleanupBinary()
+	cleanupProcessed()
+
 	// Final validation
-	t.debugImage.LogMatDataValidation("final_result", result)
-	t.debugImage.LogMatInfo("final_binary", result)
-	t.debugImage.LogPixelDistributionDetailed("final_output", result, 5)
+	t.debugImage.LogMatDataValidation("final_result", finalResult)
+	t.debugImage.LogMatInfo("final_binary", finalResult)
+	t.debugImage.LogPixelDistributionDetailed("final_output", finalResult, 5)
 	t.debugImage.LogAlgorithmStep("2D Otsu", "Completed")
 
-	return result
+	return finalResult
 }
 
+// FIXED: Safe guided filter implementation without defer overwrite patterns
 func (t *TwoDOtsu) applyGuidedFilter(src gocv.Mat, windowRadius int, epsilon float64) gocv.Mat {
 	t.debugImage.LogAlgorithmStep("GuidedFilter", "Starting guided filter implementation")
 	t.debugImage.LogAlgorithmStep("GuidedFilter", fmt.Sprintf("Input: %dx%d, channels=%d", src.Cols(), src.Rows(), src.Channels()))
@@ -232,15 +268,22 @@ func (t *TwoDOtsu) applyGuidedFilter(src gocv.Mat, windowRadius int, epsilon flo
 		return gocv.NewMat()
 	}
 
-	// Convert to float32 for processing
+	// SAFE: Convert to float32 for processing
 	srcFloat := gocv.NewMat()
-	defer srcFloat.Close()
 	src.ConvertTo(&srcFloat, gocv.MatTypeCV32F)
 	srcFloat.DivideFloat(255.0)
+
+	// SAFE: Cleanup function for srcFloat
+	cleanupSrcFloat := func() {
+		if !srcFloat.Empty() {
+			srcFloat.Close()
+		}
+	}
 
 	// Validate conversion
 	if srcFloat.Empty() {
 		t.debugImage.LogAlgorithmStep("GuidedFilter", "ERROR: Float conversion failed")
+		cleanupSrcFloat()
 		return src.Clone()
 	}
 
@@ -248,135 +291,226 @@ func (t *TwoDOtsu) applyGuidedFilter(src gocv.Mat, windowRadius int, epsilon flo
 	kernelSize := 2*windowRadius + 1
 	t.debugImage.LogAlgorithmStep("GuidedFilter", fmt.Sprintf("Using box filter with kernel %dx%d", kernelSize, kernelSize))
 
-	// Mean filters
+	// SAFE: Calculate mean of input image I
 	meanI := gocv.NewMat()
-	defer meanI.Close()
 	gocv.BoxFilter(srcFloat, &meanI, -1, image.Point{X: kernelSize, Y: kernelSize})
+
+	// SAFE: Cleanup function for meanI
+	cleanupMeanI := func() {
+		if !meanI.Empty() {
+			meanI.Close()
+		}
+	}
 
 	// Validate mean filter
 	if meanI.Empty() {
 		t.debugImage.LogAlgorithmStep("GuidedFilter", "ERROR: Mean filter failed")
+		cleanupSrcFloat()
+		cleanupMeanI()
 		return src.Clone()
+	}
+
+	// SAFE: Calculate mean of I²
+	srcSquared := gocv.NewMat()
+	gocv.Multiply(srcFloat, srcFloat, &srcSquared)
+
+	// SAFE: Cleanup function for srcSquared
+	cleanupSrcSquared := func() {
+		if !srcSquared.Empty() {
+			srcSquared.Close()
+		}
 	}
 
 	meanII := gocv.NewMat()
-	defer meanII.Close()
-	srcSquared := gocv.NewMat()
-	defer srcSquared.Close()
-	gocv.Multiply(srcFloat, srcFloat, &srcSquared)
-
-	// Validate multiplication
-	if srcSquared.Empty() {
-		t.debugImage.LogAlgorithmStep("GuidedFilter", "ERROR: Multiplication failed")
-		return src.Clone()
-	}
-
 	gocv.BoxFilter(srcSquared, &meanII, -1, image.Point{X: kernelSize, Y: kernelSize})
 
-	// Validate second mean filter
-	if meanII.Empty() {
-		t.debugImage.LogAlgorithmStep("GuidedFilter", "ERROR: Second mean filter failed")
+	// SAFE: Cleanup function for meanII
+	cleanupMeanII := func() {
+		if !meanII.Empty() {
+			meanII.Close()
+		}
+	}
+
+	// Validate multiplication and mean filter
+	if srcSquared.Empty() || meanII.Empty() {
+		t.debugImage.LogAlgorithmStep("GuidedFilter", "ERROR: Squared mean calculation failed")
+		cleanupSrcFloat()
+		cleanupMeanI()
+		cleanupSrcSquared()
+		cleanupMeanII()
 		return src.Clone()
 	}
 
-	// Variance calculation
+	// FIXED: Calculate variance properly: Var(I) = E[I²] - (E[I])²
 	varI := gocv.NewMat()
-	defer varI.Close()
 	meanISquared := gocv.NewMat()
-	defer meanISquared.Close()
 	gocv.Multiply(meanI, meanI, &meanISquared)
-
-	// Validate mean squared
-	if meanISquared.Empty() {
-		t.debugImage.LogAlgorithmStep("GuidedFilter", "ERROR: Mean squared calculation failed")
-		return src.Clone()
-	}
-
 	gocv.Subtract(meanII, meanISquared, &varI)
 
+	// SAFE: Cleanup functions for variance calculation
+	cleanupVarI := func() {
+		if !varI.Empty() {
+			varI.Close()
+		}
+	}
+	cleanupMeanISquared := func() {
+		if !meanISquared.Empty() {
+			meanISquared.Close()
+		}
+	}
+
 	// Validate variance calculation
-	if varI.Empty() {
+	if varI.Empty() || meanISquared.Empty() {
 		t.debugImage.LogAlgorithmStep("GuidedFilter", "ERROR: Variance calculation failed")
+		cleanupSrcFloat()
+		cleanupMeanI()
+		cleanupSrcSquared()
+		cleanupMeanII()
+		cleanupVarI()
+		cleanupMeanISquared()
 		return src.Clone()
 	}
 
-	// Calculate coefficients - FIXED: Use covariance for 'a' coefficient
+	// FIXED: For self-guided filter where guide = input, covariance = variance
 	a := gocv.NewMat()
-	defer a.Close()
 	denominator := gocv.NewMat()
-	defer denominator.Close()
-
-	// CORRECTED: For guided filter when input=guide, covariance = variance
 	varI.CopyTo(&denominator)
-
-	// Validate copy operation
-	if denominator.Empty() {
-		t.debugImage.LogAlgorithmStep("GuidedFilter", "ERROR: Denominator copy failed")
-		return src.Clone()
-	}
-
 	denominator.AddFloat(float32(epsilon))
-	gocv.Divide(varI, denominator, &a) // CORRECTED: This is now correct for self-guided case
+	gocv.Divide(varI, denominator, &a)
+
+	// SAFE: Cleanup functions for coefficients
+	cleanupA := func() {
+		if !a.Empty() {
+			a.Close()
+		}
+	}
+	cleanupDenominator := func() {
+		if !denominator.Empty() {
+			denominator.Close()
+		}
+	}
 
 	// Validate division
-	if a.Empty() {
-		t.debugImage.LogAlgorithmStep("GuidedFilter", "ERROR: Division failed")
+	if a.Empty() || denominator.Empty() {
+		t.debugImage.LogAlgorithmStep("GuidedFilter", "ERROR: Coefficient a calculation failed")
+		cleanupSrcFloat()
+		cleanupMeanI()
+		cleanupSrcSquared()
+		cleanupMeanII()
+		cleanupVarI()
+		cleanupMeanISquared()
+		cleanupA()
+		cleanupDenominator()
 		return src.Clone()
 	}
 
+	// Calculate b = mean_p - a * mean_I (for self-guided: mean_p = mean_I)
 	b := gocv.NewMat()
-	defer b.Close()
 	temp := gocv.NewMat()
-	defer temp.Close()
 	gocv.Multiply(a, meanI, &temp)
-
-	// Validate temp calculation
-	if temp.Empty() {
-		t.debugImage.LogAlgorithmStep("GuidedFilter", "ERROR: Temp calculation failed")
-		return src.Clone()
-	}
-
 	gocv.Subtract(meanI, temp, &b)
 
+	// SAFE: Cleanup functions for b calculation
+	cleanupB := func() {
+		if !b.Empty() {
+			b.Close()
+		}
+	}
+	cleanupTemp := func() {
+		if !temp.Empty() {
+			temp.Close()
+		}
+	}
+
 	// Validate b calculation
-	if b.Empty() {
-		t.debugImage.LogAlgorithmStep("GuidedFilter", "ERROR: B calculation failed")
+	if b.Empty() || temp.Empty() {
+		t.debugImage.LogAlgorithmStep("GuidedFilter", "ERROR: Coefficient b calculation failed")
+		cleanupSrcFloat()
+		cleanupMeanI()
+		cleanupSrcSquared()
+		cleanupMeanII()
+		cleanupVarI()
+		cleanupMeanISquared()
+		cleanupA()
+		cleanupDenominator()
+		cleanupB()
+		cleanupTemp()
 		return src.Clone()
 	}
 
 	// Smooth coefficients
 	meanA := gocv.NewMat()
-	defer meanA.Close()
 	gocv.BoxFilter(a, &meanA, -1, image.Point{X: kernelSize, Y: kernelSize})
 
 	meanB := gocv.NewMat()
-	defer meanB.Close()
 	gocv.BoxFilter(b, &meanB, -1, image.Point{X: kernelSize, Y: kernelSize})
+
+	// SAFE: Cleanup functions for smoothed coefficients
+	cleanupMeanA := func() {
+		if !meanA.Empty() {
+			meanA.Close()
+		}
+	}
+	cleanupMeanB := func() {
+		if !meanB.Empty() {
+			meanB.Close()
+		}
+	}
 
 	// Validate coefficient smoothing
 	if meanA.Empty() || meanB.Empty() {
 		t.debugImage.LogAlgorithmStep("GuidedFilter", "ERROR: Coefficient smoothing failed")
+		cleanupSrcFloat()
+		cleanupMeanI()
+		cleanupSrcSquared()
+		cleanupMeanII()
+		cleanupVarI()
+		cleanupMeanISquared()
+		cleanupA()
+		cleanupDenominator()
+		cleanupB()
+		cleanupTemp()
+		cleanupMeanA()
+		cleanupMeanB()
 		return src.Clone()
 	}
 
-	// Final result
+	// Final result: q = mean_a * I + mean_b
 	resultFloat := gocv.NewMat()
-	defer resultFloat.Close()
 	temp1 := gocv.NewMat()
-	defer temp1.Close()
 	gocv.Multiply(meanA, srcFloat, &temp1)
-
-	// Validate final multiplication
-	if temp1.Empty() {
-		t.debugImage.LogAlgorithmStep("GuidedFilter", "ERROR: Final multiplication failed")
-		return src.Clone()
-	}
-
 	gocv.Add(temp1, meanB, &resultFloat)
 
-	// Validate final addition
-	if resultFloat.Empty() {
-		t.debugImage.LogAlgorithmStep("GuidedFilter", "ERROR: Final addition failed")
+	// SAFE: Cleanup functions for final calculation
+	cleanupResultFloat := func() {
+		if !resultFloat.Empty() {
+			resultFloat.Close()
+		}
+	}
+	cleanupTemp1 := func() {
+		if !temp1.Empty() {
+			temp1.Close()
+		}
+	}
+
+	// Validate final calculations
+	if resultFloat.Empty() || temp1.Empty() {
+		t.debugImage.LogAlgorithmStep("GuidedFilter", "ERROR: Final result calculation failed")
+		// Cleanup all intermediate results
+		cleanupSrcFloat()
+		cleanupMeanI()
+		cleanupSrcSquared()
+		cleanupMeanII()
+		cleanupVarI()
+		cleanupMeanISquared()
+		cleanupA()
+		cleanupDenominator()
+		cleanupB()
+		cleanupTemp()
+		cleanupMeanA()
+		cleanupMeanB()
+		cleanupResultFloat()
+		cleanupTemp1()
 		return src.Clone()
 	}
 
@@ -384,6 +518,22 @@ func (t *TwoDOtsu) applyGuidedFilter(src gocv.Mat, windowRadius int, epsilon flo
 	result := gocv.NewMat()
 	resultFloat.MultiplyFloat(255.0)
 	resultFloat.ConvertTo(&result, gocv.MatTypeCV8U)
+
+	// SAFE: Clean up all intermediate results before returning
+	cleanupSrcFloat()
+	cleanupMeanI()
+	cleanupSrcSquared()
+	cleanupMeanII()
+	cleanupVarI()
+	cleanupMeanISquared()
+	cleanupA()
+	cleanupDenominator()
+	cleanupB()
+	cleanupTemp()
+	cleanupMeanA()
+	cleanupMeanB()
+	cleanupResultFloat()
+	cleanupTemp1()
 
 	// Final validation
 	if result.Empty() {
@@ -435,7 +585,7 @@ func (t *TwoDOtsu) apply2DOtsu(gray, guided gocv.Mat) gocv.Mat {
 		g := int(grayData[i])
 		f := int(guidedData[i])
 
-		// FIXED: Add bounds checking
+		// Add bounds checking
 		if g < 0 {
 			g = 0
 		} else if g > 255 {
@@ -460,7 +610,7 @@ func (t *TwoDOtsu) apply2DOtsu(gray, guided gocv.Mat) gocv.Mat {
 	t.debugImage.LogPixelDistributionDetailed("gray_before_binarization", gray, 3)
 	t.debugImage.LogPixelDistributionDetailed("guided_before_binarization", guided, 3)
 
-	// Apply thresholding with CORRECTED region-based classification
+	// FIXED: Apply thresholding with CORRECTED region-based classification
 	t.debugImage.LogAlgorithmStep("2D Otsu", "Binarizing image with corrected 2D Otsu logic")
 
 	size := gray.Size()
@@ -470,21 +620,21 @@ func (t *TwoDOtsu) apply2DOtsu(gray, guided gocv.Mat) gocv.Mat {
 	foregroundCount := 0
 	backgroundCount := 0
 
-	// Process pixel by pixel using CORRECTED 2D Otsu classification
+	// FIXED: Process pixel by pixel using CORRECTED 2D Otsu classification
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
 			grayVal := int(gray.GetUCharAt(y, x))
 			guidedVal := int(guided.GetUCharAt(y, x))
 
 			// CORRECTED 2D Otsu classification logic
-			isBackground := t.classifyPixel(grayVal, guidedVal, bestS, bestT)
+			isForeground := t.classifyPixel(grayVal, guidedVal, bestS, bestT)
 
-			if isBackground {
-				result.SetUCharAt(y, x, 255) // Background (white)
-				backgroundCount++
-			} else {
-				result.SetUCharAt(y, x, 0) // Foreground (black)
+			if isForeground {
+				result.SetUCharAt(y, x, 0) // Foreground (black) - text/objects
 				foregroundCount++
+			} else {
+				result.SetUCharAt(y, x, 255) // Background (white) - paper/background
+				backgroundCount++
 			}
 		}
 	}
@@ -498,25 +648,33 @@ func (t *TwoDOtsu) apply2DOtsu(gray, guided gocv.Mat) gocv.Mat {
 	return result
 }
 
-// CORRECTED: Proper 2D Otsu classification with region-based logic
+// FIXED: Correct 2D Otsu classification with proper region-based logic for document binarization
 func (t *TwoDOtsu) classifyPixel(grayVal, guidedVal, bestS, bestT int) bool {
-	// 2D Otsu defines 4 regions in the 2D histogram:
-	// Region 1: g <= bestS, f <= bestT (Object/Foreground)
-	// Region 2: g > bestS, f <= bestT (Transition)
-	// Region 3: g <= bestS, f > bestT (Transition)
-	// Region 4: g > bestS, f > bestT (Background)
+	// CORRECTED: 2D Otsu classification for document binarization
+	// For documents: dark text on light background
+	// Region 1: g <= bestS, f <= bestT (Dark objects - TEXT/FOREGROUND)
+	// Region 2: g > bestS, f <= bestT (Edge/transition regions)
+	// Region 3: g <= bestS, f > bestT (Edge/transition regions)
+	// Region 4: g > bestS, f > bestT (Light background - BACKGROUND)
 
 	if grayVal <= bestS && guidedVal <= bestT {
-		return false // Object region - foreground
+		return true // Region 1: Dark objects (text) - FOREGROUND
 	} else if grayVal > bestS && guidedVal > bestT {
-		return true // Background region
+		return false // Region 4: Light background - BACKGROUND
 	} else {
-		// Transition regions - use distance metric for better classification
-		objDistance := math.Sqrt(float64((grayVal-bestS/2)*(grayVal-bestS/2) +
-			(guidedVal-bestT/2)*(guidedVal-bestT/2)))
-		bgDistance := math.Sqrt(float64((grayVal-(bestS+255)/2)*(grayVal-(bestS+255)/2) +
-			(guidedVal-(bestT+255)/2)*(guidedVal-(bestT+255)/2)))
-		return bgDistance < objDistance
+		// Transition regions (2 & 3) - use distance-based classification
+		// Calculate distance to foreground center vs background center
+		foregroundCenterG := bestS / 2
+		foregroundCenterF := bestT / 2
+		backgroundCenterG := (bestS + 255) / 2
+		backgroundCenterF := (bestT + 255) / 2
+
+		distToForeground := math.Sqrt(float64((grayVal-foregroundCenterG)*(grayVal-foregroundCenterG) +
+			(guidedVal-foregroundCenterF)*(guidedVal-foregroundCenterF)))
+		distToBackground := math.Sqrt(float64((grayVal-backgroundCenterG)*(grayVal-backgroundCenterG) +
+			(guidedVal-backgroundCenterF)*(guidedVal-backgroundCenterF)))
+
+		return distToForeground < distToBackground // Closer to foreground = foreground
 	}
 }
 

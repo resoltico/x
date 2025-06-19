@@ -8,47 +8,70 @@ import (
 	"gocv.io/x/gocv"
 )
 
-type ManagedMat struct {
-	mat gocv.Mat
-	id  uint64
+// SafeMat provides safe OpenCV Mat management without complex ID tracking
+type SafeMat struct {
+	mat    gocv.Mat
+	closed bool
+	mutex  sync.Mutex
 }
 
-func NewManagedMat(name string, debugMemory *DebugMemory) *ManagedMat {
-	mat := gocv.NewMat()
-	id := debugMemory.LogMatCreation(name)
-	return &ManagedMat{
-		mat: mat,
-		id:  id,
+func NewSafeMat() *SafeMat {
+	return &SafeMat{
+		mat:    gocv.NewMat(),
+		closed: false,
 	}
 }
 
-func (m *ManagedMat) Close(name string, debugMemory *DebugMemory) {
-	// Check if mat is valid before calling Empty()
-	if m != nil && m.id != 0 {
-		debugMemory.LogMatCleanup(name, m.id)
-		// Only close if mat is not already closed
-		if !m.mat.Empty() {
-			m.mat.Close()
-		}
-		m.id = 0 // Mark as closed
+func (s *SafeMat) Close() {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	if !s.closed && !s.mat.Empty() {
+		s.mat.Close()
+		s.closed = true
 	}
 }
 
-func (m *ManagedMat) Mat() gocv.Mat {
-	return m.mat
+func (s *SafeMat) Mat() gocv.Mat {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	return s.mat
 }
 
-func (m *ManagedMat) IsEmpty() bool {
-	if m == nil || m.id == 0 {
-		return true
+func (s *SafeMat) IsEmpty() bool {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	return s.closed || s.mat.Empty()
+}
+
+func (s *SafeMat) IsClosed() bool {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	return s.closed
+}
+
+// SAFE: Replace mat content safely
+func (s *SafeMat) Replace(newMat gocv.Mat) error {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	if s.closed {
+		return fmt.Errorf("cannot replace closed SafeMat")
 	}
-	return m.mat.Empty()
+
+	// Close old mat if it exists
+	if !s.mat.Empty() {
+		s.mat.Close()
+	}
+
+	s.mat = newMat
+	return nil
 }
 
 type ImagePipeline struct {
-	originalImage   *ManagedMat
-	processedImage  *ManagedMat
-	previewImage    *ManagedMat
+	originalImage   *SafeMat
+	processedImage  *SafeMat
+	previewImage    *SafeMat
 	transformations []Transformation
 	debugPipeline   *DebugPipeline
 	debugMemory     *DebugMemory
@@ -67,10 +90,10 @@ func NewImagePipeline(config *DebugConfig) *ImagePipeline {
 		initialized:     false,
 	}
 
-	// Initialize with empty managed Mats
-	pipeline.originalImage = NewManagedMat("originalImage", debugMemory)
-	pipeline.processedImage = NewManagedMat("processedImage", debugMemory)
-	pipeline.previewImage = NewManagedMat("previewImage", debugMemory)
+	// Initialize with safe Mat wrappers
+	pipeline.originalImage = NewSafeMat()
+	pipeline.processedImage = NewSafeMat()
+	pipeline.previewImage = NewSafeMat()
 
 	return pipeline
 }
@@ -81,21 +104,14 @@ func (p *ImagePipeline) HasImage() bool {
 	return p.initialized && !p.originalImage.IsEmpty()
 }
 
-func (p *ImagePipeline) SetOriginalImage(img gocv.Mat) (err error) {
-	// Panic recovery for OpenCV operations
-	defer func() {
-		if r := recover(); r != nil {
-			err = fmt.Errorf("panic in SetOriginalImage: %v", r)
-			p.debugPipeline.Log(fmt.Sprintf("PANIC RECOVERED: %v", r))
-		}
-	}()
-
+// FIXED: Safe image setting without defer overwrite patterns
+func (p *ImagePipeline) SetOriginalImage(img gocv.Mat) error {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
 	p.debugPipeline.LogSetOriginalStart()
 
-	// Clean up existing resources
+	// Clean up existing resources first
 	if p.initialized {
 		p.debugPipeline.LogSetOriginalStep("cleaning up existing resources")
 		p.cleanupResourcesUnsafe()
@@ -106,43 +122,44 @@ func (p *ImagePipeline) SetOriginalImage(img gocv.Mat) (err error) {
 		return fmt.Errorf("input image is empty")
 	}
 
-	// Set up new image - avoid defer overwrite pattern
-	p.debugPipeline.LogSetOriginalStep("cloning original image")
+	// SAFE: Create clones first, then assign atomically
+	p.debugPipeline.LogSetOriginalStep("cloning images safely")
+
 	originalClone := img.Clone()
 	if originalClone.Empty() {
 		return fmt.Errorf("failed to clone original image")
 	}
 
-	// Close old mat and assign new one
-	p.originalImage.Close("originalImage", p.debugMemory)
-	p.originalImage = &ManagedMat{
-		mat: originalClone,
-		id:  p.debugMemory.LogMatCreation("originalImage"),
-	}
-
-	// Create processed and preview images
-	p.debugPipeline.LogSetOriginalStep("creating processed image")
-	processedClone := originalClone.Clone()
+	processedClone := img.Clone()
 	if processedClone.Empty() {
+		originalClone.Close() // Clean up on failure
 		return fmt.Errorf("failed to clone processed image")
 	}
 
-	p.processedImage.Close("processedImage", p.debugMemory)
-	p.processedImage = &ManagedMat{
-		mat: processedClone,
-		id:  p.debugMemory.LogMatCreation("processedImage"),
-	}
-
-	p.debugPipeline.LogSetOriginalStep("creating preview image")
-	previewClone := originalClone.Clone()
+	previewClone := img.Clone()
 	if previewClone.Empty() {
+		originalClone.Close() // Clean up on failure
+		processedClone.Close()
 		return fmt.Errorf("failed to clone preview image")
 	}
 
-	p.previewImage.Close("previewImage", p.debugMemory)
-	p.previewImage = &ManagedMat{
-		mat: previewClone,
-		id:  p.debugMemory.LogMatCreation("previewImage"),
+	// SAFE: Replace mats atomically - no defer overwrite risk
+	if err := p.originalImage.Replace(originalClone); err != nil {
+		originalClone.Close()
+		processedClone.Close()
+		previewClone.Close()
+		return fmt.Errorf("failed to set original image: %w", err)
+	}
+
+	if err := p.processedImage.Replace(processedClone); err != nil {
+		processedClone.Close()
+		previewClone.Close()
+		return fmt.Errorf("failed to set processed image: %w", err)
+	}
+
+	if err := p.previewImage.Replace(previewClone); err != nil {
+		previewClone.Close()
+		return fmt.Errorf("failed to set preview image: %w", err)
 	}
 
 	p.initialized = true
@@ -259,15 +276,8 @@ func (p *ImagePipeline) HasImageUnsafe() bool {
 	return p.initialized && !p.originalImage.IsEmpty()
 }
 
-func (p *ImagePipeline) processImageUnsafe() (err error) {
-	// Panic recovery for OpenCV operations
-	defer func() {
-		if r := recover(); r != nil {
-			err = fmt.Errorf("panic in processImage: %v", r)
-			p.debugPipeline.Log(fmt.Sprintf("PANIC RECOVERED: %v", r))
-		}
-	}()
-
+// FIXED: Safe processing without defer overwrite patterns
+func (p *ImagePipeline) processImageUnsafe() error {
 	p.debugPipeline.LogProcessStart()
 	if !p.HasImageUnsafe() {
 		p.debugPipeline.LogProcessEarlyReturn("not initialized")
@@ -289,62 +299,59 @@ func (p *ImagePipeline) processImageUnsafe() (err error) {
 		p.debugPipeline.LogMemoryUsage()
 	}()
 
-	// Create new processed image - avoid defer overwrite pattern
-	p.debugPipeline.LogProcessStep("creating new processed image")
+	// SAFE: Start with clone of original
+	p.debugPipeline.LogProcessStep("creating working copy")
 	originalMat := p.originalImage.Mat()
-	newProcessed := originalMat.Clone()
-	if newProcessed.Empty() {
+	currentResult := originalMat.Clone()
+	if currentResult.Empty() {
 		return fmt.Errorf("failed to clone original for processing")
 	}
 
-	// Apply all transformations sequentially
+	// SAFE: Process transformations with explicit cleanup
 	p.debugPipeline.LogTransformationCount(len(p.transformations))
 	for i, transformation := range p.transformations {
 		timerName := fmt.Sprintf("transformation_%d_%s", i, transformation.Name())
 		p.debugPipeline.StartTimer(timerName)
 
-		before := newProcessed.Clone()
-		result := transformation.Apply(newProcessed)
+		// Save reference to current result for debugging
+		beforeTransform := currentResult.Clone()
+
+		// Apply transformation to current result
+		transformedResult := transformation.Apply(currentResult)
 		duration := p.debugPipeline.EndTimer(timerName)
 
-		p.debugPipeline.LogTransformationApplied(transformation.Name(), before, result, duration)
+		// Log transformation
+		p.debugPipeline.LogTransformationApplied(transformation.Name(), beforeTransform, transformedResult, duration)
 
-		// Clean up intermediate result
-		if !newProcessed.Empty() {
-			newProcessed.Close()
+		// SAFE: Clean up previous result before replacing
+		if !currentResult.Empty() {
+			currentResult.Close()
 		}
-		newProcessed = result
+		if !beforeTransform.Empty() {
+			beforeTransform.Close()
+		}
 
-		if !before.Empty() {
-			before.Close()
-		}
+		// SAFE: Update current result
+		currentResult = transformedResult
 
 		// Validate result
-		if newProcessed.Empty() {
+		if currentResult.Empty() {
 			return fmt.Errorf("transformation %s returned empty result", transformation.Name())
 		}
 	}
 
-	// Replace processed image
-	p.processedImage.Close("processedImage", p.debugMemory)
-	p.processedImage = &ManagedMat{
-		mat: newProcessed,
-		id:  p.debugMemory.LogMatCreation("processedImage"),
+	// SAFE: Replace processed image atomically
+	if err := p.processedImage.Replace(currentResult); err != nil {
+		currentResult.Close() // Clean up on failure
+		return fmt.Errorf("failed to update processed image: %w", err)
 	}
 
 	p.debugPipeline.LogProcessComplete()
 	return nil
 }
 
-func (p *ImagePipeline) processPreviewUnsafe() (err error) {
-	// Panic recovery for OpenCV operations
-	defer func() {
-		if r := recover(); r != nil {
-			err = fmt.Errorf("panic in processPreview: %v", r)
-			p.debugPipeline.Log(fmt.Sprintf("PANIC RECOVERED: %v", r))
-		}
-	}()
-
+// FIXED: Safe preview processing without defer overwrite patterns
+func (p *ImagePipeline) processPreviewUnsafe() error {
 	p.debugPipeline.LogProcessStart()
 	if !p.HasImageUnsafe() {
 		p.debugPipeline.LogProcessEarlyReturn("preview not initialized")
@@ -365,65 +372,64 @@ func (p *ImagePipeline) processPreviewUnsafe() (err error) {
 		}
 	}()
 
-	// Create new preview image - avoid defer overwrite pattern
+	// SAFE: Start with clone of original
 	originalMat := p.originalImage.Mat()
-	newPreview := originalMat.Clone()
-	if newPreview.Empty() {
+	currentResult := originalMat.Clone()
+	if currentResult.Empty() {
 		return fmt.Errorf("failed to clone original for preview")
 	}
 
-	// Apply all transformations sequentially using preview method
+	// SAFE: Process transformations with explicit cleanup
 	for i, transformation := range p.transformations {
 		timerName := fmt.Sprintf("preview_transformation_%d_%s", i, transformation.Name())
 		p.debugPipeline.StartTimer(timerName)
 
-		before := newPreview.Clone()
-		result := transformation.ApplyPreview(newPreview)
+		// Save reference to current result for debugging
+		beforeTransform := currentResult.Clone()
+
+		// Apply preview transformation to current result
+		transformedResult := transformation.ApplyPreview(currentResult)
 		duration := p.debugPipeline.EndTimer(timerName)
 
-		p.debugPipeline.LogTransformationApplied(transformation.Name()+" (preview)", before, result, duration)
+		// Log transformation
+		p.debugPipeline.LogTransformationApplied(transformation.Name()+" (preview)", beforeTransform, transformedResult, duration)
 
-		// Clean up intermediate result
-		if !newPreview.Empty() {
-			newPreview.Close()
+		// SAFE: Clean up previous result before replacing
+		if !currentResult.Empty() {
+			currentResult.Close()
 		}
-		newPreview = result
+		if !beforeTransform.Empty() {
+			beforeTransform.Close()
+		}
 
-		if !before.Empty() {
-			before.Close()
-		}
+		// SAFE: Update current result
+		currentResult = transformedResult
 
 		// Validate result
-		if newPreview.Empty() {
+		if currentResult.Empty() {
 			return fmt.Errorf("preview transformation %s returned empty result", transformation.Name())
 		}
 	}
 
-	// Replace preview image
-	p.previewImage.Close("previewImage", p.debugMemory)
-	p.previewImage = &ManagedMat{
-		mat: newPreview,
-		id:  p.debugMemory.LogMatCreation("previewImage"),
+	// SAFE: Replace preview image atomically
+	if err := p.previewImage.Replace(currentResult); err != nil {
+		currentResult.Close() // Clean up on failure
+		return fmt.Errorf("failed to update preview image: %w", err)
 	}
 
 	return nil
 }
 
+// SAFE: Explicit cleanup without complex tracking
 func (p *ImagePipeline) cleanupResourcesUnsafe() {
-	if p.originalImage != nil && p.originalImage.id != 0 {
-		p.debugPipeline.LogResourceCleanup("originalImage", true)
-		p.originalImage.Close("originalImage", p.debugMemory)
-	}
+	p.debugPipeline.LogResourceCleanup("originalImage", true)
+	p.originalImage.Close()
 
-	if p.processedImage != nil && p.processedImage.id != 0 {
-		p.debugPipeline.LogResourceCleanup("processedImage", true)
-		p.processedImage.Close("processedImage", p.debugMemory)
-	}
+	p.debugPipeline.LogResourceCleanup("processedImage", true)
+	p.processedImage.Close()
 
-	if p.previewImage != nil && p.previewImage.id != 0 {
-		p.debugPipeline.LogResourceCleanup("previewImage", true)
-		p.previewImage.Close("previewImage", p.debugMemory)
-	}
+	p.debugPipeline.LogResourceCleanup("previewImage", true)
+	p.previewImage.Close()
 }
 
 func (p *ImagePipeline) CalculatePSNR() float64 {
@@ -434,7 +440,7 @@ func (p *ImagePipeline) CalculatePSNR() float64 {
 		return 0.0
 	}
 
-	// Convert to same type if needed
+	// SAFE: Create clones for calculation
 	originalMat := p.originalImage.Mat()
 	processedMat := p.processedImage.Mat()
 
@@ -469,7 +475,7 @@ func (p *ImagePipeline) CalculatePSNR() float64 {
 	return psnr
 }
 
-// FIXED: Correct SSIM calculation implementation
+// FIXED: Correct SSIM calculation implementation (from previous fix)
 func (p *ImagePipeline) CalculateSSIM() float64 {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
@@ -481,7 +487,7 @@ func (p *ImagePipeline) CalculateSSIM() float64 {
 	originalMat := p.originalImage.Mat()
 	processedMat := p.processedImage.Mat()
 
-	// Clone matrices for processing
+	// SAFE: Clone matrices for processing
 	orig := originalMat.Clone()
 	defer orig.Close()
 	proc := processedMat.Clone()
