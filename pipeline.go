@@ -469,6 +469,7 @@ func (p *ImagePipeline) CalculatePSNR() float64 {
 	return psnr
 }
 
+// FIXED: Correct SSIM calculation implementation
 func (p *ImagePipeline) CalculateSSIM() float64 {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
@@ -477,83 +478,98 @@ func (p *ImagePipeline) CalculateSSIM() float64 {
 		return 0.0
 	}
 
-	// Simple SSIM approximation using correlation coefficient
 	originalMat := p.originalImage.Mat()
 	processedMat := p.processedImage.Mat()
 
+	// Clone matrices for processing
 	orig := originalMat.Clone()
 	defer orig.Close()
 	proc := processedMat.Clone()
 	defer proc.Close()
 
+	// Ensure same type - convert processed to match original if needed
 	if orig.Type() != proc.Type() {
 		if proc.Type() == gocv.MatTypeCV8U && orig.Channels() == 3 {
 			gocv.CvtColor(proc, &proc, gocv.ColorGrayToBGR)
+		} else if orig.Type() == gocv.MatTypeCV8U && proc.Channels() == 3 {
+			gocv.CvtColor(orig, &orig, gocv.ColorGrayToBGR)
 		}
 	}
 
-	// Convert to float for calculations
+	// Convert to float32 for accurate calculations
 	origF := gocv.NewMat()
 	defer origF.Close()
 	procF := gocv.NewMat()
 	defer procF.Close()
+
 	orig.ConvertTo(&origF, gocv.MatTypeCV32F)
 	proc.ConvertTo(&procF, gocv.MatTypeCV32F)
+
+	// SSIM constants (K1=0.01, K2=0.03, L=255 for 8-bit images)
+	K1 := 0.01
+	K2 := 0.03
+	L := 255.0
+	C1 := (K1 * L) * (K1 * L)
+	C2 := (K2 * L) * (K2 * L)
 
 	// Calculate means
 	origMean := origF.Mean()
 	procMean := procF.Mean()
 
-	// Calculate standard deviations and covariance
-	origVar := gocv.NewMat()
-	defer origVar.Close()
-	procVar := gocv.NewMat()
-	defer procVar.Close()
-	covar := gocv.NewMat()
-	defer covar.Close()
+	μx := origMean.Val1
+	μy := procMean.Val1
 
-	origSub := gocv.NewMat()
-	defer origSub.Close()
-	procSub := gocv.NewMat()
-	defer procSub.Close()
+	// FIXED: Calculate variances properly
+	// σx² = E[X²] - (E[X])²
+	origSquared := gocv.NewMat()
+	defer origSquared.Close()
+	procSquared := gocv.NewMat()
+	defer procSquared.Close()
 
-	// Create scalar mats for subtraction
-	origMeanMat := gocv.NewMatFromScalar(origMean, origF.Type())
-	defer origMeanMat.Close()
-	procMeanMat := gocv.NewMatFromScalar(procMean, procF.Type())
-	defer procMeanMat.Close()
+	gocv.Multiply(origF, origF, &origSquared)
+	gocv.Multiply(procF, procF, &procSquared)
 
-	gocv.Subtract(origF, origMeanMat, &origSub)
-	gocv.Subtract(procF, procMeanMat, &procSub)
+	origSquaredMean := origSquared.Mean()
+	procSquaredMean := procSquared.Mean()
 
-	gocv.Multiply(origSub, origSub, &origVar)
-	gocv.Multiply(procSub, procSub, &procVar)
-	gocv.Multiply(origSub, procSub, &covar)
+	σx2 := origSquaredMean.Val1 - μx*μx // Var(X) = E[X²] - (E[X])²
+	σy2 := procSquaredMean.Val1 - μy*μy // Var(Y) = E[Y²] - (E[Y])²
 
-	// Calculate variance and covariance
-	origVarSum := origVar.Sum()
-	procVarSum := procVar.Sum()
-	covarSum := covar.Sum()
+	σx := math.Sqrt(σx2)
+	σy := math.Sqrt(σy2)
 
-	origStd := math.Sqrt(origVarSum.Val1 / float64(orig.Total()))
-	procStd := math.Sqrt(procVarSum.Val1 / float64(proc.Total()))
-	covariance := covarSum.Val1 / float64(orig.Total())
+	// FIXED: Calculate covariance properly
+	// σxy = E[XY] - E[X]E[Y]
+	crossProduct := gocv.NewMat()
+	defer crossProduct.Close()
 
-	// SSIM constants
-	c1 := math.Pow(0.01*255, 2)
-	c2 := math.Pow(0.03*255, 2)
+	gocv.Multiply(origF, procF, &crossProduct)
+	crossMean := crossProduct.Mean()
 
-	// Calculate SSIM
-	numerator := (2*origMean.Val1*procMean.Val1 + c1) * (2*covariance + c2)
-	denominator := (math.Pow(origMean.Val1, 2) + math.Pow(procMean.Val1, 2) + c1) * (math.Pow(origStd, 2) + math.Pow(procStd, 2) + c2)
+	σxy := crossMean.Val1 - μx*μy // Cov(X,Y) = E[XY] - E[X]E[Y]
 
-	ssim := numerator / denominator
+	// FIXED: Calculate SSIM using correct formula
+	// SSIM = ((2μxμy + C1)(2σxy + C2)) / ((μx² + μy² + C1)(σx² + σy² + C2))
+	numerator := (2*μx*μy + C1) * (2*σxy + C2)
+	denominator := (μx*μx + μy*μy + C1) * (σx2 + σy2 + C2)
 
+	var ssim float64
+	if denominator == 0 {
+		// Handle edge case where denominator is zero
+		if μx == μy && σx == σy {
+			ssim = 1.0 // Perfect similarity
+		} else {
+			ssim = 0.0
+		}
+	} else {
+		ssim = numerator / denominator
+	}
+
+	// Clamp SSIM to valid range [-1, 1], though it should typically be [0, 1]
 	if ssim > 1.0 {
 		ssim = 1.0
-	}
-	if ssim < 0.0 {
-		ssim = 0.0
+	} else if ssim < -1.0 {
+		ssim = -1.0
 	}
 
 	return ssim
