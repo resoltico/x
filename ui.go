@@ -92,7 +92,7 @@ func (ui *ImageRestorationUI) createToolbar() fyne.CanvasObject {
 }
 
 func (ui *ImageRestorationUI) createLeftPanel() fyne.CanvasObject {
-	transformations := []string{"2D Otsu"}
+	transformations := []string{"2D Otsu", "Lanczos4 Scaling"}
 
 	ui.availableTransformationsList = widget.NewList(
 		func() int { return len(transformations) },
@@ -377,6 +377,8 @@ func (ui *ImageRestorationUI) onTransformationSelected(id widget.ListItemID) {
 	switch id {
 	case 0:
 		transformationName = "2D Otsu"
+	case 1:
+		transformationName = "Lanczos4 Scaling"
 	default:
 		return
 	}
@@ -395,6 +397,8 @@ func (ui *ImageRestorationUI) onTransformationSelected(id widget.ListItemID) {
 	switch id {
 	case 0: // 2D Otsu
 		transformation = NewTwoDOtsu(&debugConfig)
+	case 1: // Lanczos4 Scaling
+		transformation = NewLanczos4Transform(&debugConfig)
 	default:
 		return
 	}
@@ -479,7 +483,8 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 		ui.debugGUI.LogUIEvent("updateImageDisplay: converting original image")
 
 		// Convert original image
-		originalImg, err := ui.pipeline.originalImage.Mat().ToImage()
+		originalMat := ui.pipeline.originalImage.Mat()
+		originalImg, err := originalMat.ToImage()
 		if err != nil {
 			ui.debugGUI.LogImageConversion("original", false, err.Error())
 			return
@@ -495,7 +500,7 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 		}
 
 		var previewImg image.Image
-		originalChannels := ui.pipeline.originalImage.Mat().Channels()
+		originalChannels := originalMat.Channels()
 		previewChannels := previewMat.Channels()
 
 		if originalChannels != previewChannels {
@@ -579,8 +584,9 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 
 func (ui *ImageRestorationUI) updateImageInfo() {
 	if ui.pipeline.HasImage() && !ui.pipeline.originalImage.IsEmpty() {
-		size := ui.pipeline.originalImage.Mat().Size()
-		channels := ui.pipeline.originalImage.Mat().Channels()
+		originalMat := ui.pipeline.originalImage.Mat()
+		size := originalMat.Size()
+		channels := originalMat.Channels()
 
 		info := fmt.Sprintf("Size: %dx%d\nChannels: %d", size[1], size[0], channels)
 		ui.imageInfoLabel.ParseMarkdown(info)

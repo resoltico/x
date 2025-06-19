@@ -24,9 +24,9 @@ type Lanczos4Transform struct {
 }
 
 // NewLanczos4Transform creates a new Lanczos4 transformation
-func NewLanczos4Transform() *Lanczos4Transform {
+func NewLanczos4Transform(config *DebugConfig) *Lanczos4Transform {
 	return &Lanczos4Transform{
-		debugImage:   NewDebugImage(),
+		debugImage:   NewDebugImage(config),
 		scaleFactor:  2.0,
 		targetDPI:    300.0,
 		originalDPI:  150.0,

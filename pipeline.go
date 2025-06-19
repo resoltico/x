@@ -23,9 +23,14 @@ func NewManagedMat(name string, debugMemory *DebugMemory) *ManagedMat {
 }
 
 func (m *ManagedMat) Close(name string, debugMemory *DebugMemory) {
-	if !m.mat.Empty() {
+	// Check if mat is valid before calling Empty()
+	if m != nil && m.id != 0 {
 		debugMemory.LogMatCleanup(name, m.id)
-		m.mat.Close()
+		// Only close if mat is not already closed
+		if !m.mat.Empty() {
+			m.mat.Close()
+		}
+		m.id = 0 // Mark as closed
 	}
 }
 
@@ -34,6 +39,9 @@ func (m *ManagedMat) Mat() gocv.Mat {
 }
 
 func (m *ManagedMat) IsEmpty() bool {
+	if m == nil || m.id == 0 {
+		return true
+	}
 	return m.mat.Empty()
 }
 
@@ -274,14 +282,17 @@ func (p *ImagePipeline) processImageUnsafe() (err error) {
 	defer func() {
 		p.debugPipeline.EndTimer("processImage")
 		if p.initialized && !p.processedImage.IsEmpty() {
-			p.debugPipeline.LogPipelineStats(p.originalImage.Mat().Size(), p.processedImage.Mat().Size(), len(p.transformations))
+			originalMat := p.originalImage.Mat()
+			processedMat := p.processedImage.Mat()
+			p.debugPipeline.LogPipelineStats(originalMat.Size(), processedMat.Size(), len(p.transformations))
 		}
 		p.debugPipeline.LogMemoryUsage()
 	}()
 
 	// Create new processed image - avoid defer overwrite pattern
 	p.debugPipeline.LogProcessStep("creating new processed image")
-	newProcessed := p.originalImage.Mat().Clone()
+	originalMat := p.originalImage.Mat()
+	newProcessed := originalMat.Clone()
 	if newProcessed.Empty() {
 		return fmt.Errorf("failed to clone original for processing")
 	}
@@ -348,12 +359,15 @@ func (p *ImagePipeline) processPreviewUnsafe() (err error) {
 	defer func() {
 		p.debugPipeline.EndTimer("processPreview")
 		if p.initialized && !p.previewImage.IsEmpty() {
-			p.debugPipeline.LogPipelineStats(p.originalImage.Mat().Size(), p.previewImage.Mat().Size(), len(p.transformations))
+			originalMat := p.originalImage.Mat()
+			previewMat := p.previewImage.Mat()
+			p.debugPipeline.LogPipelineStats(originalMat.Size(), previewMat.Size(), len(p.transformations))
 		}
 	}()
 
 	// Create new preview image - avoid defer overwrite pattern
-	newPreview := p.originalImage.Mat().Clone()
+	originalMat := p.originalImage.Mat()
+	newPreview := originalMat.Clone()
 	if newPreview.Empty() {
 		return fmt.Errorf("failed to clone original for preview")
 	}
@@ -396,18 +410,18 @@ func (p *ImagePipeline) processPreviewUnsafe() (err error) {
 }
 
 func (p *ImagePipeline) cleanupResourcesUnsafe() {
-	p.debugPipeline.LogResourceCleanup("originalImage", true)
-	if p.originalImage != nil {
+	if p.originalImage != nil && p.originalImage.id != 0 {
+		p.debugPipeline.LogResourceCleanup("originalImage", true)
 		p.originalImage.Close("originalImage", p.debugMemory)
 	}
 
-	p.debugPipeline.LogResourceCleanup("processedImage", true)
-	if p.processedImage != nil {
+	if p.processedImage != nil && p.processedImage.id != 0 {
+		p.debugPipeline.LogResourceCleanup("processedImage", true)
 		p.processedImage.Close("processedImage", p.debugMemory)
 	}
 
-	p.debugPipeline.LogResourceCleanup("previewImage", true)
-	if p.previewImage != nil {
+	if p.previewImage != nil && p.previewImage.id != 0 {
+		p.debugPipeline.LogResourceCleanup("previewImage", true)
 		p.previewImage.Close("previewImage", p.debugMemory)
 	}
 }
@@ -421,9 +435,12 @@ func (p *ImagePipeline) CalculatePSNR() float64 {
 	}
 
 	// Convert to same type if needed
-	orig := p.originalImage.Mat().Clone()
+	originalMat := p.originalImage.Mat()
+	processedMat := p.processedImage.Mat()
+
+	orig := originalMat.Clone()
 	defer orig.Close()
-	proc := p.processedImage.Mat().Clone()
+	proc := processedMat.Clone()
 	defer proc.Close()
 
 	if orig.Type() != proc.Type() {
@@ -461,9 +478,12 @@ func (p *ImagePipeline) CalculateSSIM() float64 {
 	}
 
 	// Simple SSIM approximation using correlation coefficient
-	orig := p.originalImage.Mat().Clone()
+	originalMat := p.originalImage.Mat()
+	processedMat := p.processedImage.Mat()
+
+	orig := originalMat.Clone()
 	defer orig.Close()
-	proc := p.processedImage.Mat().Clone()
+	proc := processedMat.Clone()
 	defer proc.Close()
 
 	if orig.Type() != proc.Type() {

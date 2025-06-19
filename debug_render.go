@@ -288,10 +288,3 @@ func (d *DebugRender) Enable() {
 func (d *DebugRender) Disable() {
 	d.enabled = false
 }
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
