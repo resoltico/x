@@ -33,9 +33,13 @@ type OperationLog struct {
 	Timestamp time.Time
 }
 
-func NewDebugPipeline() *DebugPipeline {
+func NewDebugPipeline(config *DebugConfig) *DebugPipeline {
+	enabled := false
+	if config != nil {
+		enabled = config.Pipeline
+	}
 	return &DebugPipeline{
-		enabled:    true, // Set to false to disable pipeline debugging
+		enabled:    enabled,
 		timings:    make(map[string]time.Time),
 		imageStats: make(map[string]ImageStats),
 		operations: make([]OperationLog, 0),
@@ -249,6 +253,22 @@ func (d *DebugPipeline) LogSetOriginalStep(step string) {
 func (d *DebugPipeline) LogGetProcessedImage(message string) {
 	if d.enabled {
 		d.Log(fmt.Sprintf("GetProcessedImage: %s", message))
+	}
+}
+
+func (d *DebugPipeline) LogDoubleCloseRisk(matName string, location string) {
+	if d.enabled {
+		d.Log(fmt.Sprintf("DOUBLE-CLOSE RISK: %s at %s", matName, location))
+	}
+}
+
+func (d *DebugPipeline) LogResourceCleanup(resource string, success bool) {
+	if d.enabled {
+		if success {
+			d.Log(fmt.Sprintf("Resource cleanup successful: %s", resource))
+		} else {
+			d.Log(fmt.Sprintf("Resource cleanup FAILED: %s", resource))
+		}
 	}
 }
 

@@ -1,19 +1,15 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"runtime"
 	"sync"
 	"time"
-	"unsafe"
-
-	"gocv.io/x/gocv"
 )
 
 type MatInfo struct {
+	ID        uint64
 	Name      string
-	Pointer   unsafe.Pointer
 	CreatedAt time.Time
 	Stack     string
 	Closed    bool
@@ -21,14 +17,20 @@ type MatInfo struct {
 
 type DebugMemory struct {
 	enabled bool
-	mats    map[unsafe.Pointer]*MatInfo
+	mats    map[uint64]*MatInfo
+	nextID  uint64
 	mutex   sync.RWMutex
 }
 
-func NewDebugMemory() *DebugMemory {
+func NewDebugMemory(config *DebugConfig) *DebugMemory {
+	enabled := false
+	if config != nil {
+		enabled = config.Memory
+	}
 	return &DebugMemory{
-		enabled: true,
-		mats:    make(map[unsafe.Pointer]*MatInfo),
+		enabled: enabled,
+		mats:    make(map[uint64]*MatInfo),
+		nextID:  1,
 	}
 }
 
@@ -38,21 +40,9 @@ func (d *DebugMemory) Log(message string) {
 	}
 }
 
-func (d *DebugMemory) LogMatCreation(name string) {
-	if d.enabled {
-		log.Printf("[MEMORY DEBUG] Mat '%s' created", name)
-	}
-}
-
-func (d *DebugMemory) LogMatCreationWithPointer(name string, mat gocv.Mat) {
+func (d *DebugMemory) LogMatCreation(name string) uint64 {
 	if !d.enabled {
-		return
-	}
-
-	ptr := mat.Ptr()
-	if ptr == nil {
-		d.Log(fmt.Sprintf("WARNING: Mat '%s' created with null pointer", name))
-		return
+		return 0
 	}
 
 	// Get stack trace
@@ -61,68 +51,53 @@ func (d *DebugMemory) LogMatCreationWithPointer(name string, mat gocv.Mat) {
 	stack := string(buf[:n])
 
 	d.mutex.Lock()
-	d.mats[unsafe.Pointer(ptr)] = &MatInfo{
+	id := d.nextID
+	d.nextID++
+	d.mats[id] = &MatInfo{
+		ID:        id,
 		Name:      name,
-		Pointer:   unsafe.Pointer(ptr),
 		CreatedAt: time.Now(),
 		Stack:     stack,
 		Closed:    false,
 	}
 	d.mutex.Unlock()
 
-	log.Printf("[MEMORY DEBUG] Mat '%s' created with pointer %p", name, ptr)
+	log.Printf("[MEMORY DEBUG] Mat '%s' created with ID %d", name, id)
+	return id
 }
 
-func (d *DebugMemory) LogMatCleanup(name string) {
-	if d.enabled {
-		log.Printf("[MEMORY DEBUG] Mat '%s' cleaned up", name)
-	}
-}
-
-func (d *DebugMemory) LogMatCleanupWithPointer(name string, mat gocv.Mat) {
+func (d *DebugMemory) LogMatCleanup(name string, id uint64) {
 	if !d.enabled {
-		return
-	}
-
-	ptr := mat.Ptr()
-	if ptr == nil {
-		d.Log(fmt.Sprintf("WARNING: Attempting to cleanup Mat '%s' with null pointer", name))
 		return
 	}
 
 	d.mutex.Lock()
-	if info, exists := d.mats[unsafe.Pointer(ptr)]; exists {
+	if info, exists := d.mats[id]; exists {
 		info.Closed = true
-		log.Printf("[MEMORY DEBUG] Mat '%s' cleaned up (pointer %p, age: %v)", name, ptr, time.Since(info.CreatedAt))
+		log.Printf("[MEMORY DEBUG] Mat '%s' cleaned up (ID %d, age: %v)", name, id, time.Since(info.CreatedAt))
 	} else {
-		log.Printf("[MEMORY DEBUG] WARNING: Mat '%s' cleanup attempted but not tracked (pointer %p)", name, ptr)
+		log.Printf("[MEMORY DEBUG] WARNING: Mat '%s' cleanup attempted but not tracked (ID %d)", name, id)
 	}
 	d.mutex.Unlock()
 }
 
-func (d *DebugMemory) ValidateMatPointer(name string, mat gocv.Mat) bool {
+func (d *DebugMemory) ValidateMatID(name string, id uint64) bool {
 	if !d.enabled {
 		return true
 	}
 
-	ptr := mat.Ptr()
-	if ptr == nil {
-		log.Printf("[MEMORY DEBUG] ERROR: Mat '%s' has null pointer!", name)
-		return false
-	}
-
 	d.mutex.RLock()
-	info, exists := d.mats[unsafe.Pointer(ptr)]
+	info, exists := d.mats[id]
 	d.mutex.RUnlock()
 
 	if !exists {
-		log.Printf("[MEMORY DEBUG] WARNING: Mat '%s' pointer %p not tracked", name, ptr)
+		log.Printf("[MEMORY DEBUG] WARNING: Mat '%s' ID %d not tracked", name, id)
 		return false
 	}
 
 	if info.Closed {
-		log.Printf("[MEMORY DEBUG] ERROR: Mat '%s' pointer %p was already closed! Created at %v",
-			name, ptr, info.CreatedAt)
+		log.Printf("[MEMORY DEBUG] ERROR: Mat '%s' ID %d was already closed! Created at %v",
+			name, id, info.CreatedAt)
 		log.Printf("[MEMORY DEBUG] Original creation stack:\n%s", info.Stack)
 		return false
 	}
@@ -162,12 +137,36 @@ func (d *DebugMemory) LogActiveMatDetails() {
 	defer d.mutex.RUnlock()
 
 	log.Printf("[MEMORY DEBUG] Active Mat details:")
-	for ptr, info := range d.mats {
+	for id, info := range d.mats {
 		if !info.Closed {
 			age := time.Since(info.CreatedAt)
-			log.Printf("[MEMORY DEBUG]   '%s' (ptr=%p, age=%v)", info.Name, ptr, age)
+			log.Printf("[MEMORY DEBUG]   '%s' (ID=%d, age=%v)", info.Name, id, age)
 		}
 	}
+}
+
+func (d *DebugMemory) LogMemoryLeak(name string, id uint64) {
+	if !d.enabled {
+		return
+	}
+
+	d.mutex.RLock()
+	info, exists := d.mats[id]
+	d.mutex.RUnlock()
+
+	if exists && !info.Closed {
+		age := time.Since(info.CreatedAt)
+		log.Printf("[MEMORY DEBUG] POTENTIAL LEAK: Mat '%s' (ID=%d) has been active for %v", name, id, age)
+		log.Printf("[MEMORY DEBUG] Creation stack:\n%s", info.Stack)
+	}
+}
+
+func (d *DebugMemory) LogDeferOverwritePattern(name string, originalID uint64, newMatInfo string) {
+	if !d.enabled {
+		return
+	}
+	log.Printf("[MEMORY DEBUG] DEFER OVERWRITE DETECTED: Mat '%s' (ID=%d) overwritten with %s - original will leak!",
+		name, originalID, newMatInfo)
 }
 
 func (d *DebugMemory) IsEnabled() bool {
@@ -176,7 +175,7 @@ func (d *DebugMemory) IsEnabled() bool {
 
 func (d *DebugMemory) Enable() {
 	d.enabled = true
-	d.Log("Memory debugging enabled with pointer tracking")
+	d.Log("Memory debugging enabled with ID-based tracking")
 }
 
 func (d *DebugMemory) Disable() {

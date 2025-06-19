@@ -11,9 +11,13 @@ type DebugGUI struct {
 	enabled bool
 }
 
-func NewDebugGUI() *DebugGUI {
+func NewDebugGUI(config *DebugConfig) *DebugGUI {
+	enabled := false
+	if config != nil {
+		enabled = config.GUI
+	}
 	return &DebugGUI{
-		enabled: true, // Set to false to disable debug output for production
+		enabled: enabled,
 	}
 }
 
@@ -322,6 +326,13 @@ func (d *DebugGUI) LogPanelSizes(leftWidth, centerWidth, rightWidth, totalHeight
 	}
 	log.Printf("[GUI DEBUG] Panel sizes: left=%.0f, center=%.0f, right=%.0f, height=%.0f",
 		leftWidth, centerWidth, rightWidth, totalHeight)
+}
+
+func (d *DebugGUI) LogThreadSafetyViolation(operation string, details string) {
+	if !d.enabled {
+		return
+	}
+	log.Printf("[GUI DEBUG] Thread safety warning: %s - %s", operation, details)
 }
 
 func (d *DebugGUI) IsEnabled() bool {

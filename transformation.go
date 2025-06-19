@@ -1,6 +1,8 @@
 package main
 
 import (
+	"sync"
+
 	"fyne.io/fyne/v2"
 	"gocv.io/x/gocv"
 )
@@ -13,4 +15,25 @@ type Transformation interface {
 	GetParameters() map[string]interface{}
 	SetParameters(params map[string]interface{})
 	Close() // For cleanup of resources
+}
+
+// ThreadSafeTransformation provides base thread safety for transformations
+type ThreadSafeTransformation struct {
+	mutex sync.RWMutex
+}
+
+func (t *ThreadSafeTransformation) LockRead() {
+	t.mutex.RLock()
+}
+
+func (t *ThreadSafeTransformation) UnlockRead() {
+	t.mutex.RUnlock()
+}
+
+func (t *ThreadSafeTransformation) LockWrite() {
+	t.mutex.Lock()
+}
+
+func (t *ThreadSafeTransformation) UnlockWrite() {
+	t.mutex.Unlock()
 }

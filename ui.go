@@ -35,12 +35,12 @@ type ImageRestorationUI struct {
 	debugRender                  *DebugRender
 }
 
-func NewImageRestorationUI(window fyne.Window) *ImageRestorationUI {
+func NewImageRestorationUI(window fyne.Window, config *DebugConfig) *ImageRestorationUI {
 	ui := &ImageRestorationUI{
 		window:      window,
-		pipeline:    NewImagePipeline(),
-		debugGUI:    NewDebugGUI(),
-		debugRender: NewDebugRender(),
+		pipeline:    NewImagePipeline(config),
+		debugGUI:    NewDebugGUI(config),
+		debugRender: NewDebugRender(config),
 	}
 	return ui
 }
@@ -92,7 +92,7 @@ func (ui *ImageRestorationUI) createToolbar() fyne.CanvasObject {
 }
 
 func (ui *ImageRestorationUI) createLeftPanel() fyne.CanvasObject {
-	transformations := []string{"2D Otsu", "Lanczos4 Scaling"}
+	transformations := []string{"2D Otsu"}
 
 	ui.availableTransformationsList = widget.NewList(
 		func() int { return len(transformations) },
@@ -282,14 +282,24 @@ func (ui *ImageRestorationUI) openImage() {
 
 		// Clean up existing transformations before setting new image
 		ui.pipeline.ClearTransformations()
-		ui.pipeline.SetOriginalImage(mat)
-		ui.updateUI()
-		ui.updateWindowTitle(reader.URI().Name())
 
-		// Reset parameters panel and clear list selections when new image is loaded
-		ui.parametersContainer.Objects[0] = widget.NewLabel("Select a Transformation")
-		ui.parametersContainer.Refresh()
-		ui.transformationsList.UnselectAll()
+		// Use fyne.Do for thread safety with Fyne v2.6+
+		err = ui.pipeline.SetOriginalImage(mat)
+		if err != nil {
+			ui.debugGUI.LogError(err)
+			dialog.ShowError(err, ui.window)
+			return
+		}
+
+		fyne.Do(func() {
+			ui.updateUI()
+			ui.updateWindowTitle(reader.URI().Name())
+
+			// Reset parameters panel and clear list selections when new image is loaded
+			ui.parametersContainer.Objects[0] = widget.NewLabel("Select a Transformation")
+			ui.parametersContainer.Refresh()
+			ui.transformationsList.UnselectAll()
+		})
 
 		ui.debugGUI.Log("Image loaded successfully")
 	}, ui.window)
@@ -354,10 +364,12 @@ func (ui *ImageRestorationUI) resetTransformations() {
 	ui.debugGUI.LogButtonClick("Reset")
 
 	ui.pipeline.ClearTransformations()
-	ui.updateUI()
-	ui.parametersContainer.Objects[0] = widget.NewLabel("Select a Transformation")
-	ui.parametersContainer.Refresh()
-	ui.transformationsList.UnselectAll()
+	fyne.Do(func() {
+		ui.updateUI()
+		ui.parametersContainer.Objects[0] = widget.NewLabel("Select a Transformation")
+		ui.parametersContainer.Refresh()
+		ui.transformationsList.UnselectAll()
+	})
 }
 
 func (ui *ImageRestorationUI) onTransformationSelected(id widget.ListItemID) {
@@ -365,8 +377,6 @@ func (ui *ImageRestorationUI) onTransformationSelected(id widget.ListItemID) {
 	switch id {
 	case 0:
 		transformationName = "2D Otsu"
-	case 1:
-		transformationName = "Lanczos4 Scaling"
 	default:
 		return
 	}
@@ -384,19 +394,24 @@ func (ui *ImageRestorationUI) onTransformationSelected(id widget.ListItemID) {
 	var transformation Transformation
 	switch id {
 	case 0: // 2D Otsu
-		transformation = NewTwoDOtsu()
-	case 1: // Lanczos4 Scaling
-		transformation = NewLanczos4Transform()
+		transformation = NewTwoDOtsu(&debugConfig)
 	default:
 		return
 	}
 
-	ui.pipeline.AddTransformation(transformation)
+	err := ui.pipeline.AddTransformation(transformation)
+	if err != nil {
+		ui.debugGUI.LogError(err)
+		dialog.ShowError(err, ui.window)
+		return
+	}
 
 	ui.debugGUI.LogTransformation(transformation.Name(), transformation.GetParameters())
 	ui.debugGUI.LogTransformationApplication(transformation.Name(), true)
 
-	ui.updateUI()
+	fyne.Do(func() {
+		ui.updateUI()
+	})
 
 	// Clear the selection so it can be clicked again
 	ui.availableTransformationsList.UnselectAll()
@@ -411,27 +426,42 @@ func (ui *ImageRestorationUI) onAppliedTransformationSelected(id widget.ListItem
 }
 
 func (ui *ImageRestorationUI) removeTransformation(id int) {
-	ui.pipeline.RemoveTransformation(id)
+	err := ui.pipeline.RemoveTransformation(id)
+	if err != nil {
+		ui.debugGUI.LogError(err)
+		return
+	}
+
 	// Clear selection since the list has changed
 	ui.transformationsList.UnselectAll()
-	ui.parametersContainer.Objects[0] = widget.NewLabel("Select a Transformation")
-	ui.parametersContainer.Refresh()
-	ui.updateUI()
+	fyne.Do(func() {
+		ui.parametersContainer.Objects[0] = widget.NewLabel("Select a Transformation")
+		ui.parametersContainer.Refresh()
+		ui.updateUI()
+	})
 }
 
 func (ui *ImageRestorationUI) showTransformationParameters(transformation Transformation) {
 	parametersWidget := transformation.GetParametersWidget(ui.onParameterChanged)
-	ui.parametersContainer.Objects[0] = parametersWidget
-	ui.parametersContainer.Refresh()
+	fyne.Do(func() {
+		ui.parametersContainer.Objects[0] = parametersWidget
+		ui.parametersContainer.Refresh()
+	})
 }
 
 func (ui *ImageRestorationUI) onParameterChanged() {
 	ui.debugGUI.LogUIEvent("onParameterChanged called - triggering preview reprocessing")
 	// Trigger preview reprocessing when parameters change
 	if ui.pipeline.HasImage() {
-		ui.pipeline.ProcessPreview()
+		err := ui.pipeline.ProcessPreview()
+		if err != nil {
+			ui.debugGUI.LogError(err)
+			return
+		}
 	}
-	ui.updateUI()
+	fyne.Do(func() {
+		ui.updateUI()
+	})
 }
 
 func (ui *ImageRestorationUI) updateUI() {
@@ -445,11 +475,11 @@ func (ui *ImageRestorationUI) updateUI() {
 func (ui *ImageRestorationUI) updateImageDisplay() {
 	ui.debugGUI.LogUIEvent("updateImageDisplay called")
 
-	if ui.pipeline.HasImage() && !ui.pipeline.originalImage.Empty() {
+	if ui.pipeline.HasImage() && !ui.pipeline.originalImage.IsEmpty() {
 		ui.debugGUI.LogUIEvent("updateImageDisplay: converting original image")
 
 		// Convert original image
-		originalImg, err := ui.pipeline.originalImage.ToImage()
+		originalImg, err := ui.pipeline.originalImage.Mat().ToImage()
 		if err != nil {
 			ui.debugGUI.LogImageConversion("original", false, err.Error())
 			return
@@ -464,12 +494,8 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 			return
 		}
 
-		// Enhanced debugging for the problematic conversion
-		ui.debugRender.LogBinaryImageConversionIssue("preview_mat", previewMat)
-		ui.debugRender.LogConversionMethodComparison("preview_comparison", previewMat)
-
 		var previewImg image.Image
-		originalChannels := ui.pipeline.originalImage.Channels()
+		originalChannels := ui.pipeline.originalImage.Mat().Channels()
 		previewChannels := previewMat.Channels()
 
 		if originalChannels != previewChannels {
@@ -552,9 +578,9 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 }
 
 func (ui *ImageRestorationUI) updateImageInfo() {
-	if ui.pipeline.HasImage() && !ui.pipeline.originalImage.Empty() {
-		size := ui.pipeline.originalImage.Size()
-		channels := ui.pipeline.originalImage.Channels()
+	if ui.pipeline.HasImage() && !ui.pipeline.originalImage.IsEmpty() {
+		size := ui.pipeline.originalImage.Mat().Size()
+		channels := ui.pipeline.originalImage.Mat().Channels()
 
 		info := fmt.Sprintf("Size: %dx%d\nChannels: %d", size[1], size[0], channels)
 		ui.imageInfoLabel.ParseMarkdown(info)

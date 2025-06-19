@@ -11,9 +11,13 @@ type DebugImage struct {
 	enabled bool
 }
 
-func NewDebugImage() *DebugImage {
+func NewDebugImage(config *DebugConfig) *DebugImage {
+	enabled := false
+	if config != nil {
+		enabled = config.Image
+	}
 	return &DebugImage{
-		enabled: false, // Set to false to disable debug output for production
+		enabled: enabled,
 	}
 }
 

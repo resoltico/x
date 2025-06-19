@@ -3,235 +3,427 @@ package main
 import (
 	"fmt"
 	"math"
+	"sync"
 
 	"gocv.io/x/gocv"
 )
 
+type ManagedMat struct {
+	mat gocv.Mat
+	id  uint64
+}
+
+func NewManagedMat(name string, debugMemory *DebugMemory) *ManagedMat {
+	mat := gocv.NewMat()
+	id := debugMemory.LogMatCreation(name)
+	return &ManagedMat{
+		mat: mat,
+		id:  id,
+	}
+}
+
+func (m *ManagedMat) Close(name string, debugMemory *DebugMemory) {
+	if !m.mat.Empty() {
+		debugMemory.LogMatCleanup(name, m.id)
+		m.mat.Close()
+	}
+}
+
+func (m *ManagedMat) Mat() gocv.Mat {
+	return m.mat
+}
+
+func (m *ManagedMat) IsEmpty() bool {
+	return m.mat.Empty()
+}
+
 type ImagePipeline struct {
-	originalImage   gocv.Mat
-	processedImage  gocv.Mat
-	previewImage    gocv.Mat
+	originalImage   *ManagedMat
+	processedImage  *ManagedMat
+	previewImage    *ManagedMat
 	transformations []Transformation
 	debugPipeline   *DebugPipeline
 	debugMemory     *DebugMemory
 	initialized     bool
+	mutex           sync.RWMutex // Protect concurrent access
 }
 
-func NewImagePipeline() *ImagePipeline {
+func NewImagePipeline(config *DebugConfig) *ImagePipeline {
+	debugPipeline := NewDebugPipeline(config)
+	debugMemory := NewDebugMemory(config)
+
 	pipeline := &ImagePipeline{
 		transformations: make([]Transformation, 0),
-		debugPipeline:   NewDebugPipeline(),
-		debugMemory:     NewDebugMemory(),
+		debugPipeline:   debugPipeline,
+		debugMemory:     debugMemory,
 		initialized:     false,
 	}
-	// Initialize with empty Mats - never call methods on these until properly set
-	pipeline.originalImage = gocv.NewMat()
-	pipeline.processedImage = gocv.NewMat()
-	pipeline.previewImage = gocv.NewMat()
-	pipeline.debugMemory.LogMatCreation("originalImage")
-	pipeline.debugMemory.LogMatCreation("processedImage")
-	pipeline.debugMemory.LogMatCreation("previewImage")
+
+	// Initialize with empty managed Mats
+	pipeline.originalImage = NewManagedMat("originalImage", debugMemory)
+	pipeline.processedImage = NewManagedMat("processedImage", debugMemory)
+	pipeline.previewImage = NewManagedMat("previewImage", debugMemory)
+
 	return pipeline
 }
 
 func (p *ImagePipeline) HasImage() bool {
-	return p.initialized && !p.originalImage.Empty()
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
+	return p.initialized && !p.originalImage.IsEmpty()
 }
 
-func (p *ImagePipeline) SetOriginalImage(img gocv.Mat) {
+func (p *ImagePipeline) SetOriginalImage(img gocv.Mat) (err error) {
+	// Panic recovery for OpenCV operations
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("panic in SetOriginalImage: %v", r)
+			p.debugPipeline.Log(fmt.Sprintf("PANIC RECOVERED: %v", r))
+		}
+	}()
+
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
 	p.debugPipeline.LogSetOriginalStart()
 
-	// Close existing images first if they exist
+	// Clean up existing resources
 	if p.initialized {
-		if !p.originalImage.Empty() {
-			p.debugPipeline.LogSetOriginalStep("closing existing original image")
-			p.originalImage.Close()
-			p.debugMemory.LogMatCleanup("originalImage")
-		}
-		if !p.processedImage.Empty() {
-			p.debugPipeline.LogSetOriginalStep("closing existing processed image")
-			p.processedImage.Close()
-			p.debugMemory.LogMatCleanup("processedImage")
-		}
-		if !p.previewImage.Empty() {
-			p.debugPipeline.LogSetOriginalStep("closing existing preview image")
-			p.previewImage.Close()
-			p.debugMemory.LogMatCleanup("previewImage")
-		}
+		p.debugPipeline.LogSetOriginalStep("cleaning up existing resources")
+		p.cleanupResourcesUnsafe()
 	}
 
-	// Set up new image
-	p.originalImage = img.Clone()
-	p.processedImage = p.originalImage.Clone()
-	p.previewImage = p.originalImage.Clone()
+	// Validate input
+	if img.Empty() {
+		return fmt.Errorf("input image is empty")
+	}
+
+	// Set up new image - avoid defer overwrite pattern
+	p.debugPipeline.LogSetOriginalStep("cloning original image")
+	originalClone := img.Clone()
+	if originalClone.Empty() {
+		return fmt.Errorf("failed to clone original image")
+	}
+
+	// Close old mat and assign new one
+	p.originalImage.Close("originalImage", p.debugMemory)
+	p.originalImage = &ManagedMat{
+		mat: originalClone,
+		id:  p.debugMemory.LogMatCreation("originalImage"),
+	}
+
+	// Create processed and preview images
+	p.debugPipeline.LogSetOriginalStep("creating processed image")
+	processedClone := originalClone.Clone()
+	if processedClone.Empty() {
+		return fmt.Errorf("failed to clone processed image")
+	}
+
+	p.processedImage.Close("processedImage", p.debugMemory)
+	p.processedImage = &ManagedMat{
+		mat: processedClone,
+		id:  p.debugMemory.LogMatCreation("processedImage"),
+	}
+
+	p.debugPipeline.LogSetOriginalStep("creating preview image")
+	previewClone := originalClone.Clone()
+	if previewClone.Empty() {
+		return fmt.Errorf("failed to clone preview image")
+	}
+
+	p.previewImage.Close("previewImage", p.debugMemory)
+	p.previewImage = &ManagedMat{
+		mat: previewClone,
+		id:  p.debugMemory.LogMatCreation("previewImage"),
+	}
+
 	p.initialized = true
-	p.debugPipeline.LogImageStats("original", p.originalImage)
+	p.debugPipeline.LogImageStats("original", p.originalImage.Mat())
 
-	// Process the image with no transformations
-	p.processImage()
-	p.processPreview()
-}
-
-func (p *ImagePipeline) AddTransformation(transformation Transformation) {
-	if !p.HasImage() {
-		p.debugPipeline.Log("Cannot add transformation: no image loaded")
-		return
+	// Process images only if we have transformations
+	if len(p.transformations) > 0 {
+		if err := p.processImageUnsafe(); err != nil {
+			return fmt.Errorf("failed to process image: %w", err)
+		}
+		if err := p.processPreviewUnsafe(); err != nil {
+			return fmt.Errorf("failed to process preview: %w", err)
+		}
 	}
-	p.transformations = append(p.transformations, transformation)
-	p.processImage()
-	p.processPreview()
+
+	return nil
 }
 
-func (p *ImagePipeline) RemoveTransformation(index int) {
+func (p *ImagePipeline) AddTransformation(transformation Transformation) error {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
+	if !p.HasImageUnsafe() {
+		p.debugPipeline.Log("Cannot add transformation: no image loaded")
+		return fmt.Errorf("no image loaded")
+	}
+
+	p.transformations = append(p.transformations, transformation)
+
+	if err := p.processImageUnsafe(); err != nil {
+		return fmt.Errorf("failed to process image after adding transformation: %w", err)
+	}
+	if err := p.processPreviewUnsafe(); err != nil {
+		return fmt.Errorf("failed to process preview after adding transformation: %w", err)
+	}
+
+	return nil
+}
+
+func (p *ImagePipeline) RemoveTransformation(index int) error {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
 	if index >= 0 && index < len(p.transformations) {
 		p.transformations[index].Close()
 		p.transformations = append(p.transformations[:index], p.transformations[index+1:]...)
-		if p.HasImage() {
-			p.processImage()
-			p.processPreview()
+
+		if p.HasImageUnsafe() {
+			if err := p.processImageUnsafe(); err != nil {
+				return fmt.Errorf("failed to process image after removing transformation: %w", err)
+			}
+			if err := p.processPreviewUnsafe(); err != nil {
+				return fmt.Errorf("failed to process preview after removing transformation: %w", err)
+			}
 		}
 	}
+	return nil
 }
 
 func (p *ImagePipeline) ClearTransformations() {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
 	p.debugPipeline.Log("Clearing all transformations")
 	for _, transform := range p.transformations {
 		transform.Close()
 	}
 	p.transformations = make([]Transformation, 0)
-	if p.HasImage() {
-		p.processImage()
-		p.processPreview()
+
+	if p.HasImageUnsafe() {
+		p.processImageUnsafe()
+		p.processPreviewUnsafe()
 	}
 }
 
 func (p *ImagePipeline) GetProcessedImage() gocv.Mat {
-	if !p.HasImage() {
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
+
+	if !p.HasImageUnsafe() {
 		p.debugPipeline.LogGetProcessedImage("not initialized, returning empty Mat")
 		return gocv.NewMat()
 	}
-	if p.processedImage.Empty() {
+	if p.processedImage.IsEmpty() {
 		p.debugPipeline.LogGetProcessedImage("processed image empty, returning original")
-		return p.originalImage
+		return p.originalImage.Mat()
 	}
-	return p.processedImage
+	return p.processedImage.Mat()
 }
 
 func (p *ImagePipeline) GetPreviewImage() gocv.Mat {
-	if !p.HasImage() {
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
+
+	if !p.HasImageUnsafe() {
 		p.debugPipeline.LogGetProcessedImage("preview not initialized, returning empty Mat")
 		return gocv.NewMat()
 	}
-	if p.previewImage.Empty() {
+	if p.previewImage.IsEmpty() {
 		p.debugPipeline.LogGetProcessedImage("preview image empty, returning original")
-		return p.originalImage
+		return p.originalImage.Mat()
 	}
-	return p.previewImage
+	return p.previewImage.Mat()
 }
 
-func (p *ImagePipeline) processImage() {
+func (p *ImagePipeline) ProcessPreview() error {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	return p.processPreviewUnsafe()
+}
+
+// Thread-unsafe helper methods (must be called with mutex held)
+func (p *ImagePipeline) HasImageUnsafe() bool {
+	return p.initialized && !p.originalImage.IsEmpty()
+}
+
+func (p *ImagePipeline) processImageUnsafe() (err error) {
+	// Panic recovery for OpenCV operations
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("panic in processImage: %v", r)
+			p.debugPipeline.Log(fmt.Sprintf("PANIC RECOVERED: %v", r))
+		}
+	}()
+
 	p.debugPipeline.LogProcessStart()
-	if !p.HasImage() {
+	if !p.HasImageUnsafe() {
 		p.debugPipeline.LogProcessEarlyReturn("not initialized")
-		return
+		return fmt.Errorf("pipeline not initialized")
 	}
-	if p.originalImage.Empty() {
+	if p.originalImage.IsEmpty() {
 		p.debugPipeline.LogProcessEarlyReturn("original image is empty")
-		return
+		return fmt.Errorf("original image is empty")
 	}
 
 	p.debugPipeline.StartTimer("processImage")
 	defer func() {
 		p.debugPipeline.EndTimer("processImage")
-		if p.initialized && !p.processedImage.Empty() {
-			p.debugPipeline.LogPipelineStats(p.originalImage.Size(), p.processedImage.Size(), len(p.transformations))
+		if p.initialized && !p.processedImage.IsEmpty() {
+			p.debugPipeline.LogPipelineStats(p.originalImage.Mat().Size(), p.processedImage.Mat().Size(), len(p.transformations))
 		}
 		p.debugPipeline.LogMemoryUsage()
 	}()
 
-	// Start with original image
-	p.debugPipeline.LogProcessStep("checking if processedImage needs reset")
-	if p.initialized && !p.processedImage.Empty() {
-		p.debugPipeline.LogProcessStep("closing existing processedImage")
-		p.processedImage.Close()
-		p.debugMemory.LogMatCleanup("processedImage")
+	// Create new processed image - avoid defer overwrite pattern
+	p.debugPipeline.LogProcessStep("creating new processed image")
+	newProcessed := p.originalImage.Mat().Clone()
+	if newProcessed.Empty() {
+		return fmt.Errorf("failed to clone original for processing")
 	}
-	p.debugPipeline.LogProcessStep("cloning original image")
-	p.processedImage = p.originalImage.Clone()
 
 	// Apply all transformations sequentially
 	p.debugPipeline.LogTransformationCount(len(p.transformations))
 	for i, transformation := range p.transformations {
-		p.debugPipeline.StartTimer(fmt.Sprintf("transformation_%d_%s", i, transformation.Name()))
+		timerName := fmt.Sprintf("transformation_%d_%s", i, transformation.Name())
+		p.debugPipeline.StartTimer(timerName)
 
-		before := p.processedImage.Clone()
-		result := transformation.Apply(p.processedImage)
-		duration := p.debugPipeline.EndTimer(fmt.Sprintf("transformation_%d_%s", i, transformation.Name()))
+		before := newProcessed.Clone()
+		result := transformation.Apply(newProcessed)
+		duration := p.debugPipeline.EndTimer(timerName)
 
 		p.debugPipeline.LogTransformationApplied(transformation.Name(), before, result, duration)
 
-		p.processedImage.Close()
-		p.processedImage = result
-		before.Close()
+		// Clean up intermediate result
+		if !newProcessed.Empty() {
+			newProcessed.Close()
+		}
+		newProcessed = result
+
+		if !before.Empty() {
+			before.Close()
+		}
+
+		// Validate result
+		if newProcessed.Empty() {
+			return fmt.Errorf("transformation %s returned empty result", transformation.Name())
+		}
 	}
+
+	// Replace processed image
+	p.processedImage.Close("processedImage", p.debugMemory)
+	p.processedImage = &ManagedMat{
+		mat: newProcessed,
+		id:  p.debugMemory.LogMatCreation("processedImage"),
+	}
+
 	p.debugPipeline.LogProcessComplete()
+	return nil
 }
 
-func (p *ImagePipeline) ProcessPreview() {
-	p.processPreview()
-}
+func (p *ImagePipeline) processPreviewUnsafe() (err error) {
+	// Panic recovery for OpenCV operations
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("panic in processPreview: %v", r)
+			p.debugPipeline.Log(fmt.Sprintf("PANIC RECOVERED: %v", r))
+		}
+	}()
 
-func (p *ImagePipeline) processPreview() {
 	p.debugPipeline.LogProcessStart()
-	if !p.HasImage() {
+	if !p.HasImageUnsafe() {
 		p.debugPipeline.LogProcessEarlyReturn("preview not initialized")
-		return
+		return fmt.Errorf("pipeline not initialized")
 	}
-	if p.originalImage.Empty() {
+	if p.originalImage.IsEmpty() {
 		p.debugPipeline.LogProcessEarlyReturn("original image is empty for preview")
-		return
+		return fmt.Errorf("original image is empty")
 	}
 
 	p.debugPipeline.StartTimer("processPreview")
 	defer func() {
 		p.debugPipeline.EndTimer("processPreview")
-		if p.initialized && !p.previewImage.Empty() {
-			p.debugPipeline.LogPipelineStats(p.originalImage.Size(), p.previewImage.Size(), len(p.transformations))
+		if p.initialized && !p.previewImage.IsEmpty() {
+			p.debugPipeline.LogPipelineStats(p.originalImage.Mat().Size(), p.previewImage.Mat().Size(), len(p.transformations))
 		}
 	}()
 
-	// Start with original image
-	if p.initialized && !p.previewImage.Empty() {
-		p.previewImage.Close()
-		p.debugMemory.LogMatCleanup("previewImage")
+	// Create new preview image - avoid defer overwrite pattern
+	newPreview := p.originalImage.Mat().Clone()
+	if newPreview.Empty() {
+		return fmt.Errorf("failed to clone original for preview")
 	}
-	p.previewImage = p.originalImage.Clone()
 
 	// Apply all transformations sequentially using preview method
 	for i, transformation := range p.transformations {
-		p.debugPipeline.StartTimer(fmt.Sprintf("preview_transformation_%d_%s", i, transformation.Name()))
+		timerName := fmt.Sprintf("preview_transformation_%d_%s", i, transformation.Name())
+		p.debugPipeline.StartTimer(timerName)
 
-		before := p.previewImage.Clone()
-		result := transformation.ApplyPreview(p.previewImage)
-		duration := p.debugPipeline.EndTimer(fmt.Sprintf("preview_transformation_%d_%s", i, transformation.Name()))
+		before := newPreview.Clone()
+		result := transformation.ApplyPreview(newPreview)
+		duration := p.debugPipeline.EndTimer(timerName)
 
 		p.debugPipeline.LogTransformationApplied(transformation.Name()+" (preview)", before, result, duration)
 
-		p.previewImage.Close()
-		p.previewImage = result
-		before.Close()
+		// Clean up intermediate result
+		if !newPreview.Empty() {
+			newPreview.Close()
+		}
+		newPreview = result
+
+		if !before.Empty() {
+			before.Close()
+		}
+
+		// Validate result
+		if newPreview.Empty() {
+			return fmt.Errorf("preview transformation %s returned empty result", transformation.Name())
+		}
+	}
+
+	// Replace preview image
+	p.previewImage.Close("previewImage", p.debugMemory)
+	p.previewImage = &ManagedMat{
+		mat: newPreview,
+		id:  p.debugMemory.LogMatCreation("previewImage"),
+	}
+
+	return nil
+}
+
+func (p *ImagePipeline) cleanupResourcesUnsafe() {
+	p.debugPipeline.LogResourceCleanup("originalImage", true)
+	if p.originalImage != nil {
+		p.originalImage.Close("originalImage", p.debugMemory)
+	}
+
+	p.debugPipeline.LogResourceCleanup("processedImage", true)
+	if p.processedImage != nil {
+		p.processedImage.Close("processedImage", p.debugMemory)
+	}
+
+	p.debugPipeline.LogResourceCleanup("previewImage", true)
+	if p.previewImage != nil {
+		p.previewImage.Close("previewImage", p.debugMemory)
 	}
 }
 
 func (p *ImagePipeline) CalculatePSNR() float64 {
-	if !p.HasImage() || p.originalImage.Empty() || p.processedImage.Empty() {
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
+
+	if !p.HasImageUnsafe() || p.originalImage.IsEmpty() || p.processedImage.IsEmpty() {
 		return 0.0
 	}
 
 	// Convert to same type if needed
-	orig := p.originalImage.Clone()
+	orig := p.originalImage.Mat().Clone()
 	defer orig.Close()
-	proc := p.processedImage.Clone()
+	proc := p.processedImage.Mat().Clone()
 	defer proc.Close()
 
 	if orig.Type() != proc.Type() {
@@ -261,14 +453,17 @@ func (p *ImagePipeline) CalculatePSNR() float64 {
 }
 
 func (p *ImagePipeline) CalculateSSIM() float64 {
-	if !p.HasImage() || p.originalImage.Empty() || p.processedImage.Empty() {
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
+
+	if !p.HasImageUnsafe() || p.originalImage.IsEmpty() || p.processedImage.IsEmpty() {
 		return 0.0
 	}
 
 	// Simple SSIM approximation using correlation coefficient
-	orig := p.originalImage.Clone()
+	orig := p.originalImage.Mat().Clone()
 	defer orig.Close()
-	proc := p.processedImage.Clone()
+	proc := p.processedImage.Mat().Clone()
 	defer proc.Close()
 
 	if orig.Type() != proc.Type() {
@@ -345,21 +540,14 @@ func (p *ImagePipeline) CalculateSSIM() float64 {
 }
 
 func (p *ImagePipeline) Close() {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
 	if p.initialized {
-		if !p.originalImage.Empty() {
-			p.originalImage.Close()
-			p.debugMemory.LogMatCleanup("originalImage final")
-		}
-		if !p.processedImage.Empty() {
-			p.processedImage.Close()
-			p.debugMemory.LogMatCleanup("processedImage final")
-		}
-		if !p.previewImage.Empty() {
-			p.previewImage.Close()
-			p.debugMemory.LogMatCleanup("previewImage final")
-		}
+		p.cleanupResourcesUnsafe()
 		for _, transform := range p.transformations {
 			transform.Close()
 		}
+		p.debugMemory.LogMemorySummary()
 	}
 }
