@@ -107,14 +107,18 @@ func (ui *ImageRestorationUI) createLeftPanel() fyne.CanvasObject {
 
 	ui.availableTransformationsList.OnSelected = ui.onTransformationSelected
 
+	// Wrap the list in a scrollable container with a minimum size
+	scrollableList := container.NewVScroll(ui.availableTransformationsList)
+	scrollableList.SetMinSize(fyne.NewSize(200, 200)) // Adjust height as needed
+
+	// Embed in a card and then in the left panel
 	transformationsCard := container.NewBorder(
-		widget.NewCard("", "TRANSFORMATIONS", ui.availableTransformationsList),
+		widget.NewCard("", "TRANSFORMATIONS", scrollableList),
 		nil, nil, nil,
 	)
 
 	leftPanel := container.NewVBox(transformationsCard)
-	// Fixed left panel width
-	leftPanel.Resize(fyne.NewSize(300, 0))
+	leftPanel.Resize(fyne.NewSize(200, 0)) // Width is fixed; height auto-adjusts
 
 	return leftPanel
 }

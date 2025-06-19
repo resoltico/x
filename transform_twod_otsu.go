@@ -28,7 +28,7 @@ func NewTwoDOtsu() *TwoDOtsu {
 		debugImage:      NewDebugImage(),
 		windowRadius:    5,
 		epsilon:         0.02,
-		morphKernelSize: 3,
+		morphKernelSize: 1,
 	}
 }
 
