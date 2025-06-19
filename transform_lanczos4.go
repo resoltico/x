@@ -283,88 +283,91 @@ func (l *Lanczos4Transform) calculateScaleFactor() float64 {
 }
 
 func (l *Lanczos4Transform) createParameterUI() *fyne.Container {
-	// Scale Factor parameter with checkbox
+	// Scale Factor parameter
 	scaleLabel := widget.NewLabel("Scale Factor (0.1-5.0):")
 	scaleEntry := widget.NewEntry()
 	scaleEntry.SetText(fmt.Sprintf("%.2f", l.scaleFactor))
-	scaleEntry.Resize(fyne.NewSize(100, scaleEntry.MinSize().Height)) // Fixed width: 10 characters
 	scaleEntry.OnSubmitted = func(text string) {
 		if value, err := strconv.ParseFloat(text, 64); err == nil && value >= 0.1 && value <= 5.0 {
+			oldValue := l.scaleFactor
 			l.scaleFactor = value
-			l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", fmt.Sprintf("Scale factor changed to: %.3f", value))
+			l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", fmt.Sprintf("Scale factor changed: %.3f -> %.3f", oldValue, value))
+			if l.onParameterChanged != nil {
+				l.onParameterChanged()
+			}
 		} else {
 			l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", fmt.Sprintf("Invalid scale factor: %s", text))
 		}
 	}
 
-	// Calculate Scale from DPI checkbox
-	calculateDPICheck := widget.NewCheck("Calculate Scale from DPI", func(checked bool) {
-		l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", fmt.Sprintf("Calculate from DPI changed to: %t", checked))
-		// Store the checkbox state but don't apply immediately
-	})
-
-	scaleRow := container.NewHBox(scaleLabel, scaleEntry, calculateDPICheck)
-
 	// Target DPI parameter
 	targetDPILabel := widget.NewLabel("Target DPI (72-1200):")
 	targetDPIEntry := widget.NewEntry()
 	targetDPIEntry.SetText(fmt.Sprintf("%.0f", l.targetDPI))
-	targetDPIEntry.Resize(fyne.NewSize(100, targetDPIEntry.MinSize().Height)) // Fixed width: 10 characters
 	targetDPIEntry.OnSubmitted = func(text string) {
 		if value, err := strconv.ParseFloat(text, 64); err == nil && value >= 72 && value <= 1200 {
+			oldValue := l.targetDPI
 			l.targetDPI = value
-			l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", fmt.Sprintf("Target DPI changed to: %.0f", value))
+			// Recalculate scale factor based on DPI
+			if l.originalDPI > 0 {
+				l.scaleFactor = l.calculateScaleFactor()
+				scaleEntry.SetText(fmt.Sprintf("%.2f", l.scaleFactor))
+			}
+			l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", fmt.Sprintf("Target DPI changed: %.0f -> %.0f", oldValue, value))
+			if l.onParameterChanged != nil {
+				l.onParameterChanged()
+			}
 		} else {
 			l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", fmt.Sprintf("Invalid target DPI: %s", text))
 		}
 	}
-	targetDPIRow := container.NewHBox(targetDPILabel, targetDPIEntry)
 
 	// Original DPI parameter
 	originalDPILabel := widget.NewLabel("Original DPI (72-1200):")
 	originalDPIEntry := widget.NewEntry()
 	originalDPIEntry.SetText(fmt.Sprintf("%.0f", l.originalDPI))
-	originalDPIEntry.Resize(fyne.NewSize(100, originalDPIEntry.MinSize().Height)) // Fixed width: 10 characters
 	originalDPIEntry.OnSubmitted = func(text string) {
 		if value, err := strconv.ParseFloat(text, 64); err == nil && value >= 72 && value <= 1200 {
+			oldValue := l.originalDPI
 			l.originalDPI = value
-			l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", fmt.Sprintf("Original DPI changed to: %.0f", value))
+			// Recalculate scale factor based on DPI
+			l.scaleFactor = l.calculateScaleFactor()
+			scaleEntry.SetText(fmt.Sprintf("%.2f", l.scaleFactor))
+			l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", fmt.Sprintf("Original DPI changed: %.0f -> %.0f", oldValue, value))
+			if l.onParameterChanged != nil {
+				l.onParameterChanged()
+			}
 		} else {
 			l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", fmt.Sprintf("Invalid original DPI: %s", text))
 		}
 	}
-	originalDPIRow := container.NewHBox(originalDPILabel, originalDPIEntry)
 
 	// Iterative downscaling checkbox
-	iterativeCheck := widget.NewCheck("Use Multi-Step Downscaling for Large Reductions", func(checked bool) {
+	iterativeCheck := widget.NewCheck("Use Iterative Downscaling", func(checked bool) {
+		oldValue := l.useIterative
 		l.useIterative = checked
-		l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", fmt.Sprintf("Multi-step downscaling changed to: %t", checked))
+		l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", fmt.Sprintf("Iterative mode changed: %t -> %t", oldValue, checked))
+		if l.onParameterChanged != nil {
+			l.onParameterChanged()
+		}
 	})
 	iterativeCheck.SetChecked(l.useIterative)
 
-	// Apply button
-	applyBtn := widget.NewButton("Apply", func() {
-		// Apply DPI calculation if checkbox is checked
-		if calculateDPICheck.Checked {
-			l.scaleFactor = l.calculateScaleFactor()
-			scaleEntry.SetText(fmt.Sprintf("%.2f", l.scaleFactor))
-			l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", "Scale factor recalculated from DPI values")
-		}
-
-		l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", "Apply button clicked")
+	// Calculate button
+	calculateBtn := widget.NewButton("Calculate Scale from DPI", func() {
+		l.scaleFactor = l.calculateScaleFactor()
+		scaleEntry.SetText(fmt.Sprintf("%.2f", l.scaleFactor))
+		l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", "Scale factor recalculated from DPI values")
 		if l.onParameterChanged != nil {
 			l.onParameterChanged()
 		}
 	})
 
 	return container.NewVBox(
-		scaleRow,
-		widget.NewSeparator(),
-		targetDPIRow,
-		originalDPIRow,
-		widget.NewSeparator(),
+		scaleLabel, scaleEntry,
+		targetDPILabel, targetDPIEntry,
+		originalDPILabel, originalDPIEntry,
 		iterativeCheck,
-		widget.NewSeparator(),
-		applyBtn,
+		calculateBtn,
 	)
 }
