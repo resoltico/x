@@ -92,33 +92,33 @@ func (ui *ImageRestorationUI) createToolbar() fyne.CanvasObject {
 }
 
 func (ui *ImageRestorationUI) createLeftPanel() fyne.CanvasObject {
-	// Transformations list - updated to include Lanczos4
 	transformations := []string{"2D Otsu", "Lanczos4 Scaling"}
 
 	ui.availableTransformationsList = widget.NewList(
 		func() int { return len(transformations) },
-		func() fyne.CanvasObject {
-			return widget.NewLabel("Transformation")
-		},
+		func() fyne.CanvasObject { return widget.NewLabel("Transformation") },
 		func(id widget.ListItemID, obj fyne.CanvasObject) {
 			obj.(*widget.Label).SetText(transformations[id])
 		},
 	)
-
 	ui.availableTransformationsList.OnSelected = ui.onTransformationSelected
 
-	// Wrap the list in a scrollable container with a minimum size
 	scrollableList := container.NewVScroll(ui.availableTransformationsList)
-	scrollableList.SetMinSize(fyne.NewSize(200, 200)) // Adjust height as needed
+	scrollableList.SetMinSize(fyne.NewSize(200, 200))
 
-	// Embed in a card and then in the left panel
-	transformationsCard := container.NewBorder(
-		widget.NewCard("", "TRANSFORMATIONS", scrollableList),
-		nil, nil, nil,
-	)
+	// Header background with desired color and correct height (24 DIP)
+	headerBg := canvas.NewRectangle(&color.RGBA{R: 233, G: 208, B: 255, A: 255})
+	headerBg.SetMinSize(fyne.NewSize(200, 24))
 
-	leftPanel := container.NewVBox(transformationsCard)
-	leftPanel.Resize(fyne.NewSize(200, 0)) // Width is fixed; height auto-adjusts
+	headerLabel := canvas.NewText("TRANSFORMATIONS", color.Black)
+	headerLabel.TextStyle = fyne.TextStyle{Bold: true}
+
+	header := container.NewMax(headerBg, container.NewCenter(headerLabel))
+
+	content := container.NewVBox(header, scrollableList)
+
+	leftPanel := container.NewVBox(content)
+	leftPanel.Resize(fyne.NewSize(200, 0))
 
 	return leftPanel
 }
@@ -128,39 +128,40 @@ func (ui *ImageRestorationUI) createCenterPanel() fyne.CanvasObject {
 	ui.originalImage = canvas.NewImageFromImage(image.NewRGBA(image.Rect(0, 0, 1, 1)))
 	ui.originalImage.FillMode = canvas.ImageFillContain
 	ui.originalImage.ScaleMode = canvas.ImageScaleSmooth
-	// Fixed image canvas size - prevents expansion
 	ui.originalImage.Resize(fyne.NewSize(500, 400))
 
 	ui.previewImage = canvas.NewImageFromImage(image.NewRGBA(image.Rect(0, 0, 1, 1)))
 	ui.previewImage.FillMode = canvas.ImageFillContain
 	ui.previewImage.ScaleMode = canvas.ImageScaleSmooth
-	// Fixed image canvas size - prevents expansion
 	ui.previewImage.Resize(fyne.NewSize(500, 400))
 
-	// Scroll containers with size locks
 	ui.originalScroll = container.NewScroll(ui.originalImage)
 	ui.originalScroll.Resize(fyne.NewSize(500, 400))
 
 	ui.previewScroll = container.NewScroll(ui.previewImage)
 	ui.previewScroll.Resize(fyne.NewSize(500, 400))
 
+	// Shared header styling function
+	makeHeader := func(text string) fyne.CanvasObject {
+		bg := canvas.NewRectangle(&color.RGBA{R: 233, G: 208, B: 255, A: 255})
+		bg.SetMinSize(fyne.NewSize(0, 24)) // same height as default card title
+		lbl := canvas.NewText(text, color.Black)
+		lbl.TextStyle = fyne.TextStyle{Bold: true}
+		return container.NewMax(bg, container.NewCenter(lbl))
+	}
+
 	originalContainer := container.NewBorder(
-		widget.NewCard("", "ORIGINAL", nil),
-		nil, nil, nil,
+		makeHeader("ORIGINAL"), nil, nil, nil,
 		ui.originalScroll,
 	)
-
 	previewContainer := container.NewBorder(
-		widget.NewCard("", "PREVIEW", nil),
-		nil, nil, nil,
+		makeHeader("PREVIEW"), nil, nil, nil,
 		ui.previewScroll,
 	)
 
-	// Fixed split layout
 	imagesSplit := container.NewHSplit(originalContainer, previewContainer)
 	imagesSplit.SetOffset(0.5)
 
-	// Transformations list and parameters
 	ui.transformationsList = widget.NewList(
 		func() int { return len(ui.pipeline.transformations) },
 		func() fyne.CanvasObject {
@@ -183,26 +184,20 @@ func (ui *ImageRestorationUI) createCenterPanel() fyne.CanvasObject {
 			}
 		},
 	)
-
 	ui.transformationsList.OnSelected = ui.onAppliedTransformationSelected
 
 	transformationsListContainer := container.NewBorder(
-		widget.NewCard("", "ACTIVE TRANSFORMATIONS", nil),
-		nil, nil, nil,
+		makeHeader("ACTIVE TRANSFORMATIONS"), nil, nil, nil,
 		ui.transformationsList,
 	)
-
 	ui.parametersContainer = container.NewBorder(
-		widget.NewCard("", "PARAMETERS", nil),
-		nil, nil, nil,
+		makeHeader("PARAMETERS"), nil, nil, nil,
 		widget.NewLabel("Select a Transformation"),
 	)
 
-	// Fixed split layout
 	bottomSplit := container.NewHSplit(transformationsListContainer, ui.parametersContainer)
 	bottomSplit.SetOffset(0.5)
 
-	// Fixed split layout
 	centerPanel := container.NewVSplit(imagesSplit, bottomSplit)
 	centerPanel.SetOffset(0.6)
 
@@ -216,14 +211,12 @@ func (ui *ImageRestorationUI) createRightPanel() fyne.CanvasObject {
 		Style: widget.RichTextStyle{},
 	})
 
-	imageInfoCard := widget.NewCard("", "IMAGE INFORMATION", ui.imageInfoLabel)
-
-	// Quality metrics with fixed text length
-	ui.psnrLabel = widget.NewLabel("PSNR: 33.14 dB") // Fixed length placeholder
+	// Quality metrics
+	ui.psnrLabel = widget.NewLabel("PSNR: 33.14 dB")
 	ui.psnrProgress = widget.NewProgressBar()
 	ui.psnrProgress.Resize(fyne.NewSize(300, 20))
 
-	ui.ssimLabel = widget.NewLabel("SSIM: 0.9674") // Fixed length placeholder
+	ui.ssimLabel = widget.NewLabel("SSIM: 0.9674")
 	ui.ssimProgress = widget.NewProgressBar()
 	ui.ssimProgress.Resize(fyne.NewSize(300, 20))
 
@@ -233,14 +226,32 @@ func (ui *ImageRestorationUI) createRightPanel() fyne.CanvasObject {
 		ui.ssimLabel,
 		ui.ssimProgress,
 	)
-	// Fixed height for quality content
 	qualityContent.Resize(fyne.NewSize(0, 120))
 
-	qualityCard := widget.NewCard("", "QUALITY METRICS", qualityContent)
-	qualityCard.Resize(fyne.NewSize(340, 150)) // Fixed card size
+	// Shared header builder
+	makeHeader := func(text string) fyne.CanvasObject {
+		bg := canvas.NewRectangle(&color.RGBA{R: 233, G: 208, B: 255, A: 255})
+		bg.SetMinSize(fyne.NewSize(0, 24))
+		lbl := canvas.NewText(text, color.Black)
+		lbl.TextStyle = fyne.TextStyle{Bold: true}
+		return container.NewMax(bg, container.NewCenter(lbl))
+	}
 
-	rightPanel := container.NewVBox(imageInfoCard, qualityCard)
-	// Absolute fixed right panel width
+	// Replace Card headers with styled headers
+	imageInfoContainer := container.NewBorder(
+		makeHeader("IMAGE INFORMATION"),
+		nil, nil, nil,
+		ui.imageInfoLabel,
+	)
+
+	qualityContainer := container.NewBorder(
+		makeHeader("QUALITY METRICS"),
+		nil, nil, nil,
+		qualityContent,
+	)
+	qualityContainer.Resize(fyne.NewSize(340, 150))
+
+	rightPanel := container.NewVBox(imageInfoContainer, qualityContainer)
 	rightPanel.Resize(fyne.NewSize(340, 0))
 
 	return rightPanel
