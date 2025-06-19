@@ -46,16 +46,14 @@ func NewImageRestorationUI(window fyne.Window, config *DebugConfig) *ImageRestor
 }
 
 func (ui *ImageRestorationUI) BuildUI() fyne.CanvasObject {
-	// Create main layout
 	toolbar := ui.createToolbar()
 	leftPanel := ui.createLeftPanel()
 	centerPanel := ui.createCenterPanel()
 	rightPanel := ui.createRightPanel()
 
-	// Main container with fixed structure
 	mainContainer := container.NewBorder(
-		toolbar, // top
-		nil,     // bottom
+		toolbar,
+		nil,
 		leftPanel,
 		rightPanel,
 		centerPanel,
@@ -65,7 +63,6 @@ func (ui *ImageRestorationUI) BuildUI() fyne.CanvasObject {
 }
 
 func (ui *ImageRestorationUI) createToolbar() fyne.CanvasObject {
-	// File operations
 	openBtn := widget.NewButtonWithIcon("OPEN IMAGE", theme.FolderOpenIcon(), ui.openImage)
 	openBtn.Importance = widget.HighImportance
 
@@ -76,16 +73,8 @@ func (ui *ImageRestorationUI) createToolbar() fyne.CanvasObject {
 	resetBtn.Importance = widget.HighImportance
 
 	leftSection := container.NewHBox(openBtn, saveBtn, resetBtn)
-
-	toolbar := container.NewBorder(
-		nil, nil,
-		leftSection,
-		nil,
-		nil,
-	)
-
+	toolbar := container.NewBorder(nil, nil, leftSection, nil, nil)
 	toolbarCard := container.NewPadded(toolbar)
-	// Fixed toolbar height
 	toolbarCard.Resize(fyne.NewSize(0, 50))
 
 	return toolbarCard
@@ -106,7 +95,6 @@ func (ui *ImageRestorationUI) createLeftPanel() fyne.CanvasObject {
 	scrollableList := container.NewVScroll(ui.availableTransformationsList)
 	scrollableList.SetMinSize(fyne.NewSize(200, 200))
 
-	// Header background with desired color and correct height (24 DIP)
 	headerBg := canvas.NewRectangle(&color.RGBA{R: 233, G: 208, B: 255, A: 255})
 	headerBg.SetMinSize(fyne.NewSize(200, 24))
 
@@ -114,9 +102,7 @@ func (ui *ImageRestorationUI) createLeftPanel() fyne.CanvasObject {
 	headerLabel.TextStyle = fyne.TextStyle{Bold: true}
 
 	header := container.NewMax(headerBg, container.NewCenter(headerLabel))
-
 	content := container.NewVBox(header, scrollableList)
-
 	leftPanel := container.NewVBox(content)
 	leftPanel.Resize(fyne.NewSize(200, 0))
 
@@ -124,7 +110,6 @@ func (ui *ImageRestorationUI) createLeftPanel() fyne.CanvasObject {
 }
 
 func (ui *ImageRestorationUI) createCenterPanel() fyne.CanvasObject {
-	// Image display area with fixed constraints
 	ui.originalImage = canvas.NewImageFromImage(image.NewRGBA(image.Rect(0, 0, 1, 1)))
 	ui.originalImage.FillMode = canvas.ImageFillContain
 	ui.originalImage.ScaleMode = canvas.ImageScaleSmooth
@@ -141,10 +126,9 @@ func (ui *ImageRestorationUI) createCenterPanel() fyne.CanvasObject {
 	ui.previewScroll = container.NewScroll(ui.previewImage)
 	ui.previewScroll.Resize(fyne.NewSize(500, 400))
 
-	// Shared header styling function
 	makeHeader := func(text string) fyne.CanvasObject {
 		bg := canvas.NewRectangle(&color.RGBA{R: 233, G: 208, B: 255, A: 255})
-		bg.SetMinSize(fyne.NewSize(0, 24)) // same height as default card title
+		bg.SetMinSize(fyne.NewSize(0, 24))
 		lbl := canvas.NewText(text, color.Black)
 		lbl.TextStyle = fyne.TextStyle{Bold: true}
 		return container.NewMax(bg, container.NewCenter(lbl))
@@ -205,13 +189,11 @@ func (ui *ImageRestorationUI) createCenterPanel() fyne.CanvasObject {
 }
 
 func (ui *ImageRestorationUI) createRightPanel() fyne.CanvasObject {
-	// Image information
 	ui.imageInfoLabel = widget.NewRichText(&widget.TextSegment{
 		Text:  "No image loaded",
 		Style: widget.RichTextStyle{},
 	})
 
-	// Quality metrics
 	ui.psnrLabel = widget.NewLabel("PSNR: 33.14 dB")
 	ui.psnrProgress = widget.NewProgressBar()
 	ui.psnrProgress.Resize(fyne.NewSize(300, 20))
@@ -228,7 +210,6 @@ func (ui *ImageRestorationUI) createRightPanel() fyne.CanvasObject {
 	)
 	qualityContent.Resize(fyne.NewSize(0, 120))
 
-	// Shared header builder
 	makeHeader := func(text string) fyne.CanvasObject {
 		bg := canvas.NewRectangle(&color.RGBA{R: 233, G: 208, B: 255, A: 255})
 		bg.SetMinSize(fyne.NewSize(0, 24))
@@ -237,7 +218,6 @@ func (ui *ImageRestorationUI) createRightPanel() fyne.CanvasObject {
 		return container.NewMax(bg, container.NewCenter(lbl))
 	}
 
-	// Replace Card headers with styled headers
 	imageInfoContainer := container.NewBorder(
 		makeHeader("IMAGE INFORMATION"),
 		nil, nil, nil,
@@ -264,29 +244,45 @@ func (ui *ImageRestorationUI) openImage() {
 		if err != nil || reader == nil {
 			return
 		}
-		defer reader.Close()
+		defer func() {
+			if err := reader.Close(); err != nil {
+				ui.debugGUI.LogError(err)
+			}
+		}()
 
 		ui.debugGUI.LogFileOperation("open", reader.URI().Name())
 
-		// Load image using OpenCV
-		mat := gocv.IMRead(reader.URI().Path(), gocv.IMReadColor)
-		if mat.Empty() {
-			err := fmt.Errorf("failed to load image")
-			ui.debugGUI.LogError(err)
-			dialog.ShowError(err, ui.window)
-			return
-		}
-
-		size := mat.Size()
-		ui.debugGUI.LogImageInfo(size[1], size[0], mat.Channels())
-
-		// FIXED: Clear transformations first, THEN set image
-		ui.pipeline.ClearTransformations()
-
-		// FIXED: Set image on background thread, update UI on main thread
+		// Use proper error boundaries
 		go func() {
-			err := ui.pipeline.SetOriginalImage(mat)
-			if err != nil {
+			defer func() {
+				if r := recover(); r != nil {
+					ui.debugGUI.Log(fmt.Sprintf("Panic in openImage: %v", r))
+					fyne.Do(func() {
+						dialog.ShowError(fmt.Errorf("error loading image: %v", r), ui.window)
+					})
+				}
+			}()
+
+			mat := gocv.IMRead(reader.URI().Path(), gocv.IMReadColor)
+			defer func() {
+				if !mat.Empty() {
+					mat.Close()
+				}
+			}()
+
+			if mat.Empty() {
+				fyne.Do(func() {
+					dialog.ShowError(fmt.Errorf("failed to load image"), ui.window)
+				})
+				return
+			}
+
+			size := mat.Size()
+			ui.debugGUI.LogImageInfo(size[1], size[0], mat.Channels())
+
+			ui.pipeline.ClearTransformations()
+
+			if err := ui.pipeline.SetOriginalImage(mat); err != nil {
 				ui.debugGUI.LogError(err)
 				fyne.Do(func() {
 					dialog.ShowError(err, ui.window)
@@ -294,12 +290,9 @@ func (ui *ImageRestorationUI) openImage() {
 				return
 			}
 
-			// FIXED: All UI updates must be wrapped in fyne.Do
 			fyne.Do(func() {
 				ui.updateUI()
 				ui.updateWindowTitle(reader.URI().Name())
-
-				// Reset parameters panel and clear list selections when new image is loaded
 				ui.parametersContainer.Objects[1] = widget.NewLabel("Select a Transformation")
 				ui.parametersContainer.Refresh()
 				ui.transformationsList.UnselectAll()
@@ -324,14 +317,17 @@ func (ui *ImageRestorationUI) saveImage() {
 			ui.debugGUI.LogError(err)
 			return
 		}
-		defer writer.Close()
+		defer func() {
+			if err := writer.Close(); err != nil {
+				ui.debugGUI.LogError(err)
+			}
+		}()
 
 		filename := writer.URI().Name()
 		filePath := writer.URI().Path()
 
 		ui.debugGUI.LogFileOperation("save", filename)
 
-		// Check file extension and add .png if missing
 		ext := strings.ToLower(filepath.Ext(filename))
 		ui.debugGUI.LogFileExtensionCheck(filename, ext, ext != "")
 
@@ -344,8 +340,16 @@ func (ui *ImageRestorationUI) saveImage() {
 			filename = strings.TrimSuffix(filename, ext) + ".png"
 		}
 
-		// FIXED: Save on background thread to avoid blocking UI
 		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					ui.debugGUI.Log(fmt.Sprintf("Panic in saveImage: %v", r))
+					fyne.Do(func() {
+						dialog.ShowError(fmt.Errorf("error saving image: %v", r), ui.window)
+					})
+				}
+			}()
+
 			processedImage := ui.pipeline.GetProcessedImage()
 			hasImage := !processedImage.Empty()
 			ui.debugGUI.LogSaveOperation(filename, filepath.Ext(filename), hasImage)
@@ -398,7 +402,6 @@ func (ui *ImageRestorationUI) onTransformationSelected(id widget.ListItemID) {
 
 	ui.debugGUI.LogListSelection("available transformations", int(id), transformationName)
 
-	// Check if image is loaded before allowing transformation selection
 	if !ui.pipeline.HasImage() {
 		ui.debugGUI.Log("Cannot apply transformation: no image loaded")
 		dialog.ShowInformation("No Image", "Please load an image before applying transformations", ui.window)
@@ -406,13 +409,21 @@ func (ui *ImageRestorationUI) onTransformationSelected(id widget.ListItemID) {
 		return
 	}
 
-	// FIXED: Apply transformation on background thread
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				ui.debugGUI.Log(fmt.Sprintf("Panic in transformation: %v", r))
+				fyne.Do(func() {
+					dialog.ShowError(fmt.Errorf("error applying transformation: %v", r), ui.window)
+				})
+			}
+		}()
+
 		var transformation Transformation
 		switch id {
-		case 0: // 2D Otsu
+		case 0:
 			transformation = NewTwoDOtsu(&debugConfig)
-		case 1: // Lanczos4 Scaling
+		case 1:
 			transformation = NewLanczos4Transform(&debugConfig)
 		default:
 			return
@@ -432,7 +443,6 @@ func (ui *ImageRestorationUI) onTransformationSelected(id widget.ListItemID) {
 
 		fyne.Do(func() {
 			ui.updateUI()
-			// Clear the selection so it can be clicked again
 			ui.availableTransformationsList.UnselectAll()
 		})
 
@@ -448,15 +458,19 @@ func (ui *ImageRestorationUI) onAppliedTransformationSelected(id widget.ListItem
 }
 
 func (ui *ImageRestorationUI) removeTransformation(id int) {
-	// FIXED: Remove transformation on background thread
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				ui.debugGUI.Log(fmt.Sprintf("Panic in removeTransformation: %v", r))
+			}
+		}()
+
 		err := ui.pipeline.RemoveTransformation(id)
 		if err != nil {
 			ui.debugGUI.LogError(err)
 			return
 		}
 
-		// Clear selection since the list has changed
 		fyne.Do(func() {
 			ui.transformationsList.UnselectAll()
 			ui.parametersContainer.Objects[1] = widget.NewLabel("Select a Transformation")
@@ -475,10 +489,15 @@ func (ui *ImageRestorationUI) showTransformationParameters(transformation Transf
 }
 
 func (ui *ImageRestorationUI) onParameterChanged() {
-	ui.debugGUI.LogUIEvent("onParameterChanged called - triggering preview reprocessing")
+	ui.debugGUI.LogUIEvent("onParameterChanged called")
 
-	// FIXED: Process preview on background thread
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				ui.debugGUI.Log(fmt.Sprintf("Panic in onParameterChanged: %v", r))
+			}
+		}()
+
 		if ui.pipeline.HasImage() {
 			err := ui.pipeline.ProcessPreview()
 			if err != nil {
@@ -497,27 +516,29 @@ func (ui *ImageRestorationUI) updateUI() {
 	ui.updateImageDisplay()
 	ui.updateImageInfo()
 	ui.updateQualityMetrics()
-	// Selective refresh - only refresh list content, not layout
 	ui.transformationsList.Refresh()
 }
 
 func (ui *ImageRestorationUI) updateImageDisplay() {
+	defer func() {
+		if r := recover(); r != nil {
+			ui.debugGUI.Log(fmt.Sprintf("Panic in updateImageDisplay: %v", r))
+		}
+	}()
+
 	ui.debugGUI.LogUIEvent("updateImageDisplay called")
 
-	if ui.pipeline.HasImage() && !ui.pipeline.originalImage.IsEmpty() {
+	if ui.pipeline.HasImage() && !ui.pipeline.originalImage.Empty() {
 		ui.debugGUI.LogUIEvent("updateImageDisplay: converting original image")
 
-		// Convert original image
-		originalMat := ui.pipeline.originalImage.Mat()
+		originalMat := ui.pipeline.originalImage
 		originalImg, err := originalMat.ToImage()
 		if err != nil {
 			ui.debugGUI.LogImageConversion("original", false, err.Error())
 			return
 		}
 		ui.debugGUI.LogImageConversion("original", true, "")
-		ui.debugRender.LogImageProperties("original", originalImg)
 
-		// Convert preview image - handle binary images with enhanced debugging
 		previewMat := ui.pipeline.GetPreviewImage()
 		if previewMat.Empty() {
 			ui.debugGUI.LogUIEvent("updateImageDisplay: preview image is empty")
@@ -532,72 +553,35 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 			ui.debugGUI.LogImageFormatChange("preview", originalChannels, previewChannels)
 
 			if previewChannels == 1 && originalChannels == 3 {
-				// ENHANCED CONVERSION: Try multiple methods and compare results
-				ui.debugRender.Log("ATTEMPTING ENHANCED BINARY->RGB CONVERSION")
-
-				// Method 1: Standard OpenCV conversion
 				previewColor := gocv.NewMat()
 				defer previewColor.Close()
 				gocv.CvtColor(previewMat, &previewColor, gocv.ColorGrayToBGR)
 
-				var err error
 				previewImg, err = previewColor.ToImage()
 				if err != nil {
-					ui.debugGUI.LogImageConversion("preview_method1", false, err.Error())
-					ui.debugRender.LogMatToImageConversion("preview_method1", previewColor, false, err.Error())
-
-					// Method 2: Manual pixel conversion as fallback
-					ui.debugRender.Log("FALLBACK: Manual pixel conversion")
-					size := previewMat.Size()
-					width, height := size[1], size[0]
-					bounds := image.Rect(0, 0, width, height)
-					manualImg := image.NewRGBA(bounds)
-
-					for y := 0; y < height; y++ {
-						for x := 0; x < width; x++ {
-							grayVal := previewMat.GetUCharAt(y, x)
-							manualImg.Set(x, y, color.RGBA{R: grayVal, G: grayVal, B: grayVal, A: 255})
-						}
-					}
-					previewImg = manualImg
-					ui.debugRender.Log("SUCCESS: Manual conversion completed")
-				} else {
-					ui.debugRender.LogMatToImageConversion("preview_method1", previewColor, true, "")
-					ui.debugRender.Log("SUCCESS: Standard OpenCV conversion")
-				}
-			} else {
-				// Fallback for other channel mismatches
-				var err error
-				previewImg, err = previewMat.ToImage()
-				if err != nil {
-					ui.debugGUI.LogImageConversion("preview_fallback", false, err.Error())
-					ui.debugRender.LogMatToImageConversion("preview_fallback", previewMat, false, err.Error())
+					ui.debugGUI.LogImageConversion("preview", false, err.Error())
 					return
 				}
-				ui.debugRender.LogMatToImageConversion("preview_fallback", previewMat, true, "")
+			} else {
+				previewImg, err = previewMat.ToImage()
+				if err != nil {
+					ui.debugGUI.LogImageConversion("preview", false, err.Error())
+					return
+				}
 			}
 		} else {
-			var err error
 			previewImg, err = previewMat.ToImage()
 			if err != nil {
 				ui.debugGUI.LogImageConversion("preview", false, err.Error())
-				ui.debugRender.LogMatToImageConversion("preview", previewMat, false, err.Error())
 				return
 			}
-			ui.debugRender.LogMatToImageConversion("preview", previewMat, true, "")
 		}
 
 		ui.debugGUI.LogImageConversion("preview", true, "")
-		ui.debugRender.LogImageProperties("preview", previewImg)
 
-		// Final content analysis before display
-		ui.debugRender.LogImageContentAnalysis("preview_final", previewImg)
-
-		// Update only image content, not canvas properties
 		ui.originalImage.Image = originalImg
 		ui.previewImage.Image = previewImg
 
-		// Selective refresh - only refresh image content
 		ui.originalImage.Refresh()
 		ui.previewImage.Refresh()
 
@@ -608,8 +592,8 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 }
 
 func (ui *ImageRestorationUI) updateImageInfo() {
-	if ui.pipeline.HasImage() && !ui.pipeline.originalImage.IsEmpty() {
-		originalMat := ui.pipeline.originalImage.Mat()
+	if ui.pipeline.HasImage() && !ui.pipeline.originalImage.Empty() {
+		originalMat := ui.pipeline.originalImage
 		size := originalMat.Size()
 		channels := originalMat.Channels()
 
@@ -619,40 +603,25 @@ func (ui *ImageRestorationUI) updateImageInfo() {
 }
 
 func (ui *ImageRestorationUI) updateQualityMetrics() {
-	// Log panel positions before update
-	leftPos := ui.window.Content().(*fyne.Container).Objects[1].Position()
-	leftSize := ui.window.Content().(*fyne.Container).Objects[1].Size()
-	ui.debugGUI.LogLayoutPositions("leftPanel", leftPos, leftSize)
-
-	rightPos := ui.window.Content().(*fyne.Container).Objects[3].Position()
-	rightSize := ui.window.Content().(*fyne.Container).Objects[3].Size()
-	ui.debugGUI.LogLayoutPositions("rightPanel", rightPos, rightSize)
-
 	if len(ui.pipeline.transformations) > 0 {
-		// Calculate PSNR and SSIM
 		psnr := ui.pipeline.CalculatePSNR()
 		ssim := ui.pipeline.CalculateSSIM()
 
 		ui.debugGUI.LogQualityMetricsUpdate(psnr, ssim, true)
 
 		ui.psnrLabel.SetText(fmt.Sprintf("PSNR: %.2f dB", psnr))
-		ui.psnrProgress.SetValue(psnr / 50.0) // Normalize to 0-1 range
+		ui.psnrProgress.SetValue(psnr / 50.0)
 
 		ui.ssimLabel.SetText(fmt.Sprintf("SSIM: %.4f", ssim))
-		ui.ssimProgress.SetValue(ssim) // SSIM is already 0-1 range
+		ui.ssimProgress.SetValue(ssim)
 	} else {
 		ui.debugGUI.LogQualityMetricsUpdate(0, 0, false)
 
-		ui.psnrLabel.SetText("PSNR: 33.14 dB") // Keep same text length
+		ui.psnrLabel.SetText("PSNR: 33.14 dB")
 		ui.psnrProgress.SetValue(0)
-		ui.ssimLabel.SetText("SSIM: 0.9674") // Keep same text length
+		ui.ssimLabel.SetText("SSIM: 0.9674")
 		ui.ssimProgress.SetValue(0)
 	}
-
-	// Log panel positions after update
-	rightPos = ui.window.Content().(*fyne.Container).Objects[3].Position()
-	rightSize = ui.window.Content().(*fyne.Container).Objects[3].Size()
-	ui.debugGUI.LogLayoutPositions("rightPanel_after", rightPos, rightSize)
 }
 
 func (ui *ImageRestorationUI) updateWindowTitle(filename string) {

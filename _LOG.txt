@@ -1,0 +1,17 @@
+[7:52:07 PM] % ./build.sh
+Building Image Restoration Suite with Mat profiling enabled...
+Cleaning previous builds...
+Building with -tags matprofile for memory leak detection...
+# image-restoration-suite
+./pipeline.go:77:19: undefined: DebugMemory
+./pipeline.go:84:17: undefined: NewDebugMemory
+./transform_lanczos4.go:16:16: undefined: DebugImage
+./transform_lanczos4.go:29:17: undefined: NewDebugImage
+./transform_twod_otsu.go:17:14: undefined: DebugImage
+./transform_twod_otsu.go:29:20: undefined: NewDebugImage
+./ui.go:35:32: undefined: DebugRender
+./ui.go:43:16: undefined: NewDebugRender
+./ui.go:531:58: ui.pipeline.originalImage.Empty undefined (type *SafeMat has no field or method Empty)
+./ui.go:535:35: originalMat.ToImage undefined (type *SafeMat has no field or method ToImage)
+./ui.go:535:35: too many errors
+[7:52:50 PM] % 
