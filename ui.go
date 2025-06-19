@@ -280,28 +280,34 @@ func (ui *ImageRestorationUI) openImage() {
 		size := mat.Size()
 		ui.debugGUI.LogImageInfo(size[1], size[0], mat.Channels())
 
-		// Clean up existing transformations before setting new image
+		// FIXED: Clear transformations first, THEN set image
 		ui.pipeline.ClearTransformations()
 
-		// Use fyne.Do for thread safety with Fyne v2.6+
-		err = ui.pipeline.SetOriginalImage(mat)
-		if err != nil {
-			ui.debugGUI.LogError(err)
-			dialog.ShowError(err, ui.window)
-			return
-		}
+		// FIXED: Set image on background thread, update UI on main thread
+		go func() {
+			err := ui.pipeline.SetOriginalImage(mat)
+			if err != nil {
+				ui.debugGUI.LogError(err)
+				fyne.Do(func() {
+					dialog.ShowError(err, ui.window)
+				})
+				return
+			}
 
-		fyne.Do(func() {
-			ui.updateUI()
-			ui.updateWindowTitle(reader.URI().Name())
+			// FIXED: All UI updates must be wrapped in fyne.Do
+			fyne.Do(func() {
+				ui.updateUI()
+				ui.updateWindowTitle(reader.URI().Name())
 
-			// Reset parameters panel and clear list selections when new image is loaded
-			ui.parametersContainer.Objects[0] = widget.NewLabel("Select a Transformation")
-			ui.parametersContainer.Refresh()
-			ui.transformationsList.UnselectAll()
-		})
+				// Reset parameters panel and clear list selections when new image is loaded
+				ui.parametersContainer.Objects[1] = widget.NewLabel("Select a Transformation")
+				ui.parametersContainer.Refresh()
+				ui.transformationsList.UnselectAll()
+				ui.availableTransformationsList.UnselectAll()
+			})
 
-		ui.debugGUI.Log("Image loaded successfully")
+			ui.debugGUI.Log("Image loaded successfully")
+		}()
 	}, ui.window)
 }
 
@@ -338,25 +344,32 @@ func (ui *ImageRestorationUI) saveImage() {
 			filename = strings.TrimSuffix(filename, ext) + ".png"
 		}
 
-		processedImage := ui.pipeline.GetProcessedImage()
-		hasImage := !processedImage.Empty()
-		ui.debugGUI.LogSaveOperation(filename, filepath.Ext(filename), hasImage)
+		// FIXED: Save on background thread to avoid blocking UI
+		go func() {
+			processedImage := ui.pipeline.GetProcessedImage()
+			hasImage := !processedImage.Empty()
+			ui.debugGUI.LogSaveOperation(filename, filepath.Ext(filename), hasImage)
 
-		if !hasImage {
-			ui.debugGUI.LogSaveResult(filename, false, "no processed image available")
-			dialog.ShowError(fmt.Errorf("no processed image available"), ui.window)
-			return
-		}
+			if !hasImage {
+				ui.debugGUI.LogSaveResult(filename, false, "no processed image available")
+				fyne.Do(func() {
+					dialog.ShowError(fmt.Errorf("no processed image available"), ui.window)
+				})
+				return
+			}
 
-		success := gocv.IMWrite(filePath, processedImage)
-		if !success {
-			err := fmt.Errorf("failed to write image to %s", filePath)
-			ui.debugGUI.LogSaveResult(filename, false, err.Error())
-			dialog.ShowError(err, ui.window)
-		} else {
-			ui.debugGUI.LogSaveResult(filename, true, "")
-			ui.debugGUI.Log("Image saved successfully")
-		}
+			success := gocv.IMWrite(filePath, processedImage)
+			if !success {
+				err := fmt.Errorf("failed to write image to %s", filePath)
+				ui.debugGUI.LogSaveResult(filename, false, err.Error())
+				fyne.Do(func() {
+					dialog.ShowError(err, ui.window)
+				})
+			} else {
+				ui.debugGUI.LogSaveResult(filename, true, "")
+				ui.debugGUI.Log("Image saved successfully")
+			}
+		}()
 	}, ui.window)
 }
 
@@ -366,7 +379,7 @@ func (ui *ImageRestorationUI) resetTransformations() {
 	ui.pipeline.ClearTransformations()
 	fyne.Do(func() {
 		ui.updateUI()
-		ui.parametersContainer.Objects[0] = widget.NewLabel("Select a Transformation")
+		ui.parametersContainer.Objects[1] = widget.NewLabel("Select a Transformation")
 		ui.parametersContainer.Refresh()
 		ui.transformationsList.UnselectAll()
 	})
@@ -393,33 +406,38 @@ func (ui *ImageRestorationUI) onTransformationSelected(id widget.ListItemID) {
 		return
 	}
 
-	var transformation Transformation
-	switch id {
-	case 0: // 2D Otsu
-		transformation = NewTwoDOtsu(&debugConfig)
-	case 1: // Lanczos4 Scaling
-		transformation = NewLanczos4Transform(&debugConfig)
-	default:
-		return
-	}
+	// FIXED: Apply transformation on background thread
+	go func() {
+		var transformation Transformation
+		switch id {
+		case 0: // 2D Otsu
+			transformation = NewTwoDOtsu(&debugConfig)
+		case 1: // Lanczos4 Scaling
+			transformation = NewLanczos4Transform(&debugConfig)
+		default:
+			return
+		}
 
-	err := ui.pipeline.AddTransformation(transformation)
-	if err != nil {
-		ui.debugGUI.LogError(err)
-		dialog.ShowError(err, ui.window)
-		return
-	}
+		err := ui.pipeline.AddTransformation(transformation)
+		if err != nil {
+			ui.debugGUI.LogError(err)
+			fyne.Do(func() {
+				dialog.ShowError(err, ui.window)
+			})
+			return
+		}
 
-	ui.debugGUI.LogTransformation(transformation.Name(), transformation.GetParameters())
-	ui.debugGUI.LogTransformationApplication(transformation.Name(), true)
+		ui.debugGUI.LogTransformation(transformation.Name(), transformation.GetParameters())
+		ui.debugGUI.LogTransformationApplication(transformation.Name(), true)
 
-	fyne.Do(func() {
-		ui.updateUI()
-	})
+		fyne.Do(func() {
+			ui.updateUI()
+			// Clear the selection so it can be clicked again
+			ui.availableTransformationsList.UnselectAll()
+		})
 
-	// Clear the selection so it can be clicked again
-	ui.availableTransformationsList.UnselectAll()
-	ui.debugGUI.LogListUnselect("available transformations")
+		ui.debugGUI.LogListUnselect("available transformations")
+	}()
 }
 
 func (ui *ImageRestorationUI) onAppliedTransformationSelected(id widget.ListItemID) {
@@ -430,42 +448,49 @@ func (ui *ImageRestorationUI) onAppliedTransformationSelected(id widget.ListItem
 }
 
 func (ui *ImageRestorationUI) removeTransformation(id int) {
-	err := ui.pipeline.RemoveTransformation(id)
-	if err != nil {
-		ui.debugGUI.LogError(err)
-		return
-	}
+	// FIXED: Remove transformation on background thread
+	go func() {
+		err := ui.pipeline.RemoveTransformation(id)
+		if err != nil {
+			ui.debugGUI.LogError(err)
+			return
+		}
 
-	// Clear selection since the list has changed
-	ui.transformationsList.UnselectAll()
-	fyne.Do(func() {
-		ui.parametersContainer.Objects[0] = widget.NewLabel("Select a Transformation")
-		ui.parametersContainer.Refresh()
-		ui.updateUI()
-	})
+		// Clear selection since the list has changed
+		fyne.Do(func() {
+			ui.transformationsList.UnselectAll()
+			ui.parametersContainer.Objects[1] = widget.NewLabel("Select a Transformation")
+			ui.parametersContainer.Refresh()
+			ui.updateUI()
+		})
+	}()
 }
 
 func (ui *ImageRestorationUI) showTransformationParameters(transformation Transformation) {
 	parametersWidget := transformation.GetParametersWidget(ui.onParameterChanged)
 	fyne.Do(func() {
-		ui.parametersContainer.Objects[0] = parametersWidget
+		ui.parametersContainer.Objects[1] = parametersWidget
 		ui.parametersContainer.Refresh()
 	})
 }
 
 func (ui *ImageRestorationUI) onParameterChanged() {
 	ui.debugGUI.LogUIEvent("onParameterChanged called - triggering preview reprocessing")
-	// Trigger preview reprocessing when parameters change
-	if ui.pipeline.HasImage() {
-		err := ui.pipeline.ProcessPreview()
-		if err != nil {
-			ui.debugGUI.LogError(err)
-			return
+
+	// FIXED: Process preview on background thread
+	go func() {
+		if ui.pipeline.HasImage() {
+			err := ui.pipeline.ProcessPreview()
+			if err != nil {
+				ui.debugGUI.LogError(err)
+				return
+			}
 		}
-	}
-	fyne.Do(func() {
-		ui.updateUI()
-	})
+
+		fyne.Do(func() {
+			ui.updateUI()
+		})
+	}()
 }
 
 func (ui *ImageRestorationUI) updateUI() {
