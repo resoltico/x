@@ -141,13 +141,13 @@ func (ui *ImageRestorationUI) createCenterPanel() fyne.CanvasObject {
 	ui.previewScroll.Resize(fyne.NewSize(500, 400))
 
 	originalContainer := container.NewBorder(
-		widget.NewCard("", "Original", nil),
+		widget.NewCard("", "ORIGINAL", nil),
 		nil, nil, nil,
 		ui.originalScroll,
 	)
 
 	previewContainer := container.NewBorder(
-		widget.NewCard("", "Preview", nil),
+		widget.NewCard("", "PREVIEW", nil),
 		nil, nil, nil,
 		ui.previewScroll,
 	)
