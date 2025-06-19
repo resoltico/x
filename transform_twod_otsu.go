@@ -28,7 +28,7 @@ func NewTwoDOtsu() *TwoDOtsu {
 		debugImage:      NewDebugImage(),
 		windowRadius:    5,
 		epsilon:         0.02,
-		morphKernelSize: 3,
+		morphKernelSize: 1, // Changed default to 1
 	}
 }
 
@@ -522,63 +522,69 @@ func (t *TwoDOtsu) applyMorphologicalOps(src gocv.Mat) gocv.Mat {
 }
 
 func (t *TwoDOtsu) createParameterUI() *fyne.Container {
-	// Window Radius parameter
+	// Window Radius parameter (label and entry on same line)
 	radiusLabel := widget.NewLabel("Window Radius (1-20):")
 	radiusEntry := widget.NewEntry()
 	radiusEntry.SetText(fmt.Sprintf("%d", t.windowRadius))
+	radiusEntry.Resize(fyne.NewSize(80, radiusEntry.MinSize().Height)) // Fixed width for 10 characters
+	radiusEntry.MultiLine = false
+	radiusEntry.Wrapping = fyne.TextWrapOff
 	radiusEntry.OnSubmitted = func(text string) {
 		if value, err := strconv.Atoi(text); err == nil && value > 0 && value <= 20 {
-			oldValue := t.windowRadius
 			t.windowRadius = value
-			t.debugImage.LogAlgorithmStep("2D Otsu Parameters", fmt.Sprintf("Window radius changed: %d -> %d", oldValue, value))
-			if t.onParameterChanged != nil {
-				t.debugImage.LogAlgorithmStep("2D Otsu Parameters", "Calling onParameterChanged callback")
-				t.onParameterChanged()
-			}
+			t.debugImage.LogAlgorithmStep("2D Otsu Parameters", fmt.Sprintf("Window radius changed to: %d", value))
 		} else {
 			t.debugImage.LogAlgorithmStep("2D Otsu Parameters", fmt.Sprintf("Invalid window radius value: %s", text))
 		}
 	}
+	radiusRow := container.NewHBox(radiusLabel, radiusEntry)
 
-	// Epsilon parameter
+	// Epsilon parameter (label and entry on same line)
 	epsilonLabel := widget.NewLabel("Epsilon (0.001-1.0):")
 	epsilonEntry := widget.NewEntry()
 	epsilonEntry.SetText(fmt.Sprintf("%.3f", t.epsilon))
+	epsilonEntry.Resize(fyne.NewSize(80, epsilonEntry.MinSize().Height)) // Fixed width for 10 characters
+	epsilonEntry.MultiLine = false
+	epsilonEntry.Wrapping = fyne.TextWrapOff
 	epsilonEntry.OnSubmitted = func(text string) {
 		if value, err := strconv.ParseFloat(text, 64); err == nil && value > 0 && value <= 1.0 {
-			oldValue := t.epsilon
 			t.epsilon = value
-			t.debugImage.LogAlgorithmStep("2D Otsu Parameters", fmt.Sprintf("Epsilon changed: %.3f -> %.3f", oldValue, value))
-			if t.onParameterChanged != nil {
-				t.debugImage.LogAlgorithmStep("2D Otsu Parameters", "Calling onParameterChanged callback")
-				t.onParameterChanged()
-			}
+			t.debugImage.LogAlgorithmStep("2D Otsu Parameters", fmt.Sprintf("Epsilon changed to: %.3f", value))
 		} else {
 			t.debugImage.LogAlgorithmStep("2D Otsu Parameters", fmt.Sprintf("Invalid epsilon value: %s", text))
 		}
 	}
+	epsilonRow := container.NewHBox(epsilonLabel, epsilonEntry)
 
-	// Morphological Kernel Size parameter
+	// Morphological Kernel Size parameter (label and entry on same line)
 	kernelLabel := widget.NewLabel("Morphological Kernel Size (1-15, odd):")
 	kernelEntry := widget.NewEntry()
 	kernelEntry.SetText(fmt.Sprintf("%d", t.morphKernelSize))
+	kernelEntry.Resize(fyne.NewSize(80, kernelEntry.MinSize().Height)) // Fixed width for 10 characters
+	kernelEntry.MultiLine = false
+	kernelEntry.Wrapping = fyne.TextWrapOff
 	kernelEntry.OnSubmitted = func(text string) {
 		if value, err := strconv.Atoi(text); err == nil && value > 0 && value <= 15 && value%2 == 1 {
-			oldValue := t.morphKernelSize
 			t.morphKernelSize = value
-			t.debugImage.LogAlgorithmStep("2D Otsu Parameters", fmt.Sprintf("Morphological kernel size changed: %d -> %d", oldValue, value))
-			if t.onParameterChanged != nil {
-				t.debugImage.LogAlgorithmStep("2D Otsu Parameters", "Calling onParameterChanged callback")
-				t.onParameterChanged()
-			}
+			t.debugImage.LogAlgorithmStep("2D Otsu Parameters", fmt.Sprintf("Morphological kernel size changed to: %d", value))
 		} else {
 			t.debugImage.LogAlgorithmStep("2D Otsu Parameters", fmt.Sprintf("Invalid morphological kernel size: %s", text))
 		}
 	}
+	kernelRow := container.NewHBox(kernelLabel, kernelEntry)
+
+	// Apply button
+	applyBtn := widget.NewButton("Apply", func() {
+		t.debugImage.LogAlgorithmStep("2D Otsu Parameters", "Apply button clicked")
+		if t.onParameterChanged != nil {
+			t.onParameterChanged()
+		}
+	})
 
 	return container.NewVBox(
-		radiusLabel, radiusEntry,
-		epsilonLabel, epsilonEntry,
-		kernelLabel, kernelEntry,
+		radiusRow,
+		epsilonRow,
+		kernelRow,
+		applyBtn,
 	)
 }

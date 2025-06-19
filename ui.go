@@ -26,7 +26,8 @@ type ImageRestorationUI struct {
 	transformationsList          *widget.List
 	availableTransformationsList *widget.List
 	parametersContainer          *fyne.Container
-	imageInfoLabel               *widget.RichText
+	originalInfoLabel            *widget.RichText
+	transformedInfoLabel         *widget.RichText
 	psnrProgress                 *widget.ProgressBar
 	ssimProgress                 *widget.ProgressBar
 	psnrLabel                    *widget.Label
@@ -107,56 +108,46 @@ func (ui *ImageRestorationUI) createLeftPanel() fyne.CanvasObject {
 
 	ui.availableTransformationsList.OnSelected = ui.onTransformationSelected
 
-	transformationsCard := container.NewBorder(
-		widget.NewCard("", "TRANSFORMATIONS", ui.availableTransformationsList),
-		nil, nil, nil,
-	)
+	transformationsCard := widget.NewCard("", "TRANSFORMATIONS", ui.availableTransformationsList)
 
 	leftPanel := container.NewVBox(transformationsCard)
-	// Fixed left panel width
-	leftPanel.Resize(fyne.NewSize(300, 0))
+	// Reduced left panel width by 30% (from 300 to 210)
+	leftPanel.Resize(fyne.NewSize(210, 0))
 
 	return leftPanel
 }
 
 func (ui *ImageRestorationUI) createCenterPanel() fyne.CanvasObject {
-	// Image display area with fixed constraints
+	// Image display area
 	ui.originalImage = canvas.NewImageFromImage(image.NewRGBA(image.Rect(0, 0, 1, 1)))
 	ui.originalImage.FillMode = canvas.ImageFillContain
 	ui.originalImage.ScaleMode = canvas.ImageScaleSmooth
-	// Fixed image canvas size - prevents expansion
-	ui.originalImage.Resize(fyne.NewSize(500, 400))
 
 	ui.previewImage = canvas.NewImageFromImage(image.NewRGBA(image.Rect(0, 0, 1, 1)))
 	ui.previewImage.FillMode = canvas.ImageFillContain
 	ui.previewImage.ScaleMode = canvas.ImageScaleSmooth
-	// Fixed image canvas size - prevents expansion
-	ui.previewImage.Resize(fyne.NewSize(500, 400))
 
-	// Scroll containers with size locks
+	// Scroll containers
 	ui.originalScroll = container.NewScroll(ui.originalImage)
-	ui.originalScroll.Resize(fyne.NewSize(500, 400))
-
 	ui.previewScroll = container.NewScroll(ui.previewImage)
-	ui.previewScroll.Resize(fyne.NewSize(500, 400))
 
 	originalContainer := container.NewBorder(
-		widget.NewCard("", "Original", nil),
+		widget.NewCard("", "ORIGINAL", nil),
 		nil, nil, nil,
 		ui.originalScroll,
 	)
 
 	previewContainer := container.NewBorder(
-		widget.NewCard("", "Preview", nil),
+		widget.NewCard("", "PREVIEW", nil),
 		nil, nil, nil,
 		ui.previewScroll,
 	)
 
-	// Fixed split layout
+	// Split layout for images
 	imagesSplit := container.NewHSplit(originalContainer, previewContainer)
 	imagesSplit.SetOffset(0.5)
 
-	// Transformations list and parameters
+	// Transformations list
 	ui.transformationsList = widget.NewList(
 		func() int { return len(ui.pipeline.transformations) },
 		func() fyne.CanvasObject {
@@ -183,22 +174,22 @@ func (ui *ImageRestorationUI) createCenterPanel() fyne.CanvasObject {
 	ui.transformationsList.OnSelected = ui.onAppliedTransformationSelected
 
 	transformationsListContainer := container.NewBorder(
-		widget.NewCard("", "Active Transformations", nil),
+		widget.NewCard("", "ACTIVE TRANSFORMATIONS", nil),
 		nil, nil, nil,
 		ui.transformationsList,
 	)
 
 	ui.parametersContainer = container.NewBorder(
-		widget.NewCard("", "Parameters", nil),
+		widget.NewCard("", "PARAMETERS", nil),
 		nil, nil, nil,
 		widget.NewLabel("Select a Transformation"),
 	)
 
-	// Fixed split layout
+	// Split layout for bottom panel
 	bottomSplit := container.NewHSplit(transformationsListContainer, ui.parametersContainer)
 	bottomSplit.SetOffset(0.5)
 
-	// Fixed split layout
+	// Main center panel split
 	centerPanel := container.NewVSplit(imagesSplit, bottomSplit)
 	centerPanel.SetOffset(0.6)
 
@@ -206,13 +197,21 @@ func (ui *ImageRestorationUI) createCenterPanel() fyne.CanvasObject {
 }
 
 func (ui *ImageRestorationUI) createRightPanel() fyne.CanvasObject {
-	// Image information
-	ui.imageInfoLabel = widget.NewRichText(&widget.TextSegment{
+	// Image information with sections for Original and Transformed
+	ui.originalInfoLabel = widget.NewRichText(&widget.TextSegment{
 		Text:  "No image loaded",
 		Style: widget.RichTextStyle{},
 	})
 
-	imageInfoCard := widget.NewCard("", "IMAGE INFORMATION", ui.imageInfoLabel)
+	ui.transformedInfoLabel = widget.NewRichText(&widget.TextSegment{
+		Text:  "No transformations applied",
+		Style: widget.RichTextStyle{},
+	})
+
+	originalCard := widget.NewCard("", "ORIGINAL", ui.originalInfoLabel)
+	transformedCard := widget.NewCard("", "TRANSFORMED", ui.transformedInfoLabel)
+
+	imageInfoContainer := container.NewVBox(originalCard, transformedCard)
 
 	// Quality metrics with fixed text length
 	ui.psnrLabel = widget.NewLabel("PSNR: 33.14 dB") // Fixed length placeholder
@@ -235,7 +234,7 @@ func (ui *ImageRestorationUI) createRightPanel() fyne.CanvasObject {
 	qualityCard := widget.NewCard("", "QUALITY METRICS", qualityContent)
 	qualityCard.Resize(fyne.NewSize(340, 150)) // Fixed card size
 
-	rightPanel := container.NewVBox(imageInfoCard, qualityCard)
+	rightPanel := container.NewVBox(imageInfoContainer, qualityCard)
 	// Absolute fixed right panel width
 	rightPanel.Resize(fyne.NewSize(340, 0))
 
@@ -541,8 +540,23 @@ func (ui *ImageRestorationUI) updateImageInfo() {
 		size := ui.pipeline.originalImage.Size()
 		channels := ui.pipeline.originalImage.Channels()
 
-		info := fmt.Sprintf("Size: %dx%d\nChannels: %d", size[1], size[0], channels)
-		ui.imageInfoLabel.ParseMarkdown(info)
+		originalInfo := fmt.Sprintf("Size: %dx%d\nChannels: %d", size[1], size[0], channels)
+		ui.originalInfoLabel.ParseMarkdown(originalInfo)
+
+		// Update transformed info if transformations exist
+		if len(ui.pipeline.transformations) > 0 {
+			processedImage := ui.pipeline.GetProcessedImage()
+			if !processedImage.Empty() {
+				processedSize := processedImage.Size()
+				processedChannels := processedImage.Channels()
+
+				transformedInfo := fmt.Sprintf("Size: %dx%d\nChannels: %d\n\nTransformations: %d",
+					processedSize[1], processedSize[0], processedChannels, len(ui.pipeline.transformations))
+				ui.transformedInfoLabel.ParseMarkdown(transformedInfo)
+			}
+		} else {
+			ui.transformedInfoLabel.ParseMarkdown("No transformations applied")
+		}
 	}
 }
 

@@ -19,7 +19,7 @@ type DebugRender struct {
 
 func NewDebugRender() *DebugRender {
 	return &DebugRender{
-		enabled: true, // Set to false to disable render debugging
+		enabled: false, // Set to false to disable render debugging
 	}
 }
 
