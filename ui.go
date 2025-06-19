@@ -183,13 +183,13 @@ func (ui *ImageRestorationUI) createCenterPanel() fyne.CanvasObject {
 	ui.transformationsList.OnSelected = ui.onAppliedTransformationSelected
 
 	transformationsListContainer := container.NewBorder(
-		widget.NewCard("", "Active Transformations", nil),
+		widget.NewCard("", "ACTIVE TRANSFORMATIONS", nil),
 		nil, nil, nil,
 		ui.transformationsList,
 	)
 
 	ui.parametersContainer = container.NewBorder(
-		widget.NewCard("", "Parameters", nil),
+		widget.NewCard("", "PARAMETERS", nil),
 		nil, nil, nil,
 		widget.NewLabel("Select a Transformation"),
 	)
