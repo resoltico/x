@@ -156,11 +156,20 @@ func (d *DebugPipeline) LogMemoryUsage() {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 
-	d.Log(fmt.Sprintf("Memory - Alloc: %.2f MB, TotalAlloc: %.2f MB, Sys: %.2f MB, NumGC: %d",
+	// Log both Go memory stats and MatProfile count
+	matCount := gocv.MatProfile.Count()
+
+	d.Log(fmt.Sprintf("Memory - Go Alloc: %.2f MB, TotalAlloc: %.2f MB, Sys: %.2f MB, NumGC: %d, MatProfile: %d Mats",
 		float64(m.Alloc)/1024/1024,
 		float64(m.TotalAlloc)/1024/1024,
 		float64(m.Sys)/1024/1024,
-		m.NumGC))
+		m.NumGC,
+		matCount))
+
+	// Warn if MatProfile count is growing
+	if matCount > 100 {
+		d.Log(fmt.Sprintf("WARNING: High MatProfile count (%d) - potential memory leak", matCount))
+	}
 }
 
 func (d *DebugPipeline) LogPipelineStats(originalSize, processedSize []int, numTransformations int) {
@@ -178,6 +187,10 @@ func (d *DebugPipeline) LogPipelineStats(originalSize, processedSize []int, numT
 		totalDuration += op.Duration
 	}
 	d.Log(fmt.Sprintf("  Total processing time: %v", totalDuration))
+
+	// Log current MatProfile status
+	matCount := gocv.MatProfile.Count()
+	d.Log(fmt.Sprintf("  Current MatProfile count: %d", matCount))
 }
 
 func (d *DebugPipeline) GetOperationHistory() []OperationLog {
@@ -211,12 +224,16 @@ func (d *DebugPipeline) LogMatrixProperties(name string, mat gocv.Mat) {
 func (d *DebugPipeline) LogProcessStart() {
 	if d.enabled {
 		d.Log("processImage called")
+		matCount := gocv.MatProfile.Count()
+		d.Log(fmt.Sprintf("MatProfile count at start: %d", matCount))
 	}
 }
 
 func (d *DebugPipeline) LogProcessEarlyReturn(reason string) {
 	if d.enabled {
 		d.Log(fmt.Sprintf("processImage: %s, returning", reason))
+		matCount := gocv.MatProfile.Count()
+		d.Log(fmt.Sprintf("MatProfile count at early return: %d", matCount))
 	}
 }
 
@@ -228,7 +245,9 @@ func (d *DebugPipeline) LogProcessStep(step string) {
 
 func (d *DebugPipeline) LogProcessComplete() {
 	if d.enabled {
+		matCount := gocv.MatProfile.Count()
 		d.Log("processImage: completed successfully")
+		d.Log(fmt.Sprintf("MatProfile count at completion: %d", matCount))
 	}
 }
 
@@ -240,7 +259,9 @@ func (d *DebugPipeline) LogTransformationCount(count int) {
 
 func (d *DebugPipeline) LogSetOriginalStart() {
 	if d.enabled {
+		matCount := gocv.MatProfile.Count()
 		d.Log("SetOriginalImage called")
+		d.Log(fmt.Sprintf("MatProfile count at start: %d", matCount))
 	}
 }
 
@@ -256,12 +277,6 @@ func (d *DebugPipeline) LogGetProcessedImage(message string) {
 	}
 }
 
-func (d *DebugPipeline) LogDoubleCloseRisk(matName string, location string) {
-	if d.enabled {
-		d.Log(fmt.Sprintf("DOUBLE-CLOSE RISK: %s at %s", matName, location))
-	}
-}
-
 func (d *DebugPipeline) LogResourceCleanup(resource string, success bool) {
 	if d.enabled {
 		if success {
@@ -269,6 +284,18 @@ func (d *DebugPipeline) LogResourceCleanup(resource string, success bool) {
 		} else {
 			d.Log(fmt.Sprintf("Resource cleanup FAILED: %s", resource))
 		}
+
+		// Log MatProfile count after cleanup
+		matCount := gocv.MatProfile.Count()
+		d.Log(fmt.Sprintf("MatProfile count after cleanup: %d", matCount))
+	}
+}
+
+func (d *DebugPipeline) LogMatProfileWarning(operation string, expectedChange int) {
+	if d.enabled {
+		matCount := gocv.MatProfile.Count()
+		d.Log(fmt.Sprintf("MatProfile check after %s: %d Mats (expected change: %+d)",
+			operation, matCount, expectedChange))
 	}
 }
 

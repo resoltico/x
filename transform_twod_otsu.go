@@ -14,6 +14,7 @@ import (
 )
 
 // TwoDOtsu implements 2D Otsu thresholding with guided filtering
+// Uses GoCV's MatProfile for memory management instead of custom tracking
 type TwoDOtsu struct {
 	ThreadSafeTransformation
 	debugImage *DebugImage
@@ -85,18 +86,14 @@ func (t *TwoDOtsu) GetParametersWidget(onParameterChanged func()) fyne.CanvasObj
 }
 
 func (t *TwoDOtsu) Close() {
-	// No resources to cleanup
+	// No resources to cleanup - GoCV MatProfile handles tracking
 }
 
-func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) (result gocv.Mat) {
+func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
 	// Panic recovery for OpenCV operations
 	defer func() {
 		if r := recover(); r != nil {
 			t.debugImage.LogError(fmt.Errorf("panic in 2D Otsu: %v", r))
-			if !result.Empty() {
-				result.Close()
-			}
-			result = gocv.NewMat()
 		}
 	}()
 
@@ -115,7 +112,7 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) (result gocv.Mat)
 	morphKernelSize := t.morphKernelSize
 	t.paramMutex.RUnlock()
 
-	// Scale input if needed - avoid defer overwrite pattern
+	// Scale input if needed - GoCV handles memory tracking
 	var workingImage gocv.Mat
 	if scale != 1.0 {
 		newWidth := int(float64(src.Cols()) * scale)
@@ -129,31 +126,25 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) (result gocv.Mat)
 
 		workingImage = gocv.NewMat()
 		gocv.Resize(src, &workingImage, image.Point{X: newWidth, Y: newHeight}, 0, 0, gocv.InterpolationLinear)
+		defer workingImage.Close()
 		t.debugImage.LogAlgorithmStep("2D Otsu", fmt.Sprintf("Scaled to %dx%d", newWidth, newHeight))
 	} else {
 		workingImage = src.Clone()
+		defer workingImage.Close()
 	}
-	defer func() {
-		if !workingImage.Empty() {
-			workingImage.Close()
-		}
-	}()
 
-	// Convert to grayscale if needed - avoid defer overwrite pattern
+	// Convert to grayscale if needed
 	t.debugImage.LogColorConversion("Input", "Grayscale")
 	var grayscale gocv.Mat
 
 	if workingImage.Channels() > 1 {
 		grayscale = gocv.NewMat()
 		gocv.CvtColor(workingImage, &grayscale, gocv.ColorBGRToGray)
+		defer grayscale.Close()
 	} else {
 		grayscale = workingImage.Clone()
+		defer grayscale.Close()
 	}
-	defer func() {
-		if !grayscale.Empty() {
-			grayscale.Close()
-		}
-	}()
 
 	// Validate grayscale conversion
 	if grayscale.Empty() {
@@ -166,16 +157,13 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) (result gocv.Mat)
 
 	// Apply guided filter for smoother guided image
 	guided := t.applyGuidedFilter(grayscale, windowRadius, epsilon)
-	defer func() {
-		if !guided.Empty() {
-			guided.Close()
-		}
-	}()
+	defer guided.Close()
 
 	// Validate guided filter result
 	if guided.Empty() {
 		t.debugImage.LogAlgorithmStep("2D Otsu", "ERROR: Guided filter failed, using original")
 		guided = grayscale.Clone()
+		defer guided.Close()
 	}
 
 	t.debugImage.LogHistogramAnalysis("guided_filter", guided)
@@ -183,7 +171,7 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) (result gocv.Mat)
 	// Apply 2D Otsu thresholding
 	binaryResult := t.apply2DOtsu(grayscale, guided)
 	defer func() {
-		if !binaryResult.Empty() {
+		if scale != 1.0 && !binaryResult.Empty() {
 			binaryResult.Close()
 		}
 	}()
@@ -197,18 +185,14 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) (result gocv.Mat)
 	// Post-processing with morphological operations
 	t.debugImage.LogAlgorithmStep("2D Otsu", "Postprocessing")
 	processed := t.applyMorphologicalOps(binaryResult, morphKernelSize)
-	defer func() {
-		if scale != 1.0 && !processed.Empty() {
-			processed.Close()
-		}
-	}()
 
 	// Scale back to original size if needed
+	var result gocv.Mat
 	if scale != 1.0 {
-		finalResult := gocv.NewMat()
-		gocv.Resize(processed, &finalResult, image.Point{X: src.Cols(), Y: src.Rows()}, 0, 0, gocv.InterpolationLinear)
+		result = gocv.NewMat()
+		gocv.Resize(processed, &result, image.Point{X: src.Cols(), Y: src.Rows()}, 0, 0, gocv.InterpolationLinear)
+		processed.Close()
 		t.debugImage.LogAlgorithmStep("2D Otsu", "Scaled back to original size")
-		result = finalResult
 	} else {
 		result = processed
 	}
@@ -224,7 +208,6 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) (result gocv.Mat)
 
 func (t *TwoDOtsu) applyGuidedFilter(src gocv.Mat, windowRadius int, epsilon float64) gocv.Mat {
 	t.debugImage.LogAlgorithmStep("GuidedFilter", "Starting guided filter implementation")
-	t.debugImage.LogAlgorithmStep("GuidedFilter", fmt.Sprintf("Input: %dx%d, channels=%d", src.Cols(), src.Rows(), src.Channels()))
 
 	// Validate input
 	if src.Empty() {
@@ -238,46 +221,20 @@ func (t *TwoDOtsu) applyGuidedFilter(src gocv.Mat, windowRadius int, epsilon flo
 	src.ConvertTo(&srcFloat, gocv.MatTypeCV32F)
 	srcFloat.DivideFloat(255.0)
 
-	// Validate conversion
-	if srcFloat.Empty() {
-		t.debugImage.LogAlgorithmStep("GuidedFilter", "ERROR: Float conversion failed")
-		return src.Clone()
-	}
-
 	// Parameters
 	kernelSize := 2*windowRadius + 1
-	t.debugImage.LogAlgorithmStep("GuidedFilter", fmt.Sprintf("Using box filter with kernel %dx%d", kernelSize, kernelSize))
 
 	// Mean filters
 	meanI := gocv.NewMat()
 	defer meanI.Close()
 	gocv.BoxFilter(srcFloat, &meanI, -1, image.Point{X: kernelSize, Y: kernelSize})
 
-	// Validate mean filter
-	if meanI.Empty() {
-		t.debugImage.LogAlgorithmStep("GuidedFilter", "ERROR: Mean filter failed")
-		return src.Clone()
-	}
-
 	meanII := gocv.NewMat()
 	defer meanII.Close()
 	srcSquared := gocv.NewMat()
 	defer srcSquared.Close()
 	gocv.Multiply(srcFloat, srcFloat, &srcSquared)
-
-	// Validate multiplication
-	if srcSquared.Empty() {
-		t.debugImage.LogAlgorithmStep("GuidedFilter", "ERROR: Multiplication failed")
-		return src.Clone()
-	}
-
 	gocv.BoxFilter(srcSquared, &meanII, -1, image.Point{X: kernelSize, Y: kernelSize})
-
-	// Validate second mean filter
-	if meanII.Empty() {
-		t.debugImage.LogAlgorithmStep("GuidedFilter", "ERROR: Second mean filter failed")
-		return src.Clone()
-	}
 
 	// Variance calculation
 	varI := gocv.NewMat()
@@ -285,64 +242,24 @@ func (t *TwoDOtsu) applyGuidedFilter(src gocv.Mat, windowRadius int, epsilon flo
 	meanISquared := gocv.NewMat()
 	defer meanISquared.Close()
 	gocv.Multiply(meanI, meanI, &meanISquared)
-
-	// Validate mean squared
-	if meanISquared.Empty() {
-		t.debugImage.LogAlgorithmStep("GuidedFilter", "ERROR: Mean squared calculation failed")
-		return src.Clone()
-	}
-
 	gocv.Subtract(meanII, meanISquared, &varI)
 
-	// Validate variance calculation
-	if varI.Empty() {
-		t.debugImage.LogAlgorithmStep("GuidedFilter", "ERROR: Variance calculation failed")
-		return src.Clone()
-	}
-
-	// Calculate coefficients - FIXED: Use covariance for 'a' coefficient
+	// Calculate coefficients
 	a := gocv.NewMat()
 	defer a.Close()
 	denominator := gocv.NewMat()
 	defer denominator.Close()
 
-	// CORRECTED: For guided filter when input=guide, covariance = variance
 	varI.CopyTo(&denominator)
-
-	// Validate copy operation
-	if denominator.Empty() {
-		t.debugImage.LogAlgorithmStep("GuidedFilter", "ERROR: Denominator copy failed")
-		return src.Clone()
-	}
-
 	denominator.AddFloat(float32(epsilon))
-	gocv.Divide(varI, denominator, &a) // CORRECTED: This is now correct for self-guided case
-
-	// Validate division
-	if a.Empty() {
-		t.debugImage.LogAlgorithmStep("GuidedFilter", "ERROR: Division failed")
-		return src.Clone()
-	}
+	gocv.Divide(varI, denominator, &a)
 
 	b := gocv.NewMat()
 	defer b.Close()
 	temp := gocv.NewMat()
 	defer temp.Close()
 	gocv.Multiply(a, meanI, &temp)
-
-	// Validate temp calculation
-	if temp.Empty() {
-		t.debugImage.LogAlgorithmStep("GuidedFilter", "ERROR: Temp calculation failed")
-		return src.Clone()
-	}
-
 	gocv.Subtract(meanI, temp, &b)
-
-	// Validate b calculation
-	if b.Empty() {
-		t.debugImage.LogAlgorithmStep("GuidedFilter", "ERROR: B calculation failed")
-		return src.Clone()
-	}
 
 	// Smooth coefficients
 	meanA := gocv.NewMat()
@@ -353,47 +270,20 @@ func (t *TwoDOtsu) applyGuidedFilter(src gocv.Mat, windowRadius int, epsilon flo
 	defer meanB.Close()
 	gocv.BoxFilter(b, &meanB, -1, image.Point{X: kernelSize, Y: kernelSize})
 
-	// Validate coefficient smoothing
-	if meanA.Empty() || meanB.Empty() {
-		t.debugImage.LogAlgorithmStep("GuidedFilter", "ERROR: Coefficient smoothing failed")
-		return src.Clone()
-	}
-
 	// Final result
 	resultFloat := gocv.NewMat()
 	defer resultFloat.Close()
 	temp1 := gocv.NewMat()
 	defer temp1.Close()
 	gocv.Multiply(meanA, srcFloat, &temp1)
-
-	// Validate final multiplication
-	if temp1.Empty() {
-		t.debugImage.LogAlgorithmStep("GuidedFilter", "ERROR: Final multiplication failed")
-		return src.Clone()
-	}
-
 	gocv.Add(temp1, meanB, &resultFloat)
-
-	// Validate final addition
-	if resultFloat.Empty() {
-		t.debugImage.LogAlgorithmStep("GuidedFilter", "ERROR: Final addition failed")
-		return src.Clone()
-	}
 
 	// Convert back to uint8
 	result := gocv.NewMat()
 	resultFloat.MultiplyFloat(255.0)
 	resultFloat.ConvertTo(&result, gocv.MatTypeCV8U)
 
-	// Final validation
-	if result.Empty() {
-		t.debugImage.LogAlgorithmStep("GuidedFilter", "ERROR: Final conversion failed")
-		return src.Clone()
-	}
-
-	t.debugImage.LogAlgorithmStep("GuidedFilter", fmt.Sprintf("Result: %dx%d, channels=%d", result.Cols(), result.Rows(), result.Channels()))
 	t.debugImage.LogFilter("GuidedFilter", fmt.Sprintf("radius=%d epsilon=%.3f", windowRadius, epsilon))
-
 	return result
 }
 
@@ -421,21 +311,13 @@ func (t *TwoDOtsu) apply2DOtsu(gray, guided gocv.Mat) gocv.Mat {
 		return gocv.NewMat()
 	}
 
-	t.debugImage.LogAlgorithmStep("2D Otsu", fmt.Sprintf("Gray dimensions: %dx%d", gray.Cols(), gray.Rows()))
-	t.debugImage.LogAlgorithmStep("2D Otsu", fmt.Sprintf("Guided dimensions: %dx%d", guided.Cols(), guided.Rows()))
-	t.debugImage.LogAlgorithmStep("2D Otsu", fmt.Sprintf("Processing %d pixels", len(grayData)))
-
-	// Validate input data integrity
-	t.debugImage.LogMatDataValidation("gray_input", gray)
-	t.debugImage.LogMatDataValidation("guided_input", guided)
-
 	// Build 2D histogram with bounds checking
 	var hist [256][256]int
 	for i := 0; i < len(grayData); i++ {
 		g := int(grayData[i])
 		f := int(guidedData[i])
 
-		// FIXED: Add bounds checking
+		// Add bounds checking
 		if g < 0 {
 			g = 0
 		} else if g > 255 {
@@ -456,11 +338,7 @@ func (t *TwoDOtsu) apply2DOtsu(gray, guided gocv.Mat) gocv.Mat {
 
 	t.debugImage.LogOptimalThresholds(bestS, bestT, maxVariance)
 
-	// Create debug output before binarization
-	t.debugImage.LogPixelDistributionDetailed("gray_before_binarization", gray, 3)
-	t.debugImage.LogPixelDistributionDetailed("guided_before_binarization", guided, 3)
-
-	// Apply thresholding with CORRECTED region-based classification
+	// Apply thresholding with corrected region-based classification
 	t.debugImage.LogAlgorithmStep("2D Otsu", "Binarizing image with corrected 2D Otsu logic")
 
 	size := gray.Size()
@@ -470,13 +348,13 @@ func (t *TwoDOtsu) apply2DOtsu(gray, guided gocv.Mat) gocv.Mat {
 	foregroundCount := 0
 	backgroundCount := 0
 
-	// Process pixel by pixel using CORRECTED 2D Otsu classification
+	// Process pixel by pixel using corrected 2D Otsu classification
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
 			grayVal := int(gray.GetUCharAt(y, x))
 			guidedVal := int(guided.GetUCharAt(y, x))
 
-			// CORRECTED 2D Otsu classification logic
+			// Corrected 2D Otsu classification logic
 			isBackground := t.classifyPixel(grayVal, guidedVal, bestS, bestT)
 
 			if isBackground {
@@ -498,7 +376,7 @@ func (t *TwoDOtsu) apply2DOtsu(gray, guided gocv.Mat) gocv.Mat {
 	return result
 }
 
-// CORRECTED: Proper 2D Otsu classification with region-based logic
+// Proper 2D Otsu classification with region-based logic
 func (t *TwoDOtsu) classifyPixel(grayVal, guidedVal, bestS, bestT int) bool {
 	// 2D Otsu defines 4 regions in the 2D histogram:
 	// Region 1: g <= bestS, f <= bestT (Object/Foreground)
@@ -630,7 +508,6 @@ func (t *TwoDOtsu) createParameterUI() *fyne.Container {
 			t.debugImage.LogAlgorithmStep("2D Otsu Parameters", fmt.Sprintf("Window radius changed: %d -> %d", oldValue, value))
 			if t.onParameterChanged != nil {
 				t.debugImage.LogAlgorithmStep("2D Otsu Parameters", "Calling onParameterChanged callback")
-				// FIXED: Use fyne.Do for thread safety
 				fyne.Do(func() {
 					t.onParameterChanged()
 				})
@@ -658,7 +535,6 @@ func (t *TwoDOtsu) createParameterUI() *fyne.Container {
 			t.debugImage.LogAlgorithmStep("2D Otsu Parameters", fmt.Sprintf("Epsilon changed: %.3f -> %.3f", oldValue, value))
 			if t.onParameterChanged != nil {
 				t.debugImage.LogAlgorithmStep("2D Otsu Parameters", "Calling onParameterChanged callback")
-				// FIXED: Use fyne.Do for thread safety
 				fyne.Do(func() {
 					t.onParameterChanged()
 				})
@@ -686,7 +562,6 @@ func (t *TwoDOtsu) createParameterUI() *fyne.Container {
 			t.debugImage.LogAlgorithmStep("2D Otsu Parameters", fmt.Sprintf("Morphological kernel size changed: %d -> %d", oldValue, value))
 			if t.onParameterChanged != nil {
 				t.debugImage.LogAlgorithmStep("2D Otsu Parameters", "Calling onParameterChanged callback")
-				// FIXED: Use fyne.Do for thread safety
 				fyne.Do(func() {
 					t.onParameterChanged()
 				})

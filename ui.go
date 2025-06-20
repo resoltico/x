@@ -479,12 +479,11 @@ func (ui *ImageRestorationUI) updateUI() {
 func (ui *ImageRestorationUI) updateImageDisplay() {
 	ui.debugGUI.LogUIEvent("updateImageDisplay called")
 
-	if ui.pipeline.HasImage() && !ui.pipeline.originalImage.IsEmpty() {
+	if ui.pipeline.HasImage() && !ui.pipeline.originalImage.Empty() {
 		ui.debugGUI.LogUIEvent("updateImageDisplay: converting original image")
 
-		// Convert original image
-		originalMat := ui.pipeline.originalImage.Mat()
-		originalImg, err := originalMat.ToImage()
+		// Convert original image - now direct Mat access
+		originalImg, err := ui.pipeline.originalImage.ToImage()
 		if err != nil {
 			ui.debugGUI.LogImageConversion("original", false, err.Error())
 			return
@@ -500,7 +499,7 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 		}
 
 		var previewImg image.Image
-		originalChannels := originalMat.Channels()
+		originalChannels := ui.pipeline.originalImage.Channels()
 		previewChannels := previewMat.Channels()
 
 		if originalChannels != previewChannels {
@@ -583,10 +582,9 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 }
 
 func (ui *ImageRestorationUI) updateImageInfo() {
-	if ui.pipeline.HasImage() && !ui.pipeline.originalImage.IsEmpty() {
-		originalMat := ui.pipeline.originalImage.Mat()
-		size := originalMat.Size()
-		channels := originalMat.Channels()
+	if ui.pipeline.HasImage() && !ui.pipeline.originalImage.Empty() {
+		size := ui.pipeline.originalImage.Size()
+		channels := ui.pipeline.originalImage.Channels()
 
 		info := fmt.Sprintf("Size: %dx%d\nChannels: %d", size[1], size[0], channels)
 		ui.imageInfoLabel.ParseMarkdown(info)
