@@ -1,0 +1,295 @@
+gocv.io/x/gocv.Mat profile: total 9
+1 @ 0x104cda17c 0x104cda17d 0x105010fd4 0x10501d4bc 0x10500e720 0x104a23624 0x104a61124
+#	0x104cda17b	gocv.io/x/gocv.newMat+0x3b	/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/mat_profile.go:71
+#	0x104cda17c	gocv.io/x/gocv.NewMat+0x3c	/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/core.go:243
+#	0x105010fd3	main.NewImagePipeline+0xa3	/Users/erst/Library/CloudStorage/Dropbox/Websites/x/pipeline.go:37
+#	0x10501d4bb	main.NewImageRestorationUI+0x2b	/Users/erst/Library/CloudStorage/Dropbox/Websites/x/ui.go:50
+#	0x10500e71f	main.main+0x2ef			/Users/erst/Library/CloudStorage/Dropbox/Websites/x/main.go:68
+#	0x104a23623	runtime.main+0x283		/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/proc.go:283
+
+1 @ 0x104cda17c 0x104cda17d 0x105010fe8 0x10501d4bc 0x10500e720 0x104a23624 0x104a61124
+#	0x104cda17b	gocv.io/x/gocv.newMat+0x3b	/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/mat_profile.go:71
+#	0x104cda17c	gocv.io/x/gocv.NewMat+0x3c	/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/core.go:243
+#	0x105010fe7	main.NewImagePipeline+0xb7	/Users/erst/Library/CloudStorage/Dropbox/Websites/x/pipeline.go:38
+#	0x10501d4bb	main.NewImageRestorationUI+0x2b	/Users/erst/Library/CloudStorage/Dropbox/Websites/x/ui.go:50
+#	0x10500e71f	main.main+0x2ef			/Users/erst/Library/CloudStorage/Dropbox/Websites/x/main.go:68
+#	0x104a23623	runtime.main+0x283		/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/proc.go:283
+
+1 @ 0x104cda17c 0x104cda17d 0x105010ffc 0x10501d4bc 0x10500e720 0x104a23624 0x104a61124
+#	0x104cda17b	gocv.io/x/gocv.newMat+0x3b	/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/mat_profile.go:71
+#	0x104cda17c	gocv.io/x/gocv.NewMat+0x3c	/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/core.go:243
+#	0x105010ffb	main.NewImagePipeline+0xcb	/Users/erst/Library/CloudStorage/Dropbox/Websites/x/pipeline.go:39
+#	0x10501d4bb	main.NewImageRestorationUI+0x2b	/Users/erst/Library/CloudStorage/Dropbox/Websites/x/ui.go:50
+#	0x10500e71f	main.main+0x2ef			/Users/erst/Library/CloudStorage/Dropbox/Websites/x/main.go:68
+#	0x104a23623	runtime.main+0x283		/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/proc.go:283
+
+1 @ 0x104cda17c 0x104cda17d 0x10501a2fc 0x105019b18 0x105013824 0x105011b54 0x105020e4c 0x104a61124
+#	0x104cda17b	gocv.io/x/gocv.newMat+0x3b					/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/mat_profile.go:71
+#	0x104cda17c	gocv.io/x/gocv.NewMat+0x3c					/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/core.go:243
+#	0x10501a2fb	main.(*TwoDOtsu).applyWithScale+0x72b				/Users/erst/Library/CloudStorage/Dropbox/Websites/x/transform_twod_otsu.go:181
+#	0x105019b17	main.(*TwoDOtsu).ApplyPreview+0x27				/Users/erst/Library/CloudStorage/Dropbox/Websites/x/transform_twod_otsu.go:81
+#	0x105013823	main.(*ImagePipeline).processPreviewUnsafe+0x403		/Users/erst/Library/CloudStorage/Dropbox/Websites/x/pipeline.go:377
+#	0x105011b53	main.(*ImagePipeline).AddTransformation+0x1c3			/Users/erst/Library/CloudStorage/Dropbox/Websites/x/pipeline.go:140
+#	0x105020e4b	main.(*ImageRestorationUI).onTransformationSelected.func1+0x15b	/Users/erst/Library/CloudStorage/Dropbox/Websites/x/ui.go:448
+
+1 @ 0x104cda1f8 0x104cda1f9 0x10501bbe8 0x10501a238 0x105019ab8 0x105012fcc 0x105011ad0 0x105020e4c 0x104a61124
+#	0x104cda1f7	gocv.io/x/gocv.newMat+0x47					/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/mat_profile.go:71
+#	0x104cda1f8	gocv.io/x/gocv.NewMatWithSize+0x48				/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/core.go:253
+#	0x10501bbe7	main.(*TwoDOtsu).apply2DOtsuFixed+0x2b7				/Users/erst/Library/CloudStorage/Dropbox/Websites/x/transform_twod_otsu.go:331
+#	0x10501a237	main.(*TwoDOtsu).applyWithScale+0x667				/Users/erst/Library/CloudStorage/Dropbox/Websites/x/transform_twod_otsu.go:163
+#	0x105019ab7	main.(*TwoDOtsu).Apply+0x27					/Users/erst/Library/CloudStorage/Dropbox/Websites/x/transform_twod_otsu.go:77
+#	0x105012fcb	main.(*ImagePipeline).processImageUnsafe+0x42b			/Users/erst/Library/CloudStorage/Dropbox/Websites/x/pipeline.go:302
+#	0x105011acf	main.(*ImagePipeline).AddTransformation+0x13f			/Users/erst/Library/CloudStorage/Dropbox/Websites/x/pipeline.go:135
+#	0x105020e4b	main.(*ImageRestorationUI).onTransformationSelected.func1+0x15b	/Users/erst/Library/CloudStorage/Dropbox/Websites/x/ui.go:448
+
+1 @ 0x104cda1f8 0x104cda1f9 0x10501bbe8 0x10501a238 0x105019ab8 0x105012fcc 0x1050122ac 0x1050204ac 0x104a61124
+#	0x104cda1f7	gocv.io/x/gocv.newMat+0x47				/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/mat_profile.go:71
+#	0x104cda1f8	gocv.io/x/gocv.NewMatWithSize+0x48			/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/core.go:253
+#	0x10501bbe7	main.(*TwoDOtsu).apply2DOtsuFixed+0x2b7			/Users/erst/Library/CloudStorage/Dropbox/Websites/x/transform_twod_otsu.go:331
+#	0x10501a237	main.(*TwoDOtsu).applyWithScale+0x667			/Users/erst/Library/CloudStorage/Dropbox/Websites/x/transform_twod_otsu.go:163
+#	0x105019ab7	main.(*TwoDOtsu).Apply+0x27				/Users/erst/Library/CloudStorage/Dropbox/Websites/x/transform_twod_otsu.go:77
+#	0x105012fcb	main.(*ImagePipeline).processImageUnsafe+0x42b		/Users/erst/Library/CloudStorage/Dropbox/Websites/x/pipeline.go:302
+#	0x1050122ab	main.(*ImagePipeline).ProcessImage+0x7b			/Users/erst/Library/CloudStorage/Dropbox/Websites/x/pipeline.go:194
+#	0x1050204ab	main.(*ImageRestorationUI).saveImage.func1.1+0x6b	/Users/erst/Library/CloudStorage/Dropbox/Websites/x/ui.go:364
+
+1 @ 0x104cda6d4 0x104cda6d5 0x105011428 0x10501fa30 0x104a61124
+#	0x104cda6d3	gocv.io/x/gocv.newMat+0x63				/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/mat_profile.go:71
+#	0x104cda6d4	gocv.io/x/gocv.(*Mat).Clone+0x64			/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/core.go:442
+#	0x105011427	main.(*ImagePipeline).SetOriginalImage+0x167		/Users/erst/Library/CloudStorage/Dropbox/Websites/x/pipeline.go:83
+#	0x10501fa2f	main.(*ImageRestorationUI).openImage.func1.1+0x17f	/Users/erst/Library/CloudStorage/Dropbox/Websites/x/ui.go:301
+
+1 @ 0x104cda6d4 0x104cda6d5 0x10501c4a4 0x10501a2a4 0x105019ab8 0x105012fcc 0x1050122ac 0x1050204ac 0x104a61124
+#	0x104cda6d3	gocv.io/x/gocv.newMat+0x63				/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/mat_profile.go:71
+#	0x104cda6d4	gocv.io/x/gocv.(*Mat).Clone+0x64			/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/core.go:442
+#	0x10501c4a3	main.(*TwoDOtsu).applyMorphologicalOps+0x53		/Users/erst/Library/CloudStorage/Dropbox/Websites/x/transform_twod_otsu.go:491
+#	0x10501a2a3	main.(*TwoDOtsu).applyWithScale+0x6d3			/Users/erst/Library/CloudStorage/Dropbox/Websites/x/transform_twod_otsu.go:176
+#	0x105019ab7	main.(*TwoDOtsu).Apply+0x27				/Users/erst/Library/CloudStorage/Dropbox/Websites/x/transform_twod_otsu.go:77
+#	0x105012fcb	main.(*ImagePipeline).processImageUnsafe+0x42b		/Users/erst/Library/CloudStorage/Dropbox/Websites/x/pipeline.go:302
+#	0x1050122ab	main.(*ImagePipeline).ProcessImage+0x7b			/Users/erst/Library/CloudStorage/Dropbox/Websites/x/pipeline.go:194
+#	0x1050204ab	main.(*ImageRestorationUI).saveImage.func1.1+0x6b	/Users/erst/Library/CloudStorage/Dropbox/Websites/x/ui.go:364
+
+1 @ 0x104cddc98 0x104cddc31 0x10501f908 0x104a61124
+#	0x104cddc97	gocv.io/x/gocv.newMat+0x87				/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/mat_profile.go:71
+#	0x104cddc30	gocv.io/x/gocv.IMRead+0x20				/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/imgcodecs.go:142
+#	0x10501f907	main.(*ImageRestorationUI).openImage.func1.1+0x57	/Users/erst/Library/CloudStorage/Dropbox/Websites/x/ui.go:285
+
+
+
+
+
+[10:10:52 AM] % ./image-restoration-suite
+2025/06/20 10:10:54 === MEMORY TRACKING INITIALIZED ===
+2025/06/20 10:10:54 Initial MatProfile count: 0
+2025/06/20 10:10:54 Go version: go1.24.4
+2025/06/20 10:10:54 GOMAXPROCS: 8
+2025/06/20 10:10:54 Starting pprof server on :6060
+2025/06/20 10:10:54 Memory profiler available at: http://localhost:6060/debug/pprof/
+2025/06/20 10:10:54 Mat-specific profiling at: http://localhost:6060/debug/pprof/gocv.io/x/gocv.Mat
+2025/06/20 10:10:54 === STARTING IMAGE RESTORATION SUITE ===
+2025/06/20 10:10:54 Debug configuration:
+2025/06/20 10:10:54   GUI debugging: true
+2025/06/20 10:10:54   Image debugging: true
+2025/06/20 10:10:54   Pipeline debugging: true
+2025/06/20 10:10:54   Render debugging: true
+2025/06/20 10:10:54 ========================================
+2025/06/20 10:12:27 [GUI DEBUG] Button clicked: OPEN IMAGE
+2025/06/20 10:12:32 [GUI DEBUG] File operation: open - Ut feritur ferit.png
+2025/06/20 10:12:32 [GUI DEBUG] Image Info - Size: 1400x995, Channels: 3
+2025/06/20 10:12:32 [PIPELINE DEBUG] Clearing all transformations
+2025/06/20 10:12:32 [PIPELINE DEBUG] SetOriginalImage called
+2025/06/20 10:12:32 [PIPELINE DEBUG] MatProfile count at start: 4
+2025/06/20 10:12:32 [PIPELINE DEBUG] SetOriginalImage: cloning original image
+2025/06/20 10:12:32 [PIPELINE DEBUG] SetOriginalImage: creating processed image
+2025/06/20 10:12:32 [PIPELINE DEBUG] SetOriginalImage: creating preview image
+2025/06/20 10:12:32 [PIPELINE DEBUG] Image 'original': 1400x995, 3 channels, type 16, size 4179000 bytes
+2025/06/20 10:12:32 [GUI DEBUG] Image loaded successfully
+2025/06/20 10:12:32 [GUI DEBUG] UI Event: updateImageDisplay called
+2025/06/20 10:12:32 [GUI DEBUG] UI Event: updateImageDisplay: converting original image
+2025/06/20 10:12:32 [GUI DEBUG] Image conversion successful: original
+2025/06/20 10:12:32 [RENDER DEBUG] Image 'original' properties: bounds=(0,0,1400,995), size=1400x995
+2025/06/20 10:12:32 [RENDER DEBUG] Image 'original' format: RGBA
+2025/06/20 10:12:32 [RENDER DEBUG] Image 'original' RGBA sample 0 at (5,5): (255,255,255,255)
+2025/06/20 10:12:32 [RENDER DEBUG] Image 'original' RGBA sample 1 at (700,497): (255,255,255,255)
+2025/06/20 10:12:32 [RENDER DEBUG] Image 'original' RGBA sample 2 at (1395,990): (255,255,255,255)
+2025/06/20 10:12:32 [RENDER DEBUG] Mat 'preview' conversion: 1400x995, channels=3, type=16
+2025/06/20 10:12:32 [RENDER DEBUG] Mat 'preview' conversion to image.Image: SUCCESS
+2025/06/20 10:12:32 [GUI DEBUG] Image conversion successful: preview
+2025/06/20 10:12:32 [RENDER DEBUG] Image 'preview' properties: bounds=(0,0,1400,995), size=1400x995
+2025/06/20 10:12:32 [RENDER DEBUG] Image 'preview' format: RGBA
+2025/06/20 10:12:32 [RENDER DEBUG] Image 'preview' RGBA sample 0 at (5,5): (255,255,255,255)
+2025/06/20 10:12:32 [RENDER DEBUG] Image 'preview' RGBA sample 1 at (700,497): (255,255,255,255)
+2025/06/20 10:12:32 [RENDER DEBUG] Image 'preview' RGBA sample 2 at (1395,990): (255,255,255,255)
+2025/06/20 10:12:32 [RENDER DEBUG] CONTENT ANALYSIS for 'preview_final':
+2025/06/20 10:12:32 [RENDER DEBUG]   Sample 0 at (5,5): RGBA(255,255,255,255)
+2025/06/20 10:12:32 [RENDER DEBUG]   Sample 1 at (350,248): RGBA(149,140,130,255)
+2025/06/20 10:12:32 [RENDER DEBUG]   Sample 2 at (700,497): RGBA(255,255,255,255)
+2025/06/20 10:12:32 [RENDER DEBUG]   Sample 3 at (1050,746): RGBA(61,54,44,255)
+2025/06/20 10:12:32 [RENDER DEBUG]   Sample 4 at (1395,990): RGBA(255,255,255,255)
+2025/06/20 10:12:32 [RENDER DEBUG] Color distribution in 5 samples:
+2025/06/20 10:12:32 [RENDER DEBUG]   white: 3 (60.0%)
+2025/06/20 10:12:32 [RENDER DEBUG]   other: 2 (40.0%)
+2025/06/20 10:12:32 [RENDER DEBUG] Image 'preview_final' has mixed/grayscale content
+2025/06/20 10:12:32 [GUI DEBUG] Canvas refreshed: originalImage
+2025/06/20 10:12:32 [GUI DEBUG] Canvas refreshed: previewImage
+2025/06/20 10:12:32 [GUI DEBUG] UI Event: updateImageDisplay: completed successfully
+2025/06/20 10:12:32 [GUI DEBUG] Quality metrics update: PSNR=0.00, SSIM=0.0000, hasTransformations=false
+2025/06/20 10:12:48 [GUI DEBUG] List 'available transformations' selection: ID=0, Name='2D Otsu'
+2025/06/20 10:12:48 [PIPELINE DEBUG] processImage called
+2025/06/20 10:12:48 [PIPELINE DEBUG] MatProfile count at start: 7
+2025/06/20 10:12:48 [PIPELINE DEBUG] processImage: creating new processed image
+2025/06/20 10:12:48 [PIPELINE DEBUG] processImage: applying 1 transformations
+2025/06/20 10:12:48 [IMAGE DEBUG] 2D Otsu Fixed - Starting binarization (scale: 1.00)
+2025/06/20 10:12:48 [IMAGE DEBUG] Mat 'grayscale': 1400x995, channels=1, type=0, elemSize=1
+2025/06/20 10:12:48 [IMAGE DEBUG] GuidedFilter Fixed - Starting corrected guided filter
+2025/06/20 10:12:48 [IMAGE DEBUG] Applied filter: GuidedFilter Fixed with params: [radius=5 epsilon=0.020]
+2025/06/20 10:12:48 [IMAGE DEBUG] 2D Otsu Fixed - Constructing 2D histogram with correct algorithm
+2025/06/20 10:13:04 [IMAGE DEBUG] Optimal thresholds found: s=110, t=220, variance=13830.133808
+2025/06/20 10:13:04 [IMAGE DEBUG] 2D Otsu Fixed - Applying corrected 2D Otsu classification
+2025/06/20 10:13:20 [IMAGE DEBUG] 2D Otsu Fixed - Binarization completed with corrected algorithm
+2025/06/20 10:13:20 [IMAGE DEBUG] 2D Otsu Fixed - Completed successfully
+2025/06/20 10:13:20 [PIPELINE DEBUG] Operation 'transformation_0_2D Otsu' took 32.085635042s
+2025/06/20 10:13:20 [PIPELINE DEBUG] Transformation '2D Otsu' applied in 32.085635042s
+2025/06/20 10:13:20 [PIPELINE DEBUG]   Before: 1400x995, 3 channels
+2025/06/20 10:13:20 [PIPELINE DEBUG]   After:  1400x995, 1 channels
+2025/06/20 10:13:20 [PIPELINE DEBUG] processImage: completed successfully
+2025/06/20 10:13:20 [PIPELINE DEBUG] MatProfile count at completion: 8
+2025/06/20 10:13:20 [PIPELINE DEBUG] Operation 'processImage' took 32.119955417s
+2025/06/20 10:13:20 [PIPELINE DEBUG] Pipeline Stats:
+2025/06/20 10:13:20 [PIPELINE DEBUG]   Original size: 1400x995
+2025/06/20 10:13:20 [PIPELINE DEBUG]   Processed size: 1400x995
+2025/06/20 10:13:20 [PIPELINE DEBUG]   Number of transformations: 1
+2025/06/20 10:13:20 [PIPELINE DEBUG]   Total processing time: 32.085635042s
+2025/06/20 10:13:20 [PIPELINE DEBUG]   Current MatProfile count: 8
+2025/06/20 10:13:20 [PIPELINE DEBUG] Memory - Go Alloc: 71.83 MB, TotalAlloc: 157.81 MB, Sys: 111.83 MB, NumGC: 11, MatProfile: 8 Mats
+2025/06/20 10:13:20 [PIPELINE DEBUG] processImage called
+2025/06/20 10:13:20 [PIPELINE DEBUG] MatProfile count at start: 8
+2025/06/20 10:13:20 [IMAGE DEBUG] 2D Otsu Fixed - Starting binarization (scale: 0.50)
+2025/06/20 10:13:20 [IMAGE DEBUG] 2D Otsu Fixed - Scaled to 700x497
+2025/06/20 10:13:20 [IMAGE DEBUG] Mat 'grayscale': 700x497, channels=1, type=0, elemSize=1
+2025/06/20 10:13:20 [IMAGE DEBUG] GuidedFilter Fixed - Starting corrected guided filter
+2025/06/20 10:13:20 [IMAGE DEBUG] Applied filter: GuidedFilter Fixed with params: [radius=5 epsilon=0.020]
+2025/06/20 10:13:20 [IMAGE DEBUG] 2D Otsu Fixed - Constructing 2D histogram with correct algorithm
+2025/06/20 10:13:36 [IMAGE DEBUG] Optimal thresholds found: s=114, t=219, variance=13182.354675
+2025/06/20 10:13:36 [IMAGE DEBUG] 2D Otsu Fixed - Applying corrected 2D Otsu classification
+2025/06/20 10:13:40 [IMAGE DEBUG] 2D Otsu Fixed - Binarization completed with corrected algorithm
+2025/06/20 10:13:40 [IMAGE DEBUG] 2D Otsu Fixed - Scaled back to original size
+2025/06/20 10:13:40 [IMAGE DEBUG] 2D Otsu Fixed - Completed successfully
+2025/06/20 10:13:40 [PIPELINE DEBUG] Operation 'preview_transformation_0_2D Otsu' took 19.646589083s
+2025/06/20 10:13:40 [PIPELINE DEBUG] Transformation '2D Otsu (preview)' applied in 19.646589083s
+2025/06/20 10:13:40 [PIPELINE DEBUG]   Before: 1400x995, 3 channels
+2025/06/20 10:13:40 [PIPELINE DEBUG]   After:  1400x995, 1 channels
+2025/06/20 10:13:40 [PIPELINE DEBUG] Operation 'processPreview' took 19.648537417s
+2025/06/20 10:13:40 [PIPELINE DEBUG] Pipeline Stats:
+2025/06/20 10:13:40 [PIPELINE DEBUG]   Original size: 1400x995
+2025/06/20 10:13:40 [PIPELINE DEBUG]   Processed size: 1400x995
+2025/06/20 10:13:40 [PIPELINE DEBUG]   Number of transformations: 1
+2025/06/20 10:13:40 [PIPELINE DEBUG]   Total processing time: 51.732224125s
+2025/06/20 10:13:40 [PIPELINE DEBUG]   Current MatProfile count: 8
+2025/06/20 10:13:40 [GUI DEBUG] Applied Transformation: 2D Otsu with params: map[epsilon:0.02 morphKernelSize:3 windowRadius:5]
+2025/06/20 10:13:40 [GUI DEBUG] Transformation '2D Otsu' applied successfully
+2025/06/20 10:13:40 [GUI DEBUG] UI Event: updateImageDisplay called
+2025/06/20 10:13:40 [GUI DEBUG] UI Event: updateImageDisplay: converting original image
+2025/06/20 10:13:40 [GUI DEBUG] Image conversion successful: original
+2025/06/20 10:13:40 [RENDER DEBUG] Image 'original' properties: bounds=(0,0,1400,995), size=1400x995
+2025/06/20 10:13:40 [RENDER DEBUG] Image 'original' format: RGBA
+2025/06/20 10:13:40 [RENDER DEBUG] Image 'original' RGBA sample 0 at (5,5): (255,255,255,255)
+2025/06/20 10:13:40 [RENDER DEBUG] Image 'original' RGBA sample 1 at (700,497): (255,255,255,255)
+2025/06/20 10:13:40 [RENDER DEBUG] Image 'original' RGBA sample 2 at (1395,990): (255,255,255,255)
+2025/06/20 10:13:40 [GUI DEBUG] Image format change 'preview': 3 channels -> 1 channels
+2025/06/20 10:13:40 [RENDER DEBUG] ATTEMPTING ENHANCED BINARY->RGB CONVERSION
+2025/06/20 10:13:40 [RENDER DEBUG] Mat 'preview_method1' conversion: 1400x995, channels=3, type=16
+2025/06/20 10:13:40 [RENDER DEBUG] Mat 'preview_method1' conversion to image.Image: SUCCESS
+2025/06/20 10:13:40 [RENDER DEBUG] SUCCESS: Standard OpenCV conversion
+2025/06/20 10:13:40 [GUI DEBUG] Image conversion successful: preview
+2025/06/20 10:13:40 [RENDER DEBUG] Image 'preview' properties: bounds=(0,0,1400,995), size=1400x995
+2025/06/20 10:13:40 [RENDER DEBUG] Image 'preview' format: RGBA
+2025/06/20 10:13:40 [RENDER DEBUG] Image 'preview' RGBA sample 0 at (5,5): (255,255,255,255)
+2025/06/20 10:13:40 [RENDER DEBUG] Image 'preview' RGBA sample 1 at (700,497): (255,255,255,255)
+2025/06/20 10:13:40 [RENDER DEBUG] Image 'preview' RGBA sample 2 at (1395,990): (255,255,255,255)
+2025/06/20 10:13:40 [RENDER DEBUG] CONTENT ANALYSIS for 'preview_final':
+2025/06/20 10:13:40 [RENDER DEBUG]   Sample 0 at (5,5): RGBA(255,255,255,255)
+2025/06/20 10:13:40 [RENDER DEBUG]   Sample 1 at (350,248): RGBA(134,134,134,255)
+2025/06/20 10:13:40 [RENDER DEBUG]   Sample 2 at (700,497): RGBA(255,255,255,255)
+2025/06/20 10:13:40 [RENDER DEBUG]   Sample 3 at (1050,746): RGBA(159,159,159,255)
+2025/06/20 10:13:40 [RENDER DEBUG]   Sample 4 at (1395,990): RGBA(255,255,255,255)
+2025/06/20 10:13:40 [RENDER DEBUG] Color distribution in 5 samples:
+2025/06/20 10:13:40 [RENDER DEBUG]   white: 3 (60.0%)
+2025/06/20 10:13:40 [RENDER DEBUG]   other: 2 (40.0%)
+2025/06/20 10:13:40 [RENDER DEBUG] Image 'preview_final' has mixed/grayscale content
+2025/06/20 10:13:40 [GUI DEBUG] Canvas refreshed: originalImage
+2025/06/20 10:13:40 [GUI DEBUG] Canvas refreshed: previewImage
+2025/06/20 10:13:40 [GUI DEBUG] UI Event: updateImageDisplay: completed successfully
+2025/06/20 10:13:40 [GUI DEBUG] List 'available transformations' unselected/cleared
+2025/06/20 10:13:40 [GUI DEBUG] Quality metrics update: PSNR=33.12, SSIM=0.9971, hasTransformations=true
+2025/06/20 10:13:57 [IMAGE DEBUG] 2D Otsu Fixed Parameters - Morphological kernel size changed: 3 -> 1
+2025/06/20 10:16:56 [GUI DEBUG] Button clicked: SAVE IMAGE
+2025/06/20 10:16:59 [GUI DEBUG] File operation: save - 111
+2025/06/20 10:16:59 [GUI DEBUG] File extension check: '111' -> '', valid=false
+2025/06/20 10:16:59 [GUI DEBUG] Added .png extension to filename
+2025/06/20 10:16:59 [GUI DEBUG] Forcing full reprocessing before save to ensure latest parameters
+2025/06/20 10:16:59 [PIPELINE DEBUG] ProcessImage: Force reprocessing full resolution image
+2025/06/20 10:16:59 [PIPELINE DEBUG] processImage called
+2025/06/20 10:16:59 [PIPELINE DEBUG] MatProfile count at start: 8
+2025/06/20 10:16:59 [PIPELINE DEBUG] processImage: creating new processed image
+2025/06/20 10:16:59 [PIPELINE DEBUG] processImage: applying 1 transformations
+2025/06/20 10:16:59 [IMAGE DEBUG] 2D Otsu Fixed - Starting binarization (scale: 1.00)
+2025/06/20 10:16:59 [IMAGE DEBUG] Mat 'grayscale': 1400x995, channels=1, type=0, elemSize=1
+2025/06/20 10:16:59 [IMAGE DEBUG] GuidedFilter Fixed - Starting corrected guided filter
+2025/06/20 10:17:00 [IMAGE DEBUG] Applied filter: GuidedFilter Fixed with params: [radius=5 epsilon=0.020]
+2025/06/20 10:17:00 [IMAGE DEBUG] 2D Otsu Fixed - Constructing 2D histogram with correct algorithm
+2025/06/20 10:17:15 [IMAGE DEBUG] Optimal thresholds found: s=110, t=220, variance=13830.133808
+2025/06/20 10:17:15 [IMAGE DEBUG] 2D Otsu Fixed - Applying corrected 2D Otsu classification
+2025/06/20 10:17:32 [IMAGE DEBUG] 2D Otsu Fixed - Binarization completed with corrected algorithm
+2025/06/20 10:17:32 [IMAGE DEBUG] 2D Otsu Fixed - Completed successfully
+2025/06/20 10:17:32 [PIPELINE DEBUG] Operation 'transformation_0_2D Otsu' took 32.072531084s
+2025/06/20 10:17:32 [PIPELINE DEBUG] Transformation '2D Otsu' applied in 32.072531084s
+2025/06/20 10:17:32 [PIPELINE DEBUG]   Before: 1400x995, 3 channels
+2025/06/20 10:17:32 [PIPELINE DEBUG]   After:  1400x995, 1 channels
+2025/06/20 10:17:32 [PIPELINE DEBUG] processImage: completed successfully
+2025/06/20 10:17:32 [PIPELINE DEBUG] MatProfile count at completion: 9
+2025/06/20 10:17:32 [PIPELINE DEBUG] Operation 'processImage' took 32.075182458s
+2025/06/20 10:17:32 [PIPELINE DEBUG] Pipeline Stats:
+2025/06/20 10:17:32 [PIPELINE DEBUG]   Original size: 1400x995
+2025/06/20 10:17:32 [PIPELINE DEBUG]   Processed size: 1400x995
+2025/06/20 10:17:32 [PIPELINE DEBUG]   Number of transformations: 1
+2025/06/20 10:17:32 [PIPELINE DEBUG]   Total processing time: 1m23.804755209s
+2025/06/20 10:17:32 [PIPELINE DEBUG]   Current MatProfile count: 9
+2025/06/20 10:17:32 [PIPELINE DEBUG] Memory - Go Alloc: 31.95 MB, TotalAlloc: 608.32 MB, Sys: 160.15 MB, NumGC: 21, MatProfile: 9 Mats
+2025/06/20 10:17:32 [GUI DEBUG] Save operation: file='111.png', ext='.png', hasImage=true
+2025/06/20 10:17:32 [GUI DEBUG] Save successful: 111.png
+2025/06/20 10:17:32 [GUI DEBUG] Image saved successfully
+2025/06/20 10:19:51 === APPLICATION SHUTDOWN INITIATED ===
+2025/06/20 10:19:51 Performing comprehensive cleanup...
+2025/06/20 10:19:51 Closing image pipeline...
+2025/06/20 10:19:51 [PIPELINE DEBUG] Resource cleanup successful: originalImage
+2025/06/20 10:19:51 [PIPELINE DEBUG] MatProfile count after cleanup: 9
+2025/06/20 10:19:51 [PIPELINE DEBUG] Resource cleanup successful: processedImage
+2025/06/20 10:19:51 [PIPELINE DEBUG] MatProfile count after cleanup: 8
+2025/06/20 10:19:51 [PIPELINE DEBUG] Resource cleanup successful: previewImage
+2025/06/20 10:19:51 [PIPELINE DEBUG] MatProfile count after cleanup: 7
+2025/06/20 10:19:51 Pipeline closed successfully
+2025/06/20 10:19:51 Waiting for cleanup operations to complete...
+2025/06/20 10:19:51 Running final garbage collection...
+2025/06/20 10:19:51 Cleanup completed in 109.4115ms
+2025/06/20 10:19:51 === FINAL MEMORY ANALYSIS ===
+2025/06/20 10:19:51 Initial MatProfile count: 0
+2025/06/20 10:19:51 Final MatProfile count: 6
+2025/06/20 10:19:51 Net change: +6 Mats
+2025/06/20 10:19:51 Go Memory Stats:
+2025/06/20 10:19:51   Allocated: 26.31 MB
+2025/06/20 10:19:51   Total Allocated: 736.98 MB
+2025/06/20 10:19:51   System Memory: 160.15 MB
+2025/06/20 10:19:51   GC Runs: 28
+2025/06/20 10:19:51   Last GC: 423µs ago
+2025/06/20 10:19:51 ⚠️  WARNING: MEMORY LEAKS DETECTED!
+2025/06/20 10:19:51    6 Mat(s) were not properly closed
+2025/06/20 10:19:51    This indicates missing defer mat.Close() calls
+2025/06/20 10:19:51    Check MatProfile for details: http://localhost:6060/debug/pprof/gocv.io/x/gocv.Mat
+2025/06/20 10:19:51    🔥 ACTIVE LEAK: 6 new Mat(s) created during session
+2025/06/20 10:19:51 === SESSION SUMMARY ===
+2025/06/20 10:19:51 Total operations: 3
+2025/06/20 10:19:51 Total processing time: 1m23.804755209s
+2025/06/20 10:19:51 Average operation time: 27.934918403s
+2025/06/20 10:19:51 Application shutdown complete.
+2025/06/20 10:19:51 =====================================
+[10:20:34 AM] % 

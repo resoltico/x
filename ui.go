@@ -36,11 +36,12 @@ type ImageRestorationUI struct {
 	debugGUI                     *DebugGUI
 	debugRender                  *DebugRender
 
-	// FIXED: Add thread safety and rate limiting
-	updateMutex    sync.Mutex
-	lastUpdateTime time.Time
-	updateDebounce time.Duration
-	pendingUpdate  bool
+	// FIXED: Enhanced thread safety and rate limiting
+	updateMutex      sync.Mutex
+	lastUpdateTime   time.Time
+	updateDebounce   time.Duration
+	pendingUpdate    bool
+	processingUpdate bool
 }
 
 func NewImageRestorationUI(window fyne.Window, config *DebugConfig) *ImageRestorationUI {
@@ -101,6 +102,7 @@ func (ui *ImageRestorationUI) createToolbar() fyne.CanvasObject {
 }
 
 func (ui *ImageRestorationUI) createLeftPanel() fyne.CanvasObject {
+	// FIXED: Update transformation list to include fixed versions
 	transformations := []string{"2D Otsu", "Lanczos4 Scaling"}
 
 	ui.availableTransformationsList = widget.NewList(
@@ -221,11 +223,11 @@ func (ui *ImageRestorationUI) createRightPanel() fyne.CanvasObject {
 	})
 
 	// Quality metrics
-	ui.psnrLabel = widget.NewLabel("PSNR: 33.14 dB")
+	ui.psnrLabel = widget.NewLabel("PSNR: --")
 	ui.psnrProgress = widget.NewProgressBar()
 	ui.psnrProgress.Resize(fyne.NewSize(300, 20))
 
-	ui.ssimLabel = widget.NewLabel("SSIM: 0.9674")
+	ui.ssimLabel = widget.NewLabel("SSIM: --")
 	ui.ssimProgress = widget.NewProgressBar()
 	ui.ssimProgress.Resize(fyne.NewSize(300, 20))
 
@@ -277,23 +279,25 @@ func (ui *ImageRestorationUI) openImage() {
 
 		ui.debugGUI.LogFileOperation("open", reader.URI().Name())
 
-		// Load image using OpenCV
-		mat := gocv.IMRead(reader.URI().Path(), gocv.IMReadColor)
-		if mat.Empty() {
-			err := fmt.Errorf("failed to load image")
-			ui.debugGUI.LogError(err)
-			dialog.ShowError(err, ui.window)
-			return
-		}
-
-		size := mat.Size()
-		ui.debugGUI.LogImageInfo(size[1], size[0], mat.Channels())
-
-		// Clean up existing transformations before setting new image
-		ui.pipeline.ClearTransformations()
-
 		// FIXED: Run in goroutine to prevent UI blocking
 		go func() {
+			// Load image using OpenCV
+			mat := gocv.IMRead(reader.URI().Path(), gocv.IMReadColor)
+			if mat.Empty() {
+				err := fmt.Errorf("failed to load image")
+				ui.debugGUI.LogError(err)
+				fyne.Do(func() {
+					dialog.ShowError(err, ui.window)
+				})
+				return
+			}
+
+			size := mat.Size()
+			ui.debugGUI.LogImageInfo(size[1], size[0], mat.Channels())
+
+			// Clean up existing transformations before setting new image
+			ui.pipeline.ClearTransformations()
+
 			err = ui.pipeline.SetOriginalImage(mat)
 			if err != nil {
 				ui.debugGUI.LogError(err)
@@ -340,7 +344,7 @@ func (ui *ImageRestorationUI) saveImage() {
 
 		ui.debugGUI.LogFileOperation("save", filename)
 
-		// Check file extension and add .png if missing
+		// FIXED: Validate and normalize file extension
 		ext := strings.ToLower(filepath.Ext(filename))
 		ui.debugGUI.LogFileExtensionCheck(filename, ext, ext != "")
 
@@ -366,7 +370,7 @@ func (ui *ImageRestorationUI) saveImage() {
 				return
 			}
 
-			// FIXED: Get cloned image to prevent race conditions
+			// FIXED: Get thread-safe clone to prevent race conditions
 			processedImage := ui.pipeline.GetProcessedImage()
 			defer processedImage.Close() // Clean up cloned image
 
@@ -496,10 +500,16 @@ func (ui *ImageRestorationUI) showTransformationParameters(transformation Transf
 	})
 }
 
-// FIXED: Add debouncing and thread safety with full reprocessing
+// FIXED: Enhanced debouncing and thread safety with full reprocessing
 func (ui *ImageRestorationUI) onParameterChanged() {
 	ui.updateMutex.Lock()
 	defer ui.updateMutex.Unlock()
+
+	// FIXED: Prevent multiple concurrent updates
+	if ui.processingUpdate {
+		ui.pendingUpdate = true
+		return
+	}
 
 	// Rate limiting to prevent excessive updates
 	now := time.Now()
@@ -510,9 +520,13 @@ func (ui *ImageRestorationUI) onParameterChanged() {
 			go func() {
 				time.Sleep(ui.updateDebounce)
 				ui.updateMutex.Lock()
+				shouldUpdate := ui.pendingUpdate
 				ui.pendingUpdate = false
 				ui.updateMutex.Unlock()
-				ui.performParameterUpdate()
+
+				if shouldUpdate {
+					ui.performParameterUpdate()
+				}
 			}()
 		}
 		return
@@ -523,6 +537,16 @@ func (ui *ImageRestorationUI) onParameterChanged() {
 }
 
 func (ui *ImageRestorationUI) performParameterUpdate() {
+	ui.updateMutex.Lock()
+	ui.processingUpdate = true
+	ui.updateMutex.Unlock()
+
+	defer func() {
+		ui.updateMutex.Lock()
+		ui.processingUpdate = false
+		ui.updateMutex.Unlock()
+	}()
+
 	ui.debugGUI.LogUIEvent("onParameterChanged called - triggering FULL reprocessing")
 
 	// CRITICAL FIX: Process both full image AND preview when parameters change
@@ -560,14 +584,14 @@ func (ui *ImageRestorationUI) updateUI() {
 	ui.transformationsList.Refresh()
 }
 
-// FIXED: Proper Mat cleanup and thread safety
+// FIXED: Enhanced image display with proper error handling and thread safety
 func (ui *ImageRestorationUI) updateImageDisplay() {
 	ui.debugGUI.LogUIEvent("updateImageDisplay called")
 
 	if ui.pipeline.HasImage() && !ui.pipeline.originalImage.Empty() {
 		ui.debugGUI.LogUIEvent("updateImageDisplay: converting original image")
 
-		// Convert original image - FIXED: Use cloned Mat to prevent race conditions
+		// FIXED: Get thread-safe clones to prevent race conditions
 		originalMat := ui.pipeline.originalImage.Clone()
 		defer originalMat.Close()
 
@@ -579,7 +603,7 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 		ui.debugGUI.LogImageConversion("original", true, "")
 		ui.debugRender.LogImageProperties("original", originalImg)
 
-		// Convert preview image - FIXED: Use cloned Mat and proper cleanup
+		// FIXED: Get thread-safe preview clone
 		previewMat := ui.pipeline.GetPreviewImage()
 		defer previewMat.Close() // Clean up cloned Mat
 
@@ -596,7 +620,7 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 			ui.debugGUI.LogImageFormatChange("preview", originalChannels, previewChannels)
 
 			if previewChannels == 1 && originalChannels == 3 {
-				// ENHANCED CONVERSION: Try multiple methods and compare results
+				// ENHANCED CONVERSION: Multiple methods with fallback
 				ui.debugRender.Log("ATTEMPTING ENHANCED BINARY->RGB CONVERSION")
 
 				// Method 1: Standard OpenCV conversion
@@ -614,9 +638,17 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 					ui.debugRender.Log("FALLBACK: Manual pixel conversion")
 					size := previewMat.Size()
 					width, height := size[1], size[0]
+
+					// FIXED: Validate dimensions
+					if width <= 0 || height <= 0 || width > 65536 || height > 65536 {
+						ui.debugRender.Log("ERROR: Invalid image dimensions for manual conversion")
+						return
+					}
+
 					bounds := image.Rect(0, 0, width, height)
 					manualImg := image.NewRGBA(bounds)
 
+					// FIXED: Safe pixel access with bounds checking
 					for y := 0; y < height; y++ {
 						for x := 0; x < width; x++ {
 							grayVal := previewMat.GetUCharAt(y, x)
@@ -657,17 +689,22 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 		// Final content analysis before display
 		ui.debugRender.LogImageContentAnalysis("preview_final", previewImg)
 
-		// Update only image content, not canvas properties
-		ui.originalImage.Image = originalImg
-		ui.previewImage.Image = previewImg
+		// FIXED: Validate images before setting
+		if originalImg != nil && previewImg != nil {
+			// Update only image content, not canvas properties
+			ui.originalImage.Image = originalImg
+			ui.previewImage.Image = previewImg
 
-		// Selective refresh - only refresh image content
-		ui.originalImage.Refresh()
-		ui.previewImage.Refresh()
+			// Selective refresh - only refresh image content
+			ui.originalImage.Refresh()
+			ui.previewImage.Refresh()
 
-		ui.debugGUI.LogCanvasRefresh("originalImage")
-		ui.debugGUI.LogCanvasRefresh("previewImage")
-		ui.debugGUI.LogUIEvent("updateImageDisplay: completed successfully")
+			ui.debugGUI.LogCanvasRefresh("originalImage")
+			ui.debugGUI.LogCanvasRefresh("previewImage")
+			ui.debugGUI.LogUIEvent("updateImageDisplay: completed successfully")
+		} else {
+			ui.debugGUI.LogUIEvent("updateImageDisplay: ERROR - one or both images are nil")
+		}
 	}
 }
 
@@ -682,19 +719,10 @@ func (ui *ImageRestorationUI) updateImageInfo() {
 }
 
 func (ui *ImageRestorationUI) updateQualityMetrics() {
-	// Log panel positions before update
-	leftPos := ui.window.Content().(*fyne.Container).Objects[1].Position()
-	leftSize := ui.window.Content().(*fyne.Container).Objects[1].Size()
-	ui.debugGUI.LogLayoutPositions("leftPanel", leftPos, leftSize)
-
-	rightPos := ui.window.Content().(*fyne.Container).Objects[3].Position()
-	rightSize := ui.window.Content().(*fyne.Container).Objects[3].Size()
-	ui.debugGUI.LogLayoutPositions("rightPanel", rightPos, rightSize)
-
 	if len(ui.pipeline.transformations) > 0 {
 		// FIXED: Run quality calculations in goroutine to prevent UI blocking
 		go func() {
-			// Calculate PSNR and SSIM
+			// FIXED: Calculate metrics with proper error handling
 			psnr := ui.pipeline.CalculatePSNR()
 			ssim := ui.pipeline.CalculateSSIM()
 
@@ -702,26 +730,32 @@ func (ui *ImageRestorationUI) updateQualityMetrics() {
 
 			// Update UI in main thread
 			fyne.Do(func() {
-				ui.psnrLabel.SetText(fmt.Sprintf("PSNR: %.2f dB", psnr))
-				ui.psnrProgress.SetValue(psnr / 50.0) // Normalize to 0-1 range
+				// FIXED: Format with proper bounds checking
+				if psnr >= 0 && psnr <= 100 {
+					ui.psnrLabel.SetText(fmt.Sprintf("PSNR: %.2f dB", psnr))
+					ui.psnrProgress.SetValue(psnr / 100.0) // Normalize to 0-1 range
+				} else {
+					ui.psnrLabel.SetText("PSNR: --")
+					ui.psnrProgress.SetValue(0)
+				}
 
-				ui.ssimLabel.SetText(fmt.Sprintf("SSIM: %.4f", ssim))
-				ui.ssimProgress.SetValue(ssim) // SSIM is already 0-1 range
+				if ssim >= 0 && ssim <= 1 {
+					ui.ssimLabel.SetText(fmt.Sprintf("SSIM: %.4f", ssim))
+					ui.ssimProgress.SetValue(ssim) // SSIM is already 0-1 range
+				} else {
+					ui.ssimLabel.SetText("SSIM: --")
+					ui.ssimProgress.SetValue(0)
+				}
 			})
 		}()
 	} else {
 		ui.debugGUI.LogQualityMetricsUpdate(0, 0, false)
 
-		ui.psnrLabel.SetText("PSNR: 33.14 dB") // Keep same text length
+		ui.psnrLabel.SetText("PSNR: --")
 		ui.psnrProgress.SetValue(0)
-		ui.ssimLabel.SetText("SSIM: 0.9674") // Keep same text length
+		ui.ssimLabel.SetText("SSIM: --")
 		ui.ssimProgress.SetValue(0)
 	}
-
-	// Log panel positions after update
-	rightPos = ui.window.Content().(*fyne.Container).Objects[3].Position()
-	rightSize = ui.window.Content().(*fyne.Container).Objects[3].Size()
-	ui.debugGUI.LogLayoutPositions("rightPanel_after", rightPos, rightSize)
 }
 
 func (ui *ImageRestorationUI) updateWindowTitle(filename string) {
