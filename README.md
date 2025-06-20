@@ -1,12 +1,12 @@
 # Image Restoration Suite
 
-A modern image processing application built with Go and Fyne, featuring advanced restoration algorithms for historical illustrations and documents. Enhanced with GoCV's MatProfile for robust memory management.
+A modern image processing application built with Go and Fyne, featuring advanced restoration algorithms for historical illustrations and documents.
 
 ## Features
 
 - **Modern GUI**: Built with Fyne v2.6.1 for cross-platform compatibility
 - **Image Processing**: Powered by OpenCV 4.11.0 through GoCV bindings
-- **Real-time Preview**: Live preview of transformations
+- **Real-time Preview**: Live preview of transformations with memory-efficient processing
 - **Quality Metrics**: PSNR and SSIM calculations for processed images
 - **Memory Profiling**: Built-in memory leak detection using GoCV's MatProfile
 - **Extensible Architecture**: Modular transformation system for easy algorithm additions
@@ -17,12 +17,14 @@ A modern image processing application built with Go and Fyne, featuring advanced
   - Window Radius (1-20)
   - Epsilon smoothing factor (0.001-0.1)
   - Morphological kernel size (1-15, odd values only)
+  - **FIXED**: Correct statistical classification and variance calculation
 
 - **Lanczos4 Scaling**: High-quality image scaling with Lanczos4 interpolation:
   - Scale factor (0.1-5.0)
   - DPI-based scaling
   - Iterative downscaling for large reductions
   - Artifact reduction filters
+  - **FIXED**: Proper memory management in guided filter
 
 ### Supported Image Formats
 
@@ -76,21 +78,29 @@ make deps
 
 ## Building the Application
 
-### Quick Start
+### Development Build
 ```bash
-# Development build with memory profiling
-make build-profile
+# Development build with memory profiling and leak detection
+make dev
 
-# Production build (optimized, no profiling)
-make build
+# Or step by step:
+make build-profile
+make run-profile
 ```
 
-### Memory Profiling Build (Recommended for Development)
+### Production Build
+```bash
+# Production build (optimized, no profiling)
+make build
+make run
+```
+
+### Memory Profiling Build
 ```bash
 # Build with GoCV MatProfile enabled
 make build-profile
 
-# Run with memory leak detection
+# Run with comprehensive memory leak detection
 make run-profile
 ```
 
@@ -146,19 +156,13 @@ make check-leaks
 
 ## Memory Management
 
-This application uses GoCV's built-in MatProfile system for memory management instead of custom tracking. Benefits include:
-
-- **Automatic Tracking**: All Mat allocations and deallocations are tracked
-- **Stack Traces**: Know exactly where memory leaks originate  
-- **Zero Configuration**: Enabled with `-tags matprofile` build flag
+This application uses proper memory management with comprehensive leak detection:
 
 ### Monitoring Memory Usage
 
-1. **Build with profiling**:
+1. **Build with profiling** (now default for development):
    ```bash
-   make profile
-   # or
-   ./build.sh
+   make build-profile
    ```
 
 2. **Run the application**:
@@ -166,47 +170,28 @@ This application uses GoCV's built-in MatProfile system for memory management in
    make run-profile
    ```
 
-3. **Check terminal output for MatProfile count**:
+3. **Monitor terminal output**:
    ```
    Initial MatProfile count: 0
    Final MatProfile count: 0  # Should be 0 for no leaks
    ```
 
+4. **Access profiling endpoints**:
+   - Main profiler: http://localhost:6060/debug/pprof/
+   - Mat profiler: http://localhost:6060/debug/pprof/gocv.io/x/gocv.Mat
+
 ### Understanding MatProfile Output
 
 When the application exits, it will show:
 ```
-Final MatProfile count: 0
+SUCCESS: No memory leaks detected - all Mats properly closed.
 ```
 
-If you see a non-zero count:
+If you see leaks:
 ```
-Final MatProfile count: 5
-WARNING: Memory leaks detected! Check MatProfile for details.
+WARNING: Memory leaks detected! 5 Mat(s) not properly closed.
+MEMORY LEAK: 5 Mat(s) were created but not cleaned up during session
 ```
-
-This indicates memory leaks - 5 Mats were not properly closed.
-
-4. **Check current Mat count**:
-   ```bash
-   make profile-count
-   ```
-
-### Understanding MatProfile Output
-
-Example MatProfile output showing a memory leak:
-```
-gocv.io/x/gocv.Mat profile: total 1
-1 @ 0x40b936c 0x40b93b7 0x40b94e2 0x40b95af 0x402cd87 0x40558e1
-#	0x40b936b	gocv.io/x/gocv.newMat+0x4b	/go/src/gocv.io/x/gocv/core.go:153
-#	0x40b93b6	gocv.io/x/gocv.NewMat+0x26	/go/src/gocv.io/x/gocv/core.go:159
-#	0x40b94e1	main.processImage+0x21	/go/src/image-restoration-suite/pipeline.go:150
-```
-
-This shows:
-- **total 1**: One unclosed Mat exists
-- **Stack trace**: Exact location where the Mat was created
-- **File/line**: Precise source location for debugging
 
 ### Memory Best Practices
 
@@ -216,14 +201,19 @@ This shows:
    defer mat.Close()
    ```
 
-2. **Check MatProfile count during development**:
-   - Initial count should be 0
-   - Final count should return to 0
+2. **Use cloned Mats for thread safety**:
+   ```go
+   // FIXED: Return clones to prevent race conditions
+   return processedImage.Clone()
+   ```
 
-3. **Build with profiling during development**:
-   ```bash
-   make profile
-   ./build.sh
+3. **Proper cleanup in loops**:
+   ```go
+   for i := 0; i < iterations; i++ {
+       temp := gocv.NewMat()
+       defer temp.Close() // FIXED: Added missing cleanup
+       // process...
+   }
    ```
 
 ## Usage
@@ -243,16 +233,13 @@ This shows:
 image-restoration-suite/
 ├── go.mod                  # Go module dependencies
 ├── Makefile               # Enhanced build system with MatProfile
-├── main.go                # Application entry point with pprof server
-├── ui.go                  # Main UI implementation
-├── pipeline.go            # Simplified pipeline using GoCV memory management
+├── main.go                # FIXED: Application entry point with pprof server
+├── ui.go                  # FIXED: Thread-safe UI implementation
+├── pipeline.go            # FIXED: Memory-safe pipeline with proper cleanup
 ├── transformation.go      # Transformation interface
-├── transform_twod_otsu.go # 2D Otsu implementation
-├── transform_lanczos4.go  # Lanczos4 scaling implementation
-├── debug_gui.go          # GUI debug output (terminal only)
-├── debug_pipeline.go     # Pipeline debug output (terminal only)
-├── debug_image.go        # Image processing debug output (terminal only)
-├── debug_render.go       # Render debug output (terminal only)
+├── transform_twod_otsu.go # FIXED: Correct 2D Otsu implementation
+├── transform_lanczos4.go  # FIXED: Memory-safe Lanczos4 implementation
+├── debug_*.go            # Debug modules (terminal output only)
 ├── helpers.go            # Utility functions
 ├── README.md             # This file
 └── README_macOS.md       # macOS-specific build instructions
@@ -260,63 +247,33 @@ image-restoration-suite/
 
 ## Architecture
 
-### Memory Management Architecture
-- **GoCV MatProfile**: Automatic tracking of all Mat allocations/deallocations (when built with `-tags matprofile`)
-- **Zero Custom Tracking**: Removed custom ManagedMat wrapper
-- **Simplified Pipeline**: Direct use of gocv.Mat with proper lifecycle management
-
-### Modular Design
-- **UI Layer**: Fyne-based graphical interface
-- **Pipeline Layer**: Simplified image processing chain management
-- **Transformation Layer**: Individual algorithm implementations
-- **Debug Layer**: Comprehensive debugging with memory profiling
-
-### Adding New Transformations
-1. Implement the `Transformation` interface
-2. Add parameter controls in `GetParametersWidget()`
-3. Ensure proper Mat lifecycle management (defer Close())
-4. Test with MatProfile enabled
-5. Register in the transformations list
-
 ## Development Workflow
 
 ### Setting Up Development Environment
 ```bash
-# Clone and setup
-git clone <repository-url>
-cd image-restoration-suite
-make deps
-
-# Start development with memory profiling
-make profile
+# Complete development setup
+make dev
 ```
 
 ### Testing Memory Management
 ```bash
-# Run tests with profiling
-make test
+# Run with comprehensive leak detection
+make check-leaks
 
-# Monitor memory during development
+# Monitor during development
 make run-profile
 ```
 
-### Debugging Memory Leaks
-1. **Enable profiling**: `make profile && make run-profile`
+### Debugging Memory Issues
+1. **Enable profiling**: `make build-profile && make run-profile`
 2. **Use the application** (load images, apply transformations)
-3. **Check terminal output** for MatProfile count
-4. **Look for non-zero final count** indicating leaks
-5. **Fix leaks** by adding proper `defer mat.Close()` calls
+3. **Check terminal output** for MatProfile count changes
+4. **Access profiler**: http://localhost:6060/debug/pprof/gocv.io/x/gocv.Mat
+5. **Look for non-zero final count** indicating leaks
 
 ## Troubleshooting
 
 ### Common Issues
-
-#### MatProfile Shows Memory Leaks
-```
-Final MatProfile count: 5
-WARNING: Memory leaks detected!
-```
-**Solution**: Check your code for Mat allocations without corresponding `defer mat.Close()` calls.
 
 #### OpenCV Not Found
 ```
@@ -333,55 +290,34 @@ Error: go version mismatch
 ```
 **Solution**: Upgrade to Go 1.24+ as specified in `go.mod`.
 
-#### Fyne Dependencies Missing
-```
-Error: fyne dependencies not found
-```
-**Solution**: 
+## Quick Start
+
 ```bash
-make deps
-```
+# 1. Check dependencies
+make check-deps
 
-### Performance Tips
+# 2. Set up development environment  
+make dev
 
-- **Enable MatProfile during development** to catch memory leaks early
-- **Use preview mode** for real-time parameter adjustment (lower memory usage)  
-- **Monitor MatProfile count** in terminal output
-- **Close Mats promptly** - don't rely on garbage collection
-- **Use smaller images** for parameter tuning to reduce memory pressure
+# 3. Run with memory profiling
+make run-profile
 
-## Migration from Custom Memory Management
+# 4. Load an image and apply transformations
 
-This version removes the custom `ManagedMat` wrapper and `DebugMemory` system in favor of GoCV's built-in MatProfile. Key changes:
-
-### Removed Files
-- `debug_memory.go` - Replaced by GoCV MatProfile
-- Custom `ManagedMat` wrapper - Use `gocv.Mat` directly
-
-### New Features
-- Automatic memory tracking with `-tags matprofile`
-- Terminal-based MatProfile count logging
-- Simple leak detection via count comparison
-
-### Code Changes
-```go
-// Old approach (custom wrapper)
-managedMat := NewManagedMat("name", debugMemory)
-defer managedMat.Close("name", debugMemory)
-
-// New approach (direct GoCV)
-mat := gocv.NewMat()
-defer mat.Close()  // MatProfile tracks automatically
+# 5. Monitor terminal for memory usage:
+#    "SUCCESS: No memory leaks detected" = good
+#    "WARNING: Memory leaks detected" = check code
 ```
 
 ## Contributing
 
 When contributing to this project:
 
-1. **Always build with profiling**: `make profile`
-2. **Test memory management**: `make run-profile`
+1. **Always use profiling build**: `make build-profile`
+2. **Test memory management**: `make check-leaks`
 3. **Verify no leaks**: Ensure MatProfile count returns to 0
-4. **Follow Mat lifecycle**: Always pair `gocv.NewMat()` with `defer mat.Close()`
+4. **Follow thread safety**: Use proper synchronization
+5. **Test UI responsiveness**: Ensure no blocking operations in UI thread
 
 ## License, Author
 

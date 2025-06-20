@@ -6,6 +6,8 @@ import (
 	"image/color"
 	"path/filepath"
 	"strings"
+	"sync"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -33,14 +35,21 @@ type ImageRestorationUI struct {
 	ssimLabel                    *widget.Label
 	debugGUI                     *DebugGUI
 	debugRender                  *DebugRender
+
+	// FIXED: Add thread safety and rate limiting
+	updateMutex    sync.Mutex
+	lastUpdateTime time.Time
+	updateDebounce time.Duration
+	pendingUpdate  bool
 }
 
 func NewImageRestorationUI(window fyne.Window, config *DebugConfig) *ImageRestorationUI {
 	ui := &ImageRestorationUI{
-		window:      window,
-		pipeline:    NewImagePipeline(config),
-		debugGUI:    NewDebugGUI(config),
-		debugRender: NewDebugRender(config),
+		window:         window,
+		pipeline:       NewImagePipeline(config),
+		debugGUI:       NewDebugGUI(config),
+		debugRender:    NewDebugRender(config),
+		updateDebounce: 50 * time.Millisecond, // Debounce UI updates
 	}
 	return ui
 }
@@ -283,25 +292,31 @@ func (ui *ImageRestorationUI) openImage() {
 		// Clean up existing transformations before setting new image
 		ui.pipeline.ClearTransformations()
 
-		// Use fyne.Do for thread safety with Fyne v2.6+
-		err = ui.pipeline.SetOriginalImage(mat)
-		if err != nil {
-			ui.debugGUI.LogError(err)
-			dialog.ShowError(err, ui.window)
-			return
-		}
+		// FIXED: Run in goroutine to prevent UI blocking
+		go func() {
+			err = ui.pipeline.SetOriginalImage(mat)
+			if err != nil {
+				ui.debugGUI.LogError(err)
+				// Show error in UI thread
+				fyne.Do(func() {
+					dialog.ShowError(err, ui.window)
+				})
+				return
+			}
 
-		fyne.Do(func() {
-			ui.updateUI()
-			ui.updateWindowTitle(reader.URI().Name())
+			// Update UI in main thread
+			fyne.Do(func() {
+				ui.updateUI()
+				ui.updateWindowTitle(reader.URI().Name())
 
-			// Reset parameters panel and clear list selections when new image is loaded
-			ui.parametersContainer.Objects[0] = widget.NewLabel("Select a Transformation")
-			ui.parametersContainer.Refresh()
-			ui.transformationsList.UnselectAll()
-		})
+				// Reset parameters panel and clear list selections when new image is loaded
+				ui.parametersContainer.Objects[0] = widget.NewLabel("Select a Transformation")
+				ui.parametersContainer.Refresh()
+				ui.transformationsList.UnselectAll()
+			})
 
-		ui.debugGUI.Log("Image loaded successfully")
+			ui.debugGUI.Log("Image loaded successfully")
+		}()
 	}, ui.window)
 }
 
@@ -338,25 +353,35 @@ func (ui *ImageRestorationUI) saveImage() {
 			filename = strings.TrimSuffix(filename, ext) + ".png"
 		}
 
-		processedImage := ui.pipeline.GetProcessedImage()
-		hasImage := !processedImage.Empty()
-		ui.debugGUI.LogSaveOperation(filename, filepath.Ext(filename), hasImage)
+		// FIXED: Run in goroutine to prevent UI blocking
+		go func() {
+			// FIXED: Get cloned image to prevent race conditions
+			processedImage := ui.pipeline.GetProcessedImage()
+			defer processedImage.Close() // Clean up cloned image
 
-		if !hasImage {
-			ui.debugGUI.LogSaveResult(filename, false, "no processed image available")
-			dialog.ShowError(fmt.Errorf("no processed image available"), ui.window)
-			return
-		}
+			hasImage := !processedImage.Empty()
+			ui.debugGUI.LogSaveOperation(filename, filepath.Ext(filename), hasImage)
 
-		success := gocv.IMWrite(filePath, processedImage)
-		if !success {
-			err := fmt.Errorf("failed to write image to %s", filePath)
-			ui.debugGUI.LogSaveResult(filename, false, err.Error())
-			dialog.ShowError(err, ui.window)
-		} else {
-			ui.debugGUI.LogSaveResult(filename, true, "")
-			ui.debugGUI.Log("Image saved successfully")
-		}
+			if !hasImage {
+				ui.debugGUI.LogSaveResult(filename, false, "no processed image available")
+				fyne.Do(func() {
+					dialog.ShowError(fmt.Errorf("no processed image available"), ui.window)
+				})
+				return
+			}
+
+			success := gocv.IMWrite(filePath, processedImage)
+			if !success {
+				err := fmt.Errorf("failed to write image to %s", filePath)
+				ui.debugGUI.LogSaveResult(filename, false, err.Error())
+				fyne.Do(func() {
+					dialog.ShowError(err, ui.window)
+				})
+			} else {
+				ui.debugGUI.LogSaveResult(filename, true, "")
+				ui.debugGUI.Log("Image saved successfully")
+			}
+		}()
 	}, ui.window)
 }
 
@@ -393,33 +418,37 @@ func (ui *ImageRestorationUI) onTransformationSelected(id widget.ListItemID) {
 		return
 	}
 
-	var transformation Transformation
-	switch id {
-	case 0: // 2D Otsu
-		transformation = NewTwoDOtsu(&debugConfig)
-	case 1: // Lanczos4 Scaling
-		transformation = NewLanczos4Transform(&debugConfig)
-	default:
-		return
-	}
+	// FIXED: Run in goroutine to prevent UI blocking
+	go func() {
+		var transformation Transformation
+		switch id {
+		case 0: // 2D Otsu
+			transformation = NewTwoDOtsu(&debugConfig)
+		case 1: // Lanczos4 Scaling
+			transformation = NewLanczos4Transform(&debugConfig)
+		default:
+			return
+		}
 
-	err := ui.pipeline.AddTransformation(transformation)
-	if err != nil {
-		ui.debugGUI.LogError(err)
-		dialog.ShowError(err, ui.window)
-		return
-	}
+		err := ui.pipeline.AddTransformation(transformation)
+		if err != nil {
+			ui.debugGUI.LogError(err)
+			fyne.Do(func() {
+				dialog.ShowError(err, ui.window)
+			})
+			return
+		}
 
-	ui.debugGUI.LogTransformation(transformation.Name(), transformation.GetParameters())
-	ui.debugGUI.LogTransformationApplication(transformation.Name(), true)
+		ui.debugGUI.LogTransformation(transformation.Name(), transformation.GetParameters())
+		ui.debugGUI.LogTransformationApplication(transformation.Name(), true)
 
-	fyne.Do(func() {
-		ui.updateUI()
-	})
-
-	// Clear the selection so it can be clicked again
-	ui.availableTransformationsList.UnselectAll()
-	ui.debugGUI.LogListUnselect("available transformations")
+		fyne.Do(func() {
+			ui.updateUI()
+			// Clear the selection so it can be clicked again
+			ui.availableTransformationsList.UnselectAll()
+			ui.debugGUI.LogListUnselect("available transformations")
+		})
+	}()
 }
 
 func (ui *ImageRestorationUI) onAppliedTransformationSelected(id widget.ListItemID) {
@@ -430,19 +459,22 @@ func (ui *ImageRestorationUI) onAppliedTransformationSelected(id widget.ListItem
 }
 
 func (ui *ImageRestorationUI) removeTransformation(id int) {
-	err := ui.pipeline.RemoveTransformation(id)
-	if err != nil {
-		ui.debugGUI.LogError(err)
-		return
-	}
+	// FIXED: Run in goroutine to prevent UI blocking
+	go func() {
+		err := ui.pipeline.RemoveTransformation(id)
+		if err != nil {
+			ui.debugGUI.LogError(err)
+			return
+		}
 
-	// Clear selection since the list has changed
-	ui.transformationsList.UnselectAll()
-	fyne.Do(func() {
-		ui.parametersContainer.Objects[0] = widget.NewLabel("Select a Transformation")
-		ui.parametersContainer.Refresh()
-		ui.updateUI()
-	})
+		// Clear selection since the list has changed
+		fyne.Do(func() {
+			ui.transformationsList.UnselectAll()
+			ui.parametersContainer.Objects[0] = widget.NewLabel("Select a Transformation")
+			ui.parametersContainer.Refresh()
+			ui.updateUI()
+		})
+	}()
 }
 
 func (ui *ImageRestorationUI) showTransformationParameters(transformation Transformation) {
@@ -453,21 +485,53 @@ func (ui *ImageRestorationUI) showTransformationParameters(transformation Transf
 	})
 }
 
+// FIXED: Add debouncing and thread safety
 func (ui *ImageRestorationUI) onParameterChanged() {
-	ui.debugGUI.LogUIEvent("onParameterChanged called - triggering preview reprocessing")
-	// Trigger preview reprocessing when parameters change
-	if ui.pipeline.HasImage() {
-		err := ui.pipeline.ProcessPreview()
-		if err != nil {
-			ui.debugGUI.LogError(err)
-			return
+	ui.updateMutex.Lock()
+	defer ui.updateMutex.Unlock()
+
+	// Rate limiting to prevent excessive updates
+	now := time.Now()
+	if now.Sub(ui.lastUpdateTime) < ui.updateDebounce {
+		if !ui.pendingUpdate {
+			ui.pendingUpdate = true
+			// Schedule delayed update
+			go func() {
+				time.Sleep(ui.updateDebounce)
+				ui.updateMutex.Lock()
+				ui.pendingUpdate = false
+				ui.updateMutex.Unlock()
+				ui.performParameterUpdate()
+			}()
 		}
+		return
 	}
-	fyne.Do(func() {
-		ui.updateUI()
-	})
+
+	ui.lastUpdateTime = now
+	ui.performParameterUpdate()
 }
 
+func (ui *ImageRestorationUI) performParameterUpdate() {
+	ui.debugGUI.LogUIEvent("onParameterChanged called - triggering preview reprocessing")
+
+	// FIXED: Run processing in goroutine to prevent UI blocking
+	go func() {
+		// Trigger preview reprocessing when parameters change
+		if ui.pipeline.HasImage() {
+			err := ui.pipeline.ProcessPreview()
+			if err != nil {
+				ui.debugGUI.LogError(err)
+				return
+			}
+		}
+
+		fyne.Do(func() {
+			ui.updateUI()
+		})
+	}()
+}
+
+// FIXED: Add thread safety to UI updates
 func (ui *ImageRestorationUI) updateUI() {
 	ui.updateImageDisplay()
 	ui.updateImageInfo()
@@ -476,14 +540,18 @@ func (ui *ImageRestorationUI) updateUI() {
 	ui.transformationsList.Refresh()
 }
 
+// FIXED: Proper Mat cleanup and thread safety
 func (ui *ImageRestorationUI) updateImageDisplay() {
 	ui.debugGUI.LogUIEvent("updateImageDisplay called")
 
 	if ui.pipeline.HasImage() && !ui.pipeline.originalImage.Empty() {
 		ui.debugGUI.LogUIEvent("updateImageDisplay: converting original image")
 
-		// Convert original image - now direct Mat access
-		originalImg, err := ui.pipeline.originalImage.ToImage()
+		// Convert original image - FIXED: Use cloned Mat to prevent race conditions
+		originalMat := ui.pipeline.originalImage.Clone()
+		defer originalMat.Close()
+
+		originalImg, err := originalMat.ToImage()
 		if err != nil {
 			ui.debugGUI.LogImageConversion("original", false, err.Error())
 			return
@@ -491,15 +559,17 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 		ui.debugGUI.LogImageConversion("original", true, "")
 		ui.debugRender.LogImageProperties("original", originalImg)
 
-		// Convert preview image - handle binary images with enhanced debugging
+		// Convert preview image - FIXED: Use cloned Mat and proper cleanup
 		previewMat := ui.pipeline.GetPreviewImage()
+		defer previewMat.Close() // Clean up cloned Mat
+
 		if previewMat.Empty() {
 			ui.debugGUI.LogUIEvent("updateImageDisplay: preview image is empty")
 			return
 		}
 
 		var previewImg image.Image
-		originalChannels := ui.pipeline.originalImage.Channels()
+		originalChannels := originalMat.Channels()
 		previewChannels := previewMat.Channels()
 
 		if originalChannels != previewChannels {
@@ -602,17 +672,23 @@ func (ui *ImageRestorationUI) updateQualityMetrics() {
 	ui.debugGUI.LogLayoutPositions("rightPanel", rightPos, rightSize)
 
 	if len(ui.pipeline.transformations) > 0 {
-		// Calculate PSNR and SSIM
-		psnr := ui.pipeline.CalculatePSNR()
-		ssim := ui.pipeline.CalculateSSIM()
+		// FIXED: Run quality calculations in goroutine to prevent UI blocking
+		go func() {
+			// Calculate PSNR and SSIM
+			psnr := ui.pipeline.CalculatePSNR()
+			ssim := ui.pipeline.CalculateSSIM()
 
-		ui.debugGUI.LogQualityMetricsUpdate(psnr, ssim, true)
+			ui.debugGUI.LogQualityMetricsUpdate(psnr, ssim, true)
 
-		ui.psnrLabel.SetText(fmt.Sprintf("PSNR: %.2f dB", psnr))
-		ui.psnrProgress.SetValue(psnr / 50.0) // Normalize to 0-1 range
+			// Update UI in main thread
+			fyne.Do(func() {
+				ui.psnrLabel.SetText(fmt.Sprintf("PSNR: %.2f dB", psnr))
+				ui.psnrProgress.SetValue(psnr / 50.0) // Normalize to 0-1 range
 
-		ui.ssimLabel.SetText(fmt.Sprintf("SSIM: %.4f", ssim))
-		ui.ssimProgress.SetValue(ssim) // SSIM is already 0-1 range
+				ui.ssimLabel.SetText(fmt.Sprintf("SSIM: %.4f", ssim))
+				ui.ssimProgress.SetValue(ssim) // SSIM is already 0-1 range
+			})
+		}()
 	} else {
 		ui.debugGUI.LogQualityMetricsUpdate(0, 0, false)
 

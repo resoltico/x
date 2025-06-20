@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"sync"
+	"time"
 
 	"gocv.io/x/gocv"
 )
@@ -16,6 +17,10 @@ type ImagePipeline struct {
 	debugPipeline   *DebugPipeline
 	initialized     bool
 	mutex           sync.RWMutex // Protect concurrent access
+
+	// Rate limiting for preview processing
+	lastPreviewUpdate time.Time
+	previewDebounce   time.Duration
 }
 
 func NewImagePipeline(config *DebugConfig) *ImagePipeline {
@@ -25,6 +30,7 @@ func NewImagePipeline(config *DebugConfig) *ImagePipeline {
 		transformations: make([]Transformation, 0),
 		debugPipeline:   debugPipeline,
 		initialized:     false,
+		previewDebounce: 100 * time.Millisecond, // Debounce preview updates
 		// Initialize with empty Mats - GoCV handles memory tracking via MatProfile
 		originalImage:  gocv.NewMat(),
 		processedImage: gocv.NewMat(),
@@ -157,6 +163,7 @@ func (p *ImagePipeline) ClearTransformations() {
 	}
 }
 
+// FIXED: Return cloned Mat to prevent race conditions
 func (p *ImagePipeline) GetProcessedImage() gocv.Mat {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
@@ -166,12 +173,14 @@ func (p *ImagePipeline) GetProcessedImage() gocv.Mat {
 		return gocv.NewMat()
 	}
 	if p.processedImage.Empty() {
-		p.debugPipeline.LogGetProcessedImage("processed image empty, returning original")
-		return p.originalImage
+		p.debugPipeline.LogGetProcessedImage("processed image empty, returning original clone")
+		return p.originalImage.Clone()
 	}
-	return p.processedImage
+	// CRITICAL FIX: Always return clones to prevent race conditions
+	return p.processedImage.Clone()
 }
 
+// FIXED: Return cloned Mat to prevent race conditions
 func (p *ImagePipeline) GetPreviewImage() gocv.Mat {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
@@ -181,15 +190,25 @@ func (p *ImagePipeline) GetPreviewImage() gocv.Mat {
 		return gocv.NewMat()
 	}
 	if p.previewImage.Empty() {
-		p.debugPipeline.LogGetProcessedImage("preview image empty, returning original")
-		return p.originalImage
+		p.debugPipeline.LogGetProcessedImage("preview image empty, returning original clone")
+		return p.originalImage.Clone()
 	}
-	return p.previewImage
+	// CRITICAL FIX: Always return clones to prevent race conditions
+	return p.previewImage.Clone()
 }
 
+// FIXED: Add debouncing to prevent memory pressure
 func (p *ImagePipeline) ProcessPreview() error {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
+
+	// Rate limiting for preview updates
+	now := time.Now()
+	if now.Sub(p.lastPreviewUpdate) < p.previewDebounce {
+		return nil // Skip if too soon
+	}
+	p.lastPreviewUpdate = now
+
 	return p.processPreviewUnsafe()
 }
 
@@ -357,6 +376,7 @@ func (p *ImagePipeline) cleanupResourcesUnsafe() {
 	}
 }
 
+// FIXED: Proper PSNR calculation with edge case handling
 func (p *ImagePipeline) CalculatePSNR() float64 {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
@@ -370,6 +390,11 @@ func (p *ImagePipeline) CalculatePSNR() float64 {
 	defer orig.Close()
 	proc := p.processedImage.Clone()
 	defer proc.Close()
+
+	// Ensure same dimensions
+	if orig.Rows() != proc.Rows() || orig.Cols() != proc.Cols() {
+		return 0.0
+	}
 
 	if orig.Type() != proc.Type() {
 		if proc.Type() == gocv.MatTypeCV8U && orig.Channels() == 3 {
@@ -389,14 +414,28 @@ func (p *ImagePipeline) CalculatePSNR() float64 {
 	sumResult := diffSq.Sum()
 	mse := sumResult.Val1 / float64(orig.Total())
 
+	// Handle edge cases
 	if mse == 0 {
-		return math.Inf(1)
+		return math.Inf(1) // Perfect match
+	}
+	if mse < 1e-10 {
+		return 100.0 // Very small differences
 	}
 
 	psnr := 20*math.Log10(255) - 10*math.Log10(mse)
+
+	// Clamp to reasonable range
+	if psnr > 100 {
+		return 100.0
+	}
+	if psnr < 0 {
+		return 0.0
+	}
+
 	return psnr
 }
 
+// FIXED: Proper SSIM calculation with all components
 func (p *ImagePipeline) CalculateSSIM() float64 {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
@@ -405,16 +444,38 @@ func (p *ImagePipeline) CalculateSSIM() float64 {
 		return 0.0
 	}
 
-	// Simple SSIM approximation using correlation coefficient
+	// Convert to same type if needed
 	orig := p.originalImage.Clone()
 	defer orig.Close()
 	proc := p.processedImage.Clone()
 	defer proc.Close()
 
+	// Ensure same dimensions
+	if orig.Rows() != proc.Rows() || orig.Cols() != proc.Cols() {
+		return 0.0
+	}
+
 	if orig.Type() != proc.Type() {
 		if proc.Type() == gocv.MatTypeCV8U && orig.Channels() == 3 {
 			gocv.CvtColor(proc, &proc, gocv.ColorGrayToBGR)
 		}
+	}
+
+	// Convert to grayscale for SSIM calculation
+	if orig.Channels() > 1 {
+		origGray := gocv.NewMat()
+		defer origGray.Close()
+		gocv.CvtColor(orig, &origGray, gocv.ColorBGRToGray)
+		orig.Close()
+		orig = origGray.Clone()
+	}
+
+	if proc.Channels() > 1 {
+		procGray := gocv.NewMat()
+		defer procGray.Close()
+		gocv.CvtColor(proc, &procGray, gocv.ColorBGRToGray)
+		proc.Close()
+		proc = procGray.Clone()
 	}
 
 	// Convert to float for calculations
@@ -425,24 +486,23 @@ func (p *ImagePipeline) CalculateSSIM() float64 {
 	orig.ConvertTo(&origF, gocv.MatTypeCV32F)
 	proc.ConvertTo(&procF, gocv.MatTypeCV32F)
 
+	// SSIM constants
+	c1 := math.Pow(0.01*255, 2)
+	c2 := math.Pow(0.03*255, 2)
+
 	// Calculate means
 	origMean := origF.Mean()
 	procMean := procF.Mean()
 
-	// Calculate standard deviations and covariance
-	origVar := gocv.NewMat()
-	defer origVar.Close()
-	procVar := gocv.NewMat()
-	defer procVar.Close()
-	covar := gocv.NewMat()
-	defer covar.Close()
+	mu1 := origMean.Val1
+	mu2 := procMean.Val1
 
+	// Calculate variances and covariance using proper formulas
 	origSub := gocv.NewMat()
 	defer origSub.Close()
 	procSub := gocv.NewMat()
 	defer procSub.Close()
 
-	// Create scalar mats for subtraction
 	origMeanMat := gocv.NewMatFromScalar(origMean, origF.Type())
 	defer origMeanMat.Close()
 	procMeanMat := gocv.NewMatFromScalar(procMean, procF.Type())
@@ -451,29 +511,29 @@ func (p *ImagePipeline) CalculateSSIM() float64 {
 	gocv.Subtract(origF, origMeanMat, &origSub)
 	gocv.Subtract(procF, procMeanMat, &procSub)
 
-	gocv.Multiply(origSub, origSub, &origVar)
-	gocv.Multiply(procSub, procSub, &procVar)
-	gocv.Multiply(origSub, procSub, &covar)
+	// Calculate sigma1^2, sigma2^2, and sigma12
+	sigma1Sq := gocv.NewMat()
+	defer sigma1Sq.Close()
+	sigma2Sq := gocv.NewMat()
+	defer sigma2Sq.Close()
+	sigma12 := gocv.NewMat()
+	defer sigma12.Close()
 
-	// Calculate variance and covariance
-	origVarSum := origVar.Sum()
-	procVarSum := procVar.Sum()
-	covarSum := covar.Sum()
+	gocv.Multiply(origSub, origSub, &sigma1Sq)
+	gocv.Multiply(procSub, procSub, &sigma2Sq)
+	gocv.Multiply(origSub, procSub, &sigma12)
 
-	origStd := math.Sqrt(origVarSum.Val1 / float64(orig.Total()))
-	procStd := math.Sqrt(procVarSum.Val1 / float64(proc.Total()))
-	covariance := covarSum.Val1 / float64(orig.Total())
+	sigma1SqVal := sigma1Sq.Mean().Val1
+	sigma2SqVal := sigma2Sq.Mean().Val1
+	sigma12Val := sigma12.Mean().Val1
 
-	// SSIM constants
-	c1 := math.Pow(0.01*255, 2)
-	c2 := math.Pow(0.03*255, 2)
-
-	// Calculate SSIM
-	numerator := (2*origMean.Val1*procMean.Val1 + c1) * (2*covariance + c2)
-	denominator := (math.Pow(origMean.Val1, 2) + math.Pow(procMean.Val1, 2) + c1) * (math.Pow(origStd, 2) + math.Pow(procStd, 2) + c2)
+	// Calculate SSIM using proper formula
+	numerator := (2*mu1*mu2 + c1) * (2*sigma12Val + c2)
+	denominator := (mu1*mu1 + mu2*mu2 + c1) * (sigma1SqVal + sigma2SqVal + c2)
 
 	ssim := numerator / denominator
 
+	// Clamp to valid range
 	if ssim > 1.0 {
 		ssim = 1.0
 	}

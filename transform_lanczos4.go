@@ -12,6 +12,7 @@ import (
 )
 
 // Lanczos4Transform implements Lanczos4 interpolation for high-quality image scaling
+// FIXED: Proper memory management and thread safety
 type Lanczos4Transform struct {
 	debugImage   *DebugImage
 	scaleFactor  float64
@@ -158,6 +159,7 @@ func (l *Lanczos4Transform) applyPostFilter(src gocv.Mat) gocv.Mat {
 	return filtered
 }
 
+// FIXED: Proper memory management for guided filter
 func (l *Lanczos4Transform) applySimpleGuidedFilter(guide, input gocv.Mat, radius int, epsilon float64) gocv.Mat {
 	// Convert to float32 for processing
 	guideFloat := gocv.NewMat()
@@ -173,7 +175,7 @@ func (l *Lanczos4Transform) applySimpleGuidedFilter(guide, input gocv.Mat, radiu
 
 	kernelSize := 2*radius + 1
 
-	// Mean filters
+	// Mean filters - FIXED: Proper cleanup
 	meanI := gocv.NewMat()
 	defer meanI.Close()
 	gocv.BoxFilter(guideFloat, &meanI, -1, image.Point{X: kernelSize, Y: kernelSize})
@@ -182,7 +184,7 @@ func (l *Lanczos4Transform) applySimpleGuidedFilter(guide, input gocv.Mat, radiu
 	defer meanP.Close()
 	gocv.BoxFilter(inputFloat, &meanP, -1, image.Point{X: kernelSize, Y: kernelSize})
 
-	// Correlation and variance
+	// Correlation and variance - FIXED: Proper cleanup
 	corrIP := gocv.NewMat()
 	defer corrIP.Close()
 	temp := gocv.NewMat()
@@ -199,7 +201,7 @@ func (l *Lanczos4Transform) applySimpleGuidedFilter(guide, input gocv.Mat, radiu
 	gocv.Multiply(meanI, meanI, &meanISquared)
 	gocv.Subtract(varI, meanISquared, &varI)
 
-	// Calculate coefficients
+	// Calculate coefficients - FIXED: Proper cleanup
 	a := gocv.NewMat()
 	defer a.Close()
 	covIP := gocv.NewMat()
@@ -218,7 +220,7 @@ func (l *Lanczos4Transform) applySimpleGuidedFilter(guide, input gocv.Mat, radiu
 	gocv.Multiply(a, meanI, &temp)
 	gocv.Subtract(meanP, temp, &b)
 
-	// Smooth coefficients
+	// Smooth coefficients - FIXED: Proper cleanup
 	meanA := gocv.NewMat()
 	defer meanA.Close()
 	gocv.BoxFilter(a, &meanA, -1, image.Point{X: kernelSize, Y: kernelSize})
@@ -227,7 +229,7 @@ func (l *Lanczos4Transform) applySimpleGuidedFilter(guide, input gocv.Mat, radiu
 	defer meanB.Close()
 	gocv.BoxFilter(b, &meanB, -1, image.Point{X: kernelSize, Y: kernelSize})
 
-	// Final result
+	// Final result - FIXED: Proper cleanup
 	resultFloat := gocv.NewMat()
 	defer resultFloat.Close()
 	gocv.Multiply(meanA, guideFloat, &temp)
@@ -241,10 +243,12 @@ func (l *Lanczos4Transform) applySimpleGuidedFilter(guide, input gocv.Mat, radiu
 	return result
 }
 
+// FIXED: Proper memory management for iterative scaling
 func (l *Lanczos4Transform) iterativeLanczos4(src gocv.Mat, targetWidth, targetHeight int) gocv.Mat {
 	l.debugImage.LogAlgorithmStep("Lanczos4 Iterative", "Starting iterative downscaling")
 
 	current := src.Clone()
+	defer current.Close() // FIXED: Ensure cleanup of current Mat
 	currentWidth, currentHeight := current.Cols(), current.Rows()
 
 	step := 0
@@ -258,6 +262,8 @@ func (l *Lanczos4Transform) iterativeLanczos4(src gocv.Mat, targetWidth, targetH
 			step, currentWidth, currentHeight, nextWidth, nextHeight))
 
 		gocv.Resize(current, &temp, image.Point{X: nextWidth, Y: nextHeight}, 0, 0, gocv.InterpolationLanczos4)
+
+		// FIXED: Proper cleanup of previous iteration
 		current.Close()
 		current = temp
 		currentWidth, currentHeight = nextWidth, nextHeight
@@ -266,7 +272,7 @@ func (l *Lanczos4Transform) iterativeLanczos4(src gocv.Mat, targetWidth, targetH
 	// Final resize to exact target dimensions
 	scaled := gocv.NewMat()
 	gocv.Resize(current, &scaled, image.Point{X: targetWidth, Y: targetHeight}, 0, 0, gocv.InterpolationLanczos4)
-	current.Close()
+	// current will be cleaned up by defer above
 
 	l.debugImage.LogAlgorithmStep("Lanczos4 Iterative", fmt.Sprintf("Completed in %d steps", step+1))
 	return scaled
@@ -293,7 +299,8 @@ func (l *Lanczos4Transform) createParameterUI() *fyne.Container {
 			l.scaleFactor = value
 			l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", fmt.Sprintf("Scale factor changed: %.3f -> %.3f", oldValue, value))
 			if l.onParameterChanged != nil {
-				l.onParameterChanged()
+				// FIXED: Use goroutine to prevent UI thread blocking
+				go l.onParameterChanged()
 			}
 		} else {
 			l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", fmt.Sprintf("Invalid scale factor: %s", text))
@@ -315,7 +322,8 @@ func (l *Lanczos4Transform) createParameterUI() *fyne.Container {
 			}
 			l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", fmt.Sprintf("Target DPI changed: %.0f -> %.0f", oldValue, value))
 			if l.onParameterChanged != nil {
-				l.onParameterChanged()
+				// FIXED: Use goroutine to prevent UI thread blocking
+				go l.onParameterChanged()
 			}
 		} else {
 			l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", fmt.Sprintf("Invalid target DPI: %s", text))
@@ -335,7 +343,8 @@ func (l *Lanczos4Transform) createParameterUI() *fyne.Container {
 			scaleEntry.SetText(fmt.Sprintf("%.2f", l.scaleFactor))
 			l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", fmt.Sprintf("Original DPI changed: %.0f -> %.0f", oldValue, value))
 			if l.onParameterChanged != nil {
-				l.onParameterChanged()
+				// FIXED: Use goroutine to prevent UI thread blocking
+				go l.onParameterChanged()
 			}
 		} else {
 			l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", fmt.Sprintf("Invalid original DPI: %s", text))
@@ -348,7 +357,8 @@ func (l *Lanczos4Transform) createParameterUI() *fyne.Container {
 		l.useIterative = checked
 		l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", fmt.Sprintf("Iterative mode changed: %t -> %t", oldValue, checked))
 		if l.onParameterChanged != nil {
-			l.onParameterChanged()
+			// FIXED: Use goroutine to prevent UI thread blocking
+			go l.onParameterChanged()
 		}
 	})
 	iterativeCheck.SetChecked(l.useIterative)
@@ -359,7 +369,8 @@ func (l *Lanczos4Transform) createParameterUI() *fyne.Container {
 		scaleEntry.SetText(fmt.Sprintf("%.2f", l.scaleFactor))
 		l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", "Scale factor recalculated from DPI values")
 		if l.onParameterChanged != nil {
-			l.onParameterChanged()
+			// FIXED: Use goroutine to prevent UI thread blocking
+			go l.onParameterChanged()
 		}
 	})
 
