@@ -77,32 +77,36 @@ func main() {
 
 	myWindow.SetContent(content)
 
-	// Cleanup and memory leak detection
+	// Cleanup and memory leak detection with proper Mat cleanup
 	myWindow.SetOnClosed(func() {
 		log.Printf("=== APPLICATION SHUTDOWN INITIATED ===")
 		log.Printf("Performing cleanup...")
 
-		// Force garbage collection before cleanup
-		runtime.GC()
-		runtime.GC() // Call twice to ensure thorough cleanup
+		// Force multiple garbage collections before cleanup to ensure all go objects are collected
+		for i := 0; i < 3; i++ {
+			runtime.GC()
+			time.Sleep(10 * time.Millisecond)
+		}
 
 		startCleanupTime := time.Now()
 
-		// Pipeline cleanup
+		// Pipeline cleanup with proper Mat resource management
 		if ui != nil && ui.pipeline != nil {
 			log.Printf("Closing image pipeline...")
 			ui.pipeline.Close()
 			log.Printf("Pipeline closed successfully")
 		}
 
-		// Allow time for all goroutines to complete cleanup
+		// Allow more time for all goroutines to complete cleanup
 		log.Printf("Waiting for cleanup operations to complete...")
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(200 * time.Millisecond)
 
-		// Force final garbage collection
+		// Force final garbage collection multiple times
 		log.Printf("Running final garbage collection...")
-		runtime.GC()
-		runtime.GC()
+		for i := 0; i < 5; i++ {
+			runtime.GC()
+			time.Sleep(20 * time.Millisecond)
+		}
 
 		cleanupDuration := time.Since(startCleanupTime)
 		log.Printf("Cleanup completed in %v", cleanupDuration)
@@ -127,7 +131,7 @@ func main() {
 		log.Printf("  GC Runs: %d", memStats.NumGC)
 		log.Printf("  Last GC: %v ago", time.Since(time.Unix(0, int64(memStats.LastGC))))
 
-		// Leak detection and reporting
+		// Memory leak detection and reporting
 		if finalCount > 0 {
 			log.Printf("⚠️  WARNING: MEMORY LEAKS DETECTED!")
 			log.Printf("   %d Mat(s) were not properly closed", finalCount)
@@ -152,7 +156,7 @@ func main() {
 
 		// Performance summary
 		log.Printf("=== SESSION SUMMARY ===")
-		if ui != nil && ui.pipeline != nil {
+		if ui != nil && ui.pipeline != nil && ui.pipeline.debugPipeline != nil {
 			operations := ui.pipeline.debugPipeline.GetOperationHistory()
 			if len(operations) > 0 {
 				totalDuration := time.Duration(0)

@@ -13,7 +13,7 @@ import (
 	"gocv.io/x/gocv"
 )
 
-// TwoDOtsu implements correct 2D Otsu thresholding algorithm
+// TwoDOtsu implements 2D Otsu thresholding algorithm with proper memory management
 type TwoDOtsu struct {
 	ThreadSafeTransformation
 	debugImage *DebugImage
@@ -112,7 +112,7 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
 	morphKernelSize := t.morphKernelSize
 	t.paramMutex.RUnlock()
 
-	// Scale input if needed
+	// Scale input if needed with proper memory management
 	var workingImage gocv.Mat
 	if scale != 1.0 {
 		newWidth := int(float64(src.Cols()) * scale)
@@ -130,12 +130,11 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
 			workingImage.Close()
 			return gocv.NewMat()
 		}
-		defer workingImage.Close()
 		t.debugImage.LogAlgorithmStep("2D Otsu", fmt.Sprintf("Scaled to %dx%d", newWidth, newHeight))
 	} else {
 		workingImage = src.Clone()
-		defer workingImage.Close()
 	}
+	defer workingImage.Close()
 
 	// Convert to grayscale if needed
 	var grayscale gocv.Mat
@@ -147,11 +146,10 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
 			grayscale.Close()
 			return gocv.NewMat()
 		}
-		defer grayscale.Close()
 	} else {
 		grayscale = workingImage.Clone()
-		defer grayscale.Close()
 	}
+	defer grayscale.Close()
 
 	if grayscale.Empty() {
 		t.debugImage.LogAlgorithmStep("2D Otsu", "ERROR: Grayscale conversion failed")
@@ -166,15 +164,16 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
 
 	if guided.Empty() {
 		t.debugImage.LogAlgorithmStep("2D Otsu", "ERROR: Guided filter failed")
+		// Create fallback guided image as clone
 		guided = grayscale.Clone()
-		defer guided.Close()
 	}
 
-	// Apply 2D Otsu thresholding with correct algorithm
+	// Apply 2D Otsu thresholding with memory management
 	binaryResult := t.apply2DOtsuCorrect(grayscale, guided)
 	defer func() {
+		// Only close if we're scaling back, otherwise return as-is
 		if scale != 1.0 && !binaryResult.Empty() {
-			binaryResult.Close()
+			defer binaryResult.Close()
 		}
 	}()
 
@@ -185,6 +184,11 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
 
 	// Post-processing with morphological operations
 	processed := t.applyMorphologicalOps(binaryResult, morphKernelSize)
+	defer func() {
+		if scale != 1.0 && !processed.Empty() {
+			defer processed.Close()
+		}
+	}()
 
 	// Scale back to original size if needed
 	var result gocv.Mat
@@ -193,10 +197,9 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
 		err := gocv.Resize(processed, &result, image.Point{X: src.Cols(), Y: src.Rows()}, 0, 0, gocv.InterpolationLinear)
 		if err != nil {
 			t.debugImage.LogError(err)
-			processed.Close()
+			result.Close()
 			return gocv.NewMat()
 		}
-		processed.Close()
 		t.debugImage.LogAlgorithmStep("2D Otsu", "Scaled back to original size")
 	} else {
 		result = processed
@@ -206,7 +209,7 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
 	return result
 }
 
-// Guided filter with correct covariance computation
+// Guided filter with correct covariance computation and memory management
 func (t *TwoDOtsu) applyGuidedFilterCorrect(src gocv.Mat, windowRadius int, epsilon float64) gocv.Mat {
 	t.debugImage.LogAlgorithmStep("GuidedFilter", "Starting guided filter with correct covariance")
 
@@ -347,7 +350,7 @@ func (t *TwoDOtsu) applyGuidedFilterCorrect(src gocv.Mat, windowRadius int, epsi
 	return result
 }
 
-// Correct 2D Otsu algorithm with proper between-class scatter matrix
+// 2D Otsu algorithm with proper between-class scatter matrix and memory management
 func (t *TwoDOtsu) apply2DOtsuCorrect(gray, guided gocv.Mat) gocv.Mat {
 	t.debugImage.LogAlgorithmStep("2D Otsu", "Constructing 2D histogram")
 
@@ -389,7 +392,7 @@ func (t *TwoDOtsu) apply2DOtsuCorrect(gray, guided gocv.Mat) gocv.Mat {
 		}
 	}
 
-	// Find optimal thresholds using correct 2D Otsu algorithm
+	// Find optimal thresholds using 2D Otsu algorithm
 	bestS, bestT, maxVariance := t.findOptimalThresholdsCorrect(hist)
 	t.debugImage.LogOptimalThresholds(bestS, bestT, maxVariance)
 
@@ -400,13 +403,13 @@ func (t *TwoDOtsu) apply2DOtsuCorrect(gray, guided gocv.Mat) gocv.Mat {
 	width, height := size[1], size[0]
 	result := gocv.NewMatWithSize(height, width, gocv.MatTypeCV8U)
 
-	// Apply correct 2D Otsu classification
+	// Apply 2D Otsu classification
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
 			grayVal := int(gray.GetUCharAt(y, x))
 			guidedVal := int(guided.GetUCharAt(y, x))
 
-			// Correct 2D Otsu classification based on diagonal quadrants
+			// 2D Otsu classification based on diagonal quadrants
 			var pixelValue uint8 = 0 // foreground
 			if grayVal > bestS && guidedVal > bestT {
 				pixelValue = 255 // background
@@ -430,7 +433,7 @@ func (t *TwoDOtsu) apply2DOtsuCorrect(gray, guided gocv.Mat) gocv.Mat {
 	return result
 }
 
-// Correct 2D Otsu optimal threshold finding using proper between-class scatter matrix
+// 2D Otsu optimal threshold finding using proper between-class scatter matrix
 func (t *TwoDOtsu) findOptimalThresholdsCorrect(hist [][]float64) (int, int, float64) {
 	maxBetweenClassVariance := 0.0
 	bestS, bestT := 0, 0
@@ -462,7 +465,7 @@ func (t *TwoDOtsu) findOptimalThresholdsCorrect(hist [][]float64) (int, int, flo
 	return bestS, bestT, maxBetweenClassVariance
 }
 
-// Correct between-class scatter matrix trace calculation for 2D Otsu
+// Between-class scatter matrix trace calculation for 2D Otsu
 func (t *TwoDOtsu) calculateBetweenClassScatterCorrect(hist [][]float64, s, thresholdT int, totalMeanG, totalMeanF float64) float64 {
 	// Calculate statistics for 4 regions based on diagonal separation
 	var w [4]float64   // weights (probabilities)
@@ -552,7 +555,7 @@ func (t *TwoDOtsu) calculateBetweenClassScatterCorrect(hist [][]float64, s, thre
 	return betweenClassVariance + 0.1*diagonalCoherence
 }
 
-// Morphological operations using current GoCV API
+// Morphological operations using current GoCV API with memory management
 func (t *TwoDOtsu) applyMorphologicalOps(src gocv.Mat, morphKernelSize int) gocv.Mat {
 	if morphKernelSize <= 1 {
 		return src.Clone()
@@ -576,7 +579,8 @@ func (t *TwoDOtsu) applyMorphologicalOps(src gocv.Mat, morphKernelSize int) gocv
 	err = gocv.MorphologyEx(closed, &result, gocv.MorphOpen, kernel)
 	if err != nil {
 		t.debugImage.LogError(err)
-		closed.CopyTo(&result)
+		result.Close()
+		return closed.Clone()
 	}
 
 	return result

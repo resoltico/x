@@ -277,8 +277,15 @@ func (ui *ImageRestorationUI) openImage() {
 
 		// Run in goroutine to prevent UI blocking
 		go func() {
-			// Load image using OpenCV
+			// Load image using OpenCV with proper cleanup
 			mat := gocv.IMRead(reader.URI().Path(), gocv.IMReadColor)
+			defer func() {
+				// Ensure Mat is closed even if SetOriginalImage fails
+				if !mat.Empty() {
+					mat.Close()
+				}
+			}()
+
 			if mat.Empty() {
 				err := fmt.Errorf("failed to load image")
 				ui.debugGUI.LogError(err)
@@ -294,8 +301,11 @@ func (ui *ImageRestorationUI) openImage() {
 			// Clean up existing transformations before setting new image
 			ui.pipeline.ClearTransformations()
 
-			err = ui.pipeline.SetOriginalImage(mat)
+			// Clone the Mat before passing to pipeline since we defer Close above
+			clonedMat := mat.Clone()
+			err = ui.pipeline.SetOriginalImage(clonedMat)
 			if err != nil {
+				clonedMat.Close() // Clean up cloned Mat on error
 				ui.debugGUI.LogError(err)
 				// Show error in UI thread
 				fyne.Do(func() {
@@ -368,7 +378,7 @@ func (ui *ImageRestorationUI) saveImage() {
 
 			// Get thread-safe clone to prevent race conditions
 			processedImage := ui.pipeline.GetProcessedImage()
-			defer processedImage.Close() // Clean up cloned image
+			defer processedImage.Close() // Always close the cloned image
 
 			hasImage := !processedImage.Empty()
 			ui.debugGUI.LogSaveOperation(filename, filepath.Ext(filename), hasImage)

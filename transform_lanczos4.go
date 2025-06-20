@@ -12,7 +12,7 @@ import (
 	"gocv.io/x/gocv"
 )
 
-// Lanczos4Transform implements Lanczos4 interpolation with current GoCV 4.11.0 APIs
+// Lanczos4Transform implements Lanczos4 interpolation with proper memory management
 type Lanczos4Transform struct {
 	debugImage   *DebugImage
 	scaleFactor  float64
@@ -138,7 +138,7 @@ func (l *Lanczos4Transform) applyLanczos4(src gocv.Mat, scale float64) gocv.Mat 
 		return gocv.NewMat()
 	}
 
-	// Apply pre-filtering using GoCV APIs
+	// Apply pre-filtering using GoCV APIs with memory management
 	filtered := l.applyPreFilter(working)
 	defer filtered.Close()
 
@@ -183,11 +183,13 @@ func (l *Lanczos4Transform) applyLanczos4(src gocv.Mat, scale float64) gocv.Mat 
 		return gocv.NewMat()
 	}
 
-	// Apply post-processing using GoCV blur
+	// Apply post-processing using GoCV blur with memory management
 	final := l.applyPostFilter(result)
-	if !result.Empty() {
-		result.Close()
-	}
+	defer func() {
+		if !result.Empty() {
+			result.Close()
+		}
+	}()
 
 	l.debugImage.LogMatInfo("final_result", final)
 	l.debugImage.LogAlgorithmStep("Lanczos4", "Scaling completed successfully")
@@ -195,7 +197,7 @@ func (l *Lanczos4Transform) applyLanczos4(src gocv.Mat, scale float64) gocv.Mat 
 	return final
 }
 
-// Use GoCV GaussianBlur with adaptive kernel sizing
+// Use GoCV GaussianBlur with adaptive kernel sizing and memory management
 func (l *Lanczos4Transform) applyPreFilter(src gocv.Mat) gocv.Mat {
 	if src.Empty() {
 		return gocv.NewMat()
@@ -237,7 +239,7 @@ func (l *Lanczos4Transform) applyPreFilter(src gocv.Mat) gocv.Mat {
 	return blurred
 }
 
-// Use GoCV's bilateral filter for better edge-preserving post-processing
+// Use GoCV's bilateral filter for better edge-preserving post-processing with memory management
 func (l *Lanczos4Transform) applyPostFilter(src gocv.Mat) gocv.Mat {
 	if src.Empty() {
 		return gocv.NewMat()
