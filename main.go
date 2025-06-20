@@ -29,7 +29,7 @@ var debugConfig = DebugConfig{
 }
 
 func main() {
-	// FIXED: Enhanced pprof server startup with error handling
+	// pprof server startup with error handling
 	go func() {
 		log.Println("Starting pprof server on :6060")
 		log.Println("Memory profiler available at: http://localhost:6060/debug/pprof/")
@@ -46,7 +46,7 @@ func main() {
 		}
 	}()
 
-	// FIXED: Enhanced initial MatProfile logging
+	// Initial MatProfile logging
 	initialCount := gocv.MatProfile.Count()
 	log.Printf("=== MEMORY TRACKING INITIALIZED ===")
 	log.Printf("Initial MatProfile count: %d", initialCount)
@@ -56,7 +56,7 @@ func main() {
 		log.Printf("This may indicate leftover Mats from previous sessions")
 	}
 
-	// FIXED: Log Go runtime information
+	// Log Go runtime information
 	log.Printf("Go version: %s", runtime.Version())
 	log.Printf("GOMAXPROCS: %d", runtime.GOMAXPROCS(0))
 
@@ -64,7 +64,7 @@ func main() {
 	myWindow := myApp.NewWindow("Image Restoration Suite (Fixed)")
 	myWindow.Resize(fyne.NewSize(1600, 900))
 
-	// FIXED: Create UI with enhanced error handling
+	// Create UI with error handling
 	ui := NewImageRestorationUI(myWindow, &debugConfig)
 	if ui == nil {
 		log.Fatal("Failed to create UI")
@@ -77,29 +77,29 @@ func main() {
 
 	myWindow.SetContent(content)
 
-	// FIXED: Enhanced cleanup and comprehensive memory leak detection
+	// Cleanup and memory leak detection
 	myWindow.SetOnClosed(func() {
 		log.Printf("=== APPLICATION SHUTDOWN INITIATED ===")
-		log.Printf("Performing comprehensive cleanup...")
+		log.Printf("Performing cleanup...")
 
-		// FIXED: Force garbage collection before cleanup
+		// Force garbage collection before cleanup
 		runtime.GC()
 		runtime.GC() // Call twice to ensure thorough cleanup
 
 		startCleanupTime := time.Now()
 
-		// Enhanced pipeline cleanup
+		// Pipeline cleanup
 		if ui != nil && ui.pipeline != nil {
 			log.Printf("Closing image pipeline...")
 			ui.pipeline.Close()
 			log.Printf("Pipeline closed successfully")
 		}
 
-		// FIXED: Allow time for all goroutines to complete cleanup
+		// Allow time for all goroutines to complete cleanup
 		log.Printf("Waiting for cleanup operations to complete...")
 		time.Sleep(100 * time.Millisecond)
 
-		// FIXED: Force final garbage collection
+		// Force final garbage collection
 		log.Printf("Running final garbage collection...")
 		runtime.GC()
 		runtime.GC()
@@ -107,7 +107,7 @@ func main() {
 		cleanupDuration := time.Since(startCleanupTime)
 		log.Printf("Cleanup completed in %v", cleanupDuration)
 
-		// FIXED: Comprehensive memory analysis
+		// Comprehensive memory analysis
 		var memStats runtime.MemStats
 		runtime.ReadMemStats(&memStats)
 
@@ -119,7 +119,7 @@ func main() {
 		log.Printf("Final MatProfile count: %d", finalCount)
 		log.Printf("Net change: %+d Mats", memoryChange)
 
-		// FIXED: Detailed memory statistics
+		// Memory statistics
 		log.Printf("Go Memory Stats:")
 		log.Printf("  Allocated: %.2f MB", float64(memStats.Alloc)/1024/1024)
 		log.Printf("  Total Allocated: %.2f MB", float64(memStats.TotalAlloc)/1024/1024)
@@ -127,7 +127,7 @@ func main() {
 		log.Printf("  GC Runs: %d", memStats.NumGC)
 		log.Printf("  Last GC: %v ago", time.Since(time.Unix(0, int64(memStats.LastGC))))
 
-		// FIXED: Enhanced leak detection and reporting
+		// Leak detection and reporting
 		if finalCount > 0 {
 			log.Printf("⚠️  WARNING: MEMORY LEAKS DETECTED!")
 			log.Printf("   %d Mat(s) were not properly closed", finalCount)
@@ -150,7 +150,7 @@ func main() {
 			}
 		}
 
-		// FIXED: Performance summary
+		// Performance summary
 		log.Printf("=== SESSION SUMMARY ===")
 		if ui != nil && ui.pipeline != nil {
 			operations := ui.pipeline.debugPipeline.GetOperationHistory()
@@ -169,7 +169,7 @@ func main() {
 		log.Printf("=====================================")
 	})
 
-	// FIXED: Enhanced startup logging
+	// Startup logging
 	log.Printf("=== STARTING IMAGE RESTORATION SUITE ===")
 	log.Printf("Debug configuration:")
 	log.Printf("  GUI debugging: %t", debugConfig.GUI)

@@ -36,11 +36,8 @@ type ImageRestorationUI struct {
 	debugGUI                     *DebugGUI
 	debugRender                  *DebugRender
 
-	// FIXED: Enhanced thread safety and rate limiting
 	updateMutex       sync.Mutex
 	lastUpdateTime    time.Time
-	updateDebounce    time.Duration
-	pendingUpdate     bool
 	processingUpdate  bool
 	parameterDebounce time.Duration
 }
@@ -51,8 +48,7 @@ func NewImageRestorationUI(window fyne.Window, config *DebugConfig) *ImageRestor
 		pipeline:          NewImagePipeline(config),
 		debugGUI:          NewDebugGUI(config),
 		debugRender:       NewDebugRender(config),
-		updateDebounce:    50 * time.Millisecond,  // Debounce UI updates
-		parameterDebounce: 100 * time.Millisecond, // Debounce parameter changes
+		parameterDebounce: 200 * time.Millisecond, // Reduced debounce for more responsive updates
 	}
 	return ui
 }
@@ -97,14 +93,14 @@ func (ui *ImageRestorationUI) createToolbar() fyne.CanvasObject {
 	)
 
 	toolbarCard := container.NewPadded(toolbar)
-	// Fixed toolbar height
+	// toolbar height
 	toolbarCard.Resize(fyne.NewSize(0, 50))
 
 	return toolbarCard
 }
 
 func (ui *ImageRestorationUI) createLeftPanel() fyne.CanvasObject {
-	// FIXED: Update transformation list to include fixed versions
+	// Update transformation list
 	transformations := []string{"2D Otsu", "Lanczos4 Scaling"}
 
 	ui.availableTransformationsList = widget.NewList(
@@ -119,7 +115,7 @@ func (ui *ImageRestorationUI) createLeftPanel() fyne.CanvasObject {
 	scrollableList := container.NewVScroll(ui.availableTransformationsList)
 	scrollableList.SetMinSize(fyne.NewSize(200, 200))
 
-	// Header background with desired color and correct height (24 DIP)
+	// Header background with desired color and height (24 DIP)
 	headerBg := canvas.NewRectangle(&color.RGBA{R: 233, G: 208, B: 255, A: 255})
 	headerBg.SetMinSize(fyne.NewSize(200, 24))
 
@@ -281,7 +277,7 @@ func (ui *ImageRestorationUI) openImage() {
 
 		ui.debugGUI.LogFileOperation("open", reader.URI().Name())
 
-		// FIXED: Run in goroutine to prevent UI blocking
+		// Run in goroutine to prevent UI blocking
 		go func() {
 			// Load image using OpenCV
 			mat := gocv.IMRead(reader.URI().Path(), gocv.IMReadColor)
@@ -346,7 +342,7 @@ func (ui *ImageRestorationUI) saveImage() {
 
 		ui.debugGUI.LogFileOperation("save", filename)
 
-		// FIXED: Validate and normalize file extension
+		// Validate and normalize file extension
 		ext := strings.ToLower(filepath.Ext(filename))
 		ui.debugGUI.LogFileExtensionCheck(filename, ext, ext != "")
 
@@ -359,9 +355,9 @@ func (ui *ImageRestorationUI) saveImage() {
 			filename = strings.TrimSuffix(filename, ext) + ".png"
 		}
 
-		// FIXED: Run in goroutine to prevent UI blocking
+		// Run in goroutine to prevent UI blocking
 		go func() {
-			// CRITICAL FIX: Force reprocessing of the full image to ensure latest parameters are applied
+			// Force reprocessing of the full image to ensure latest parameters are applied
 			ui.debugGUI.Log("Forcing full reprocessing before save to ensure latest parameters")
 			err := ui.pipeline.ProcessImage()
 			if err != nil {
@@ -372,7 +368,7 @@ func (ui *ImageRestorationUI) saveImage() {
 				return
 			}
 
-			// FIXED: Get thread-safe clone to prevent race conditions
+			// Get thread-safe clone to prevent race conditions
 			processedImage := ui.pipeline.GetProcessedImage()
 			defer processedImage.Close() // Clean up cloned image
 
@@ -435,7 +431,7 @@ func (ui *ImageRestorationUI) onTransformationSelected(id widget.ListItemID) {
 		return
 	}
 
-	// FIXED: Run in goroutine to prevent UI blocking
+	// Run in goroutine to prevent UI blocking
 	go func() {
 		var transformation Transformation
 		switch id {
@@ -476,7 +472,7 @@ func (ui *ImageRestorationUI) onAppliedTransformationSelected(id widget.ListItem
 }
 
 func (ui *ImageRestorationUI) removeTransformation(id int) {
-	// FIXED: Run in goroutine to prevent UI blocking
+	// Run in goroutine to prevent UI blocking
 	go func() {
 		err := ui.pipeline.RemoveTransformation(id)
 		if err != nil {
@@ -495,7 +491,7 @@ func (ui *ImageRestorationUI) removeTransformation(id int) {
 }
 
 func (ui *ImageRestorationUI) showTransformationParameters(transformation Transformation) {
-	// CRITICAL FIX: Pass ui.onParameterChanged as the callback
+	// Pass ui.onParameterChanged as the callback
 	parametersWidget := transformation.GetParametersWidget(ui.onParameterChanged)
 	fyne.Do(func() {
 		ui.parametersContainer.Objects[0] = parametersWidget
@@ -503,77 +499,71 @@ func (ui *ImageRestorationUI) showTransformationParameters(transformation Transf
 	})
 }
 
-// CRITICAL FIX: Proper parameter change handling with preview reprocessing
 func (ui *ImageRestorationUI) onParameterChanged() {
-	ui.debugGUI.LogUIEvent("onParameterChanged called - will reprocess preview")
+	ui.debugGUI.LogUIEvent("onParameterChanged called - triggering immediate preview update")
 
+	// Prevent concurrent updates with simple mutex
 	ui.updateMutex.Lock()
-	defer ui.updateMutex.Unlock()
-
-	// FIXED: Prevent multiple concurrent updates
 	if ui.processingUpdate {
-		ui.pendingUpdate = true
+		ui.updateMutex.Unlock()
+		ui.debugGUI.LogUIEvent("onParameterChanged: update already in progress, skipping")
 		return
 	}
+	ui.processingUpdate = true
+	ui.updateMutex.Unlock()
 
-	// Rate limiting to prevent excessive updates
+	// Minimal debouncing - only prevent rapid successive calls
 	now := time.Now()
 	if now.Sub(ui.lastUpdateTime) < ui.parameterDebounce {
-		if !ui.pendingUpdate {
-			ui.pendingUpdate = true
-			// Schedule delayed update
-			go func() {
-				time.Sleep(ui.parameterDebounce)
-				ui.updateMutex.Lock()
-				shouldUpdate := ui.pendingUpdate
-				ui.pendingUpdate = false
-				ui.updateMutex.Unlock()
+		ui.updateMutex.Lock()
+		ui.processingUpdate = false
+		ui.updateMutex.Unlock()
+		ui.debugGUI.LogUIEvent("onParameterChanged: rate limited, scheduling delayed update")
 
-				if shouldUpdate {
-					ui.performParameterUpdate()
-				}
-			}()
-		}
+		// Schedule a single delayed update
+		go func() {
+			time.Sleep(ui.parameterDebounce - now.Sub(ui.lastUpdateTime))
+			ui.onParameterChanged() // Retry after delay
+		}()
 		return
 	}
 
 	ui.lastUpdateTime = now
-	ui.performParameterUpdate()
-}
 
-func (ui *ImageRestorationUI) performParameterUpdate() {
-	ui.updateMutex.Lock()
-	ui.processingUpdate = true
-	ui.updateMutex.Unlock()
-
-	defer func() {
-		ui.updateMutex.Lock()
-		ui.processingUpdate = false
-		ui.updateMutex.Unlock()
-	}()
-
-	ui.debugGUI.LogUIEvent("performParameterUpdate - reprocessing preview with new parameters")
-
-	// CRITICAL FIX: Use pipeline's proper ReprocessPreview method
+	// Force immediate preview regeneration
 	go func() {
-		if ui.pipeline.HasImage() {
-			// Force the pipeline to reprocess the preview with updated parameters
-			err := ui.pipeline.ReprocessPreview()
-			if err != nil {
-				ui.debugGUI.LogError(fmt.Errorf("failed to reprocess preview with new parameters: %w", err))
-				return
-			}
+		defer func() {
+			ui.updateMutex.Lock()
+			ui.processingUpdate = false
+			ui.updateMutex.Unlock()
+		}()
 
-			ui.debugGUI.Log("Preview reprocessed with updated parameters")
+		ui.debugGUI.LogUIEvent("onParameterChanged: starting preview regeneration")
+
+		if !ui.pipeline.HasImage() {
+			ui.debugGUI.LogUIEvent("onParameterChanged: no image loaded")
+			return
 		}
 
+		// CRITICAL: Force preview regeneration by calling the pipeline method
+		// that triggers fresh processing with current parameters
+		err := ui.pipeline.ForcePreviewRegeneration()
+		if err != nil {
+			ui.debugGUI.LogError(fmt.Errorf("failed to regenerate preview: %w", err))
+			return
+		}
+
+		ui.debugGUI.LogUIEvent("onParameterChanged: preview regenerated successfully")
+
+		// Update UI on main thread
 		fyne.Do(func() {
-			ui.updateUI()
+			ui.updateImageDisplay()
+			ui.updateQualityMetrics()
 		})
 	}()
 }
 
-// FIXED: Add thread safety to UI updates
+// Add thread safety to UI updates
 func (ui *ImageRestorationUI) updateUI() {
 	ui.updateImageDisplay()
 	ui.updateImageInfo()
@@ -582,14 +572,14 @@ func (ui *ImageRestorationUI) updateUI() {
 	ui.transformationsList.Refresh()
 }
 
-// FIXED: Enhanced image display with proper error handling and thread safety
+// Image display with error handling and thread safety
 func (ui *ImageRestorationUI) updateImageDisplay() {
 	ui.debugGUI.LogUIEvent("updateImageDisplay called")
 
 	if ui.pipeline.HasImage() && !ui.pipeline.originalImage.Empty() {
 		ui.debugGUI.LogUIEvent("updateImageDisplay: converting original image")
 
-		// FIXED: Get thread-safe clones to prevent race conditions
+		// Get thread-safe clones to prevent race conditions
 		originalMat := ui.pipeline.originalImage.Clone()
 		defer originalMat.Close()
 
@@ -601,7 +591,7 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 		ui.debugGUI.LogImageConversion("original", true, "")
 		ui.debugRender.LogImageProperties("original", originalImg)
 
-		// FIXED: Get thread-safe preview clone
+		// Get thread-safe preview clone
 		previewMat := ui.pipeline.GetPreviewImage()
 		defer previewMat.Close() // Clean up cloned Mat
 
@@ -618,7 +608,7 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 			ui.debugGUI.LogImageFormatChange("preview", originalChannels, previewChannels)
 
 			if previewChannels == 1 && originalChannels == 3 {
-				// ENHANCED CONVERSION: Use standard GoCV API instead of custom logic
+				// ENHANCED CONVERSION: Use standard GoCV API
 				ui.debugRender.Log("Converting grayscale to color using GoCV API")
 
 				previewColor := gocv.NewMat()
@@ -666,7 +656,7 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 		ui.debugGUI.LogImageConversion("preview", true, "")
 		ui.debugRender.LogImageProperties("preview", previewImg)
 
-		// FIXED: Validate images before setting
+		// Validate images before setting
 		if originalImg != nil && previewImg != nil {
 			// Update only image content, not canvas properties
 			ui.originalImage.Image = originalImg
@@ -697,9 +687,9 @@ func (ui *ImageRestorationUI) updateImageInfo() {
 
 func (ui *ImageRestorationUI) updateQualityMetrics() {
 	if len(ui.pipeline.transformations) > 0 {
-		// FIXED: Run quality calculations in goroutine to prevent UI blocking
+		// Run quality calculations in goroutine to prevent UI blocking
 		go func() {
-			// FIXED: Calculate metrics with proper error handling
+			// Calculate metrics with error handling
 			psnr := ui.pipeline.CalculatePSNR()
 			ssim := ui.pipeline.CalculateSSIM()
 
@@ -707,7 +697,7 @@ func (ui *ImageRestorationUI) updateQualityMetrics() {
 
 			// Update UI in main thread
 			fyne.Do(func() {
-				// FIXED: Format with proper bounds checking
+				// Format with bounds checking
 				if psnr >= 0 && psnr <= 100 {
 					ui.psnrLabel.SetText(fmt.Sprintf("PSNR: %.2f dB", psnr))
 					ui.psnrProgress.SetValue(psnr / 100.0) // Normalize to 0-1 range

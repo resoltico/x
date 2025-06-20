@@ -50,13 +50,13 @@ clean:
 	rm -f $(BINARY_NAME).exe
 	rm -f $(BINARY_NAME)-*
 
-# FIXED: Enhanced dependency checking
+# Dependency checking
 deps:
 	@echo "Installing Go dependencies..."
 	go mod tidy
 	go mod download
 
-# FIXED: Comprehensive dependency verification
+# Dependency verification
 check-deps:
 	@echo "Checking system dependencies..."
 	@echo "Checking Go version..."

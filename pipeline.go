@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"math"
 	"sync"
-	"time"
 
 	"gocv.io/x/gocv"
 )
 
 type ImagePipeline struct {
-	// FIXED: Use proper atomic access patterns for thread safety
+	// Use proper atomic access patterns for thread safety
 	originalImage   gocv.Mat
 	processedImage  gocv.Mat
 	previewImage    gocv.Mat
@@ -19,10 +18,8 @@ type ImagePipeline struct {
 	initialized     bool
 	mutex           sync.RWMutex // Protect concurrent access
 
-	// FIXED: Add proper rate limiting for preview processing
-	lastPreviewUpdate time.Time
-	previewDebounce   time.Duration
-	processingMutex   sync.Mutex // Separate mutex for processing operations
+	// Remove excessive rate limiting for preview processing
+	processingMutex sync.Mutex // Separate mutex for processing operations
 }
 
 func NewImagePipeline(config *DebugConfig) *ImagePipeline {
@@ -32,8 +29,7 @@ func NewImagePipeline(config *DebugConfig) *ImagePipeline {
 		transformations: make([]Transformation, 0),
 		debugPipeline:   debugPipeline,
 		initialized:     false,
-		previewDebounce: 100 * time.Millisecond, // Debounce preview updates
-		// FIXED: Initialize with empty Mats using proper GoCV patterns
+		// Initialize with empty Mats using proper GoCV patterns
 		originalImage:  gocv.NewMat(),
 		processedImage: gocv.NewMat(),
 		previewImage:   gocv.NewMat(),
@@ -49,7 +45,7 @@ func (p *ImagePipeline) HasImage() bool {
 }
 
 func (p *ImagePipeline) SetOriginalImage(img gocv.Mat) (err error) {
-	// FIXED: Enhanced panic recovery with proper error handling
+	// Enhanced panic recovery with proper error handling
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("panic in SetOriginalImage: %v", r)
@@ -62,12 +58,12 @@ func (p *ImagePipeline) SetOriginalImage(img gocv.Mat) (err error) {
 
 	p.debugPipeline.LogSetOriginalStart()
 
-	// FIXED: Input validation
+	// Input validation
 	if img.Empty() {
 		return fmt.Errorf("input image is empty")
 	}
 
-	// FIXED: Validate image dimensions
+	// Validate image dimensions
 	if img.Cols() <= 0 || img.Rows() <= 0 || img.Cols() > 65536 || img.Rows() > 65536 {
 		return fmt.Errorf("invalid image dimensions: %dx%d", img.Cols(), img.Rows())
 	}
@@ -78,7 +74,7 @@ func (p *ImagePipeline) SetOriginalImage(img gocv.Mat) (err error) {
 		p.cleanupResourcesUnsafe()
 	}
 
-	// FIXED: Atomic resource setup with proper error handling
+	// Atomic resource setup with proper error handling
 	p.debugPipeline.LogSetOriginalStep("cloning original image")
 	p.originalImage = img.Clone()
 	if p.originalImage.Empty() {
@@ -125,7 +121,7 @@ func (p *ImagePipeline) AddTransformation(transformation Transformation) error {
 		return fmt.Errorf("no image loaded")
 	}
 
-	// FIXED: Validate transformation
+	// Validate transformation
 	if transformation == nil {
 		return fmt.Errorf("transformation is nil")
 	}
@@ -133,7 +129,7 @@ func (p *ImagePipeline) AddTransformation(transformation Transformation) error {
 	p.transformations = append(p.transformations, transformation)
 
 	if err := p.processImageUnsafe(); err != nil {
-		// FIXED: Remove the failed transformation
+		// Remove the failed transformation
 		p.transformations = p.transformations[:len(p.transformations)-1]
 		return fmt.Errorf("failed to process image after adding transformation: %w", err)
 	}
@@ -149,7 +145,7 @@ func (p *ImagePipeline) RemoveTransformation(index int) error {
 	defer p.mutex.Unlock()
 
 	if index >= 0 && index < len(p.transformations) {
-		// FIXED: Proper cleanup of transformation resources
+		// Proper cleanup of transformation resources
 		if p.transformations[index] != nil {
 			p.transformations[index].Close()
 		}
@@ -194,6 +190,21 @@ func (p *ImagePipeline) ProcessImage() error {
 	return p.processImageUnsafe()
 }
 
+// CRITICAL FIX: Add method to force preview regeneration with current parameters
+func (p *ImagePipeline) ForcePreviewRegeneration() error {
+	p.debugPipeline.Log("ForcePreviewRegeneration: Regenerating preview with current parameters")
+
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
+	if !p.HasImageUnsafe() {
+		return fmt.Errorf("no image loaded")
+	}
+
+	// CRITICAL: Always regenerate preview from scratch with current parameters
+	return p.processPreviewUnsafe()
+}
+
 // CRITICAL FIX: Add public method to reprocess preview with current parameters
 func (p *ImagePipeline) ReprocessPreview() error {
 	p.debugPipeline.Log("ReprocessPreview: Force reprocessing preview with current parameters")
@@ -204,7 +215,7 @@ func (p *ImagePipeline) ReprocessPreview() error {
 	return p.processPreviewUnsafe()
 }
 
-// FIXED: Return thread-safe clones with proper error handling
+// Return thread-safe clones with proper error handling
 func (p *ImagePipeline) GetProcessedImage() gocv.Mat {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
@@ -217,11 +228,11 @@ func (p *ImagePipeline) GetProcessedImage() gocv.Mat {
 		p.debugPipeline.LogGetProcessedImage("processed image empty, returning original clone")
 		return p.originalImage.Clone()
 	}
-	// CRITICAL FIX: Always return clones to prevent race conditions
+	// Always return clones to prevent race conditions
 	return p.processedImage.Clone()
 }
 
-// FIXED: Return thread-safe clones with proper error handling
+// Return thread-safe clones with proper error handling
 func (p *ImagePipeline) GetPreviewImage() gocv.Mat {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
@@ -234,22 +245,15 @@ func (p *ImagePipeline) GetPreviewImage() gocv.Mat {
 		p.debugPipeline.LogGetProcessedImage("preview image empty, returning original clone")
 		return p.originalImage.Clone()
 	}
-	// CRITICAL FIX: Always return clones to prevent race conditions
+	// Always return clones to prevent race conditions
 	return p.previewImage.Clone()
 }
 
-// FIXED: Add proper debouncing and thread safety
+// Remove debouncing and use separate mutex for processing
 func (p *ImagePipeline) ProcessPreview() error {
-	// FIXED: Use separate mutex for processing to prevent deadlocks
+	// Use separate mutex for processing to prevent deadlocks
 	p.processingMutex.Lock()
 	defer p.processingMutex.Unlock()
-
-	// Rate limiting for preview updates
-	now := time.Now()
-	if now.Sub(p.lastPreviewUpdate) < p.previewDebounce {
-		return nil // Skip if too soon
-	}
-	p.lastPreviewUpdate = now
 
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
@@ -263,7 +267,7 @@ func (p *ImagePipeline) HasImageUnsafe() bool {
 }
 
 func (p *ImagePipeline) processImageUnsafe() (err error) {
-	// FIXED: Enhanced panic recovery with proper cleanup
+	// Enhanced panic recovery with proper cleanup
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("panic in processImage: %v", r)
@@ -290,7 +294,7 @@ func (p *ImagePipeline) processImageUnsafe() (err error) {
 		p.debugPipeline.LogMemoryUsage()
 	}()
 
-	// FIXED: Create new processed image with validation
+	// Create new processed image with validation
 	p.debugPipeline.LogProcessStep("creating new processed image")
 	newProcessed := p.originalImage.Clone()
 	if newProcessed.Empty() {
@@ -314,7 +318,7 @@ func (p *ImagePipeline) processImageUnsafe() (err error) {
 
 		p.debugPipeline.LogTransformationApplied(transformation.Name(), before, result, duration)
 
-		// FIXED: Proper cleanup and validation
+		// Proper cleanup and validation
 		if !newProcessed.Empty() {
 			newProcessed.Close()
 		}
@@ -322,7 +326,7 @@ func (p *ImagePipeline) processImageUnsafe() (err error) {
 			before.Close()
 		}
 
-		// FIXED: Validate transformation result
+		// Validate transformation result
 		if result.Empty() {
 			return fmt.Errorf("transformation %s returned empty result", transformation.Name())
 		}
@@ -330,7 +334,7 @@ func (p *ImagePipeline) processImageUnsafe() (err error) {
 		newProcessed = result
 	}
 
-	// FIXED: Atomic replacement of processed image
+	// Atomic replacement of processed image
 	if !p.processedImage.Empty() {
 		p.processedImage.Close()
 	}
@@ -341,7 +345,7 @@ func (p *ImagePipeline) processImageUnsafe() (err error) {
 }
 
 func (p *ImagePipeline) processPreviewUnsafe() (err error) {
-	// FIXED: Enhanced panic recovery
+	// Enhanced panic recovery
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("panic in processPreview: %v", r)
@@ -367,13 +371,13 @@ func (p *ImagePipeline) processPreviewUnsafe() (err error) {
 		}
 	}()
 
-	// FIXED: Create new preview image with validation
+	// CRITICAL FIX: Always create new preview image from original to ensure current parameters are used
 	newPreview := p.originalImage.Clone()
 	if newPreview.Empty() {
 		return fmt.Errorf("failed to clone original for preview")
 	}
 
-	// Apply all transformations sequentially using preview method
+	// Apply all transformations using their current parameters via ApplyPreview
 	for i, transformation := range p.transformations {
 		if transformation == nil {
 			newPreview.Close()
@@ -384,12 +388,13 @@ func (p *ImagePipeline) processPreviewUnsafe() (err error) {
 		p.debugPipeline.StartTimer(timerName)
 
 		before := newPreview.Clone()
+		// Use ApplyPreview which reads current parameters
 		result := transformation.ApplyPreview(newPreview)
 		duration := p.debugPipeline.EndTimer(timerName)
 
 		p.debugPipeline.LogTransformationApplied(transformation.Name()+" (preview)", before, result, duration)
 
-		// FIXED: Proper cleanup
+		// Proper cleanup
 		if !newPreview.Empty() {
 			newPreview.Close()
 		}
@@ -397,7 +402,7 @@ func (p *ImagePipeline) processPreviewUnsafe() (err error) {
 			before.Close()
 		}
 
-		// FIXED: Validate preview result
+		// Validate preview result
 		if result.Empty() {
 			return fmt.Errorf("preview transformation %s returned empty result", transformation.Name())
 		}
@@ -405,7 +410,7 @@ func (p *ImagePipeline) processPreviewUnsafe() (err error) {
 		newPreview = result
 	}
 
-	// FIXED: Atomic replacement of preview image
+	// Atomic replacement of preview image
 	if !p.previewImage.Empty() {
 		p.previewImage.Close()
 	}
@@ -431,7 +436,7 @@ func (p *ImagePipeline) cleanupResourcesUnsafe() {
 	}
 }
 
-// FIXED: Proper PSNR calculation with enhanced numerical stability
+// Proper PSNR calculation with enhanced numerical stability
 func (p *ImagePipeline) CalculatePSNR() float64 {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
@@ -440,18 +445,18 @@ func (p *ImagePipeline) CalculatePSNR() float64 {
 		return 0.0
 	}
 
-	// FIXED: Create thread-safe clones for calculation
+	// Create thread-safe clones for calculation
 	orig := p.originalImage.Clone()
 	defer orig.Close()
 	proc := p.processedImage.Clone()
 	defer proc.Close()
 
-	// FIXED: Validate dimensions match
+	// Validate dimensions match
 	if orig.Rows() != proc.Rows() || orig.Cols() != proc.Cols() {
 		return 0.0
 	}
 
-	// FIXED: Handle channel mismatch properly
+	// Handle channel mismatch properly
 	if orig.Type() != proc.Type() {
 		if proc.Type() == gocv.MatTypeCV8U && orig.Channels() == 3 {
 			temp := gocv.NewMat()
@@ -480,14 +485,14 @@ func (p *ImagePipeline) CalculatePSNR() float64 {
 	sumResult := diffSq.Sum()
 	totalPixels := float64(orig.Total())
 
-	// FIXED: Handle potential division by zero
+	// Handle potential division by zero
 	if totalPixels == 0 {
 		return 0.0
 	}
 
 	mse := sumResult.Val1 / totalPixels
 
-	// FIXED: Enhanced edge case handling
+	// Enhanced edge case handling
 	if mse == 0 {
 		return 100.0 // Perfect match - return large finite value instead of infinity
 	}
@@ -495,14 +500,14 @@ func (p *ImagePipeline) CalculatePSNR() float64 {
 		return 100.0 // Very small differences
 	}
 
-	// FIXED: Prevent NaN and infinite results
+	// Prevent NaN and infinite results
 	if math.IsInf(mse, 0) || math.IsNaN(mse) {
 		return 0.0
 	}
 
 	psnr := 20*math.Log10(255) - 10*math.Log10(mse)
 
-	// FIXED: Clamp to reasonable range and handle edge cases
+	// Clamp to reasonable range and handle edge cases
 	if math.IsInf(psnr, 0) || math.IsNaN(psnr) {
 		return 100.0
 	}
@@ -516,7 +521,7 @@ func (p *ImagePipeline) CalculatePSNR() float64 {
 	return psnr
 }
 
-// FIXED: Proper SSIM calculation with enhanced numerical stability
+// Proper SSIM calculation with enhanced numerical stability
 func (p *ImagePipeline) CalculateSSIM() float64 {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
@@ -525,18 +530,18 @@ func (p *ImagePipeline) CalculateSSIM() float64 {
 		return 0.0
 	}
 
-	// FIXED: Create thread-safe clones for calculation
+	// Create thread-safe clones for calculation
 	orig := p.originalImage.Clone()
 	defer orig.Close()
 	proc := p.processedImage.Clone()
 	defer proc.Close()
 
-	// FIXED: Validate dimensions match
+	// Validate dimensions match
 	if orig.Rows() != proc.Rows() || orig.Cols() != proc.Cols() {
 		return 0.0
 	}
 
-	// FIXED: Handle channel mismatch properly
+	// Handle channel mismatch properly
 	if orig.Type() != proc.Type() {
 		if proc.Type() == gocv.MatTypeCV8U && orig.Channels() == 3 {
 			temp := gocv.NewMat()
@@ -578,7 +583,7 @@ func (p *ImagePipeline) CalculateSSIM() float64 {
 	orig.ConvertTo(&origF, gocv.MatTypeCV32F)
 	proc.ConvertTo(&procF, gocv.MatTypeCV32F)
 
-	// FIXED: Enhanced SSIM constants for better numerical stability
+	// Enhanced SSIM constants for better numerical stability
 	c1 := math.Pow(0.01*255, 2)
 	c2 := math.Pow(0.03*255, 2)
 
@@ -586,7 +591,7 @@ func (p *ImagePipeline) CalculateSSIM() float64 {
 	origMean := origF.Mean()
 	procMean := procF.Mean()
 
-	// FIXED: Validate mean calculations
+	// Validate mean calculations
 	if math.IsInf(origMean.Val1, 0) || math.IsNaN(origMean.Val1) ||
 		math.IsInf(procMean.Val1, 0) || math.IsNaN(procMean.Val1) {
 		return 0.0
@@ -625,7 +630,7 @@ func (p *ImagePipeline) CalculateSSIM() float64 {
 	sigma2SqVal := sigma2Sq.Mean().Val1
 	sigma12Val := sigma12.Mean().Val1
 
-	// FIXED: Validate variance calculations
+	// Validate variance calculations
 	if math.IsInf(sigma1SqVal, 0) || math.IsNaN(sigma1SqVal) ||
 		math.IsInf(sigma2SqVal, 0) || math.IsNaN(sigma2SqVal) ||
 		math.IsInf(sigma12Val, 0) || math.IsNaN(sigma12Val) {
@@ -636,14 +641,14 @@ func (p *ImagePipeline) CalculateSSIM() float64 {
 	numerator := (2*mu1*mu2 + c1) * (2*sigma12Val + c2)
 	denominator := (mu1*mu1 + mu2*mu2 + c1) * (sigma1SqVal + sigma2SqVal + c2)
 
-	// FIXED: Prevent division by zero
+	// Prevent division by zero
 	if denominator == 0 || math.IsInf(denominator, 0) || math.IsNaN(denominator) {
 		return 0.0
 	}
 
 	ssim := numerator / denominator
 
-	// FIXED: Enhanced bounds checking and numerical stability
+	// Enhanced bounds checking and numerical stability
 	if math.IsInf(ssim, 0) || math.IsNaN(ssim) {
 		return 0.0
 	}

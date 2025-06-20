@@ -17,14 +17,12 @@ A modern image processing application built with Go and Fyne, featuring advanced
   - Window Radius (1-20)
   - Epsilon smoothing factor (0.001-0.1)
   - Morphological kernel size (1-15, odd values only)
-  - **FIXED**: Correct statistical classification and variance calculation
 
 - **Lanczos4 Scaling**: High-quality image scaling with Lanczos4 interpolation:
   - Scale factor (0.1-5.0)
   - DPI-based scaling
   - Iterative downscaling for large reductions
   - Artifact reduction filters
-  - **FIXED**: Proper memory management in guided filter
 
 ### Supported Image Formats
 
@@ -203,7 +201,7 @@ MEMORY LEAK: 5 Mat(s) were created but not cleaned up during session
 
 2. **Use cloned Mats for thread safety**:
    ```go
-   // FIXED: Return clones to prevent race conditions
+   // Return clones to prevent race conditions
    return processedImage.Clone()
    ```
 
@@ -211,7 +209,7 @@ MEMORY LEAK: 5 Mat(s) were created but not cleaned up during session
    ```go
    for i := 0; i < iterations; i++ {
        temp := gocv.NewMat()
-       defer temp.Close() // FIXED: Added missing cleanup
+       defer temp.Close() // Added missing cleanup
        // process...
    }
    ```
@@ -233,12 +231,12 @@ MEMORY LEAK: 5 Mat(s) were created but not cleaned up during session
 image-restoration-suite/
 ├── go.mod                  # Go module dependencies
 ├── Makefile               # Enhanced build system with MatProfile
-├── main.go                # FIXED: Application entry point with pprof server
-├── ui.go                  # FIXED: Thread-safe UI implementation
-├── pipeline.go            # FIXED: Memory-safe pipeline with proper cleanup
+├── main.go                # Application entry point with pprof server
+├── ui.go                  # Thread-safe UI implementation
+├── pipeline.go            # Memory-safe pipeline with proper cleanup
 ├── transformation.go      # Transformation interface
-├── transform_twod_otsu.go # FIXED: Correct 2D Otsu implementation
-├── transform_lanczos4.go  # FIXED: Memory-safe Lanczos4 implementation
+├── transform_twod_otsu.go # 2D Otsu implementation
+├── transform_lanczos4.go  # Lanczos4 implementation
 ├── debug_*.go            # Debug modules (terminal output only)
 ├── helpers.go            # Utility functions
 ├── README.md             # This file
