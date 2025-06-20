@@ -177,6 +177,8 @@ func (t *TwoDOtsu) applyGuidedFilter(src gocv.Mat, radius int, eps float64) gocv
 	defer denominator.Close()
 	varI.CopyTo(&denominator)
 	denominator.AddFloat(float32(eps))
+
+	// Avoid division by zero
 	gocv.Divide(varI, denominator, &a)
 
 	// b = mean(I) * (1 - a)
@@ -271,13 +273,14 @@ func (t *TwoDOtsu) findOptimalThresholds2D(hist [256][256]float64) (int, int) {
 	maxVariance := 0.0
 	bestS, bestT := 128, 128
 
+	// Fixed: Use proper variable names for both thresholds
 	for s := 1; s < 255; s++ {
-		for threshold := 1; threshold < 255; threshold++ {
-			variance := t.calculateBetweenClassVariance2D(hist, s, threshold)
+		for thr := 1; thr < 255; thr++ { // Fixed: renamed to avoid conflict
+			variance := t.calculateBetweenClassVariance2D(hist, s, thr)
 			if variance > maxVariance {
 				maxVariance = variance
 				bestS = s
-				bestT = threshold
+				bestT = thr
 			}
 		}
 	}
@@ -286,50 +289,91 @@ func (t *TwoDOtsu) findOptimalThresholds2D(hist [256][256]float64) (int, int) {
 }
 
 func (t *TwoDOtsu) calculateBetweenClassVariance2D(hist [256][256]float64, s, threshold int) float64 {
-	// Class probabilities and means
-	var w0, w1 float64
-	var μ0g, μ0f, μ1g, μ1f float64
+	// Class probabilities and means for 2D case
+	var w0, w1, w2, w3 float64
+	var μ0g, μ0f, μ1g, μ1f, μ2g, μ2f, μ3g, μ3f float64
 
-	// Class 0: g <= s, f <= threshold
-	for g := 0; g <= s; g++ {
-		for f := 0; f <= threshold; f++ {
-			prob := hist[g][f]
-			w0 += prob
-			μ0g += float64(g) * prob
-			μ0f += float64(f) * prob
-		}
-	}
+	// Four regions in 2D Otsu:
+	// Class 0: g <= s, f <= threshold (dark objects)
+	// Class 1: g <= s, f > threshold  (light objects in dark background)
+	// Class 2: g > s, f <= threshold  (dark objects in light background)
+	// Class 3: g > s, f > threshold   (background)
 
-	// Class 1: rest
-	w1 = 1.0 - w0
-
-	if w0 == 0 || w1 == 0 {
-		return 0.0
-	}
-
-	// Normalize means
-	μ0g /= w0
-	μ0f /= w0
-
-	// Calculate means for class 1
 	for g := 0; g < 256; g++ {
 		for f := 0; f < 256; f++ {
-			if g > s || f > threshold {
-				prob := hist[g][f]
+			prob := hist[g][f]
+
+			if g <= s && f <= threshold {
+				// Class 0
+				w0 += prob
+				μ0g += float64(g) * prob
+				μ0f += float64(f) * prob
+			} else if g <= s && f > threshold {
+				// Class 1
+				w1 += prob
 				μ1g += float64(g) * prob
 				μ1f += float64(f) * prob
+			} else if g > s && f <= threshold {
+				// Class 2
+				w2 += prob
+				μ2g += float64(g) * prob
+				μ2f += float64(f) * prob
+			} else {
+				// Class 3
+				w3 += prob
+				μ3g += float64(g) * prob
+				μ3f += float64(f) * prob
 			}
 		}
 	}
 
-	μ1g /= w1
-	μ1f /= w1
+	// Normalize means by class probabilities
+	if w0 > 0 {
+		μ0g /= w0
+		μ0f /= w0
+	}
+	if w1 > 0 {
+		μ1g /= w1
+		μ1f /= w1
+	}
+	if w2 > 0 {
+		μ2g /= w2
+		μ2f /= w2
+	}
+	if w3 > 0 {
+		μ3g /= w3
+		μ3f /= w3
+	}
 
-	// Between-class variance in 2D
-	diffG := μ1g - μ0g
-	diffF := μ1f - μ0f
+	// Calculate overall means
+	μG := μ0g*w0 + μ1g*w1 + μ2g*w2 + μ3g*w3
+	μF := μ0f*w0 + μ1f*w1 + μ2f*w2 + μ3f*w3
 
-	return w0 * w1 * (diffG*diffG + diffF*diffF)
+	// Calculate between-class variance for 2D case
+	var betweenVariance float64
+
+	if w0 > 0 {
+		diffG := μ0g - μG
+		diffF := μ0f - μF
+		betweenVariance += w0 * (diffG*diffG + diffF*diffF)
+	}
+	if w1 > 0 {
+		diffG := μ1g - μG
+		diffF := μ1f - μF
+		betweenVariance += w1 * (diffG*diffG + diffF*diffF)
+	}
+	if w2 > 0 {
+		diffG := μ2g - μG
+		diffF := μ2f - μF
+		betweenVariance += w2 * (diffG*diffG + diffF*diffF)
+	}
+	if w3 > 0 {
+		diffG := μ3g - μG
+		diffF := μ3f - μF
+		betweenVariance += w3 * (diffG*diffG + diffF*diffF)
+	}
+
+	return betweenVariance
 }
 
 func (t *TwoDOtsu) applyMorphology(src gocv.Mat, kernelSize int) gocv.Mat {

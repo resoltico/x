@@ -6,6 +6,7 @@ import (
 	"image/color"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -33,6 +34,7 @@ type ImageRestorationUI struct {
 	ssimLabel                    *widget.Label
 	debugGUI                     *DebugGUI
 	debugRender                  *DebugRender
+	processingMutex              sync.Mutex
 }
 
 func NewImageRestorationUI(window fyne.Window, config *DebugConfig) *ImageRestorationUI {
@@ -252,56 +254,59 @@ func (ui *ImageRestorationUI) openImage() {
 
 		ui.debugGUI.LogFileOperation("open", reader.URI().Name())
 
-		// Use proper error boundaries
-		go func() {
-			defer func() {
-				if r := recover(); r != nil {
-					ui.debugGUI.Log(fmt.Sprintf("Panic in openImage: %v", r))
-					fyne.Do(func() {
-						dialog.ShowError(fmt.Errorf("error loading image: %v", r), ui.window)
-					})
-				}
-			}()
-
-			mat := gocv.IMRead(reader.URI().Path(), gocv.IMReadColor)
-			defer func() {
-				if !mat.Empty() {
-					mat.Close()
-				}
-			}()
-
-			if mat.Empty() {
-				fyne.Do(func() {
-					dialog.ShowError(fmt.Errorf("failed to load image"), ui.window)
-				})
-				return
-			}
-
-			size := mat.Size()
-			ui.debugGUI.LogImageInfo(size[1], size[0], mat.Channels())
-
-			ui.pipeline.ClearTransformations()
-
-			if err := ui.pipeline.SetOriginalImage(mat); err != nil {
-				ui.debugGUI.LogError(err)
-				fyne.Do(func() {
-					dialog.ShowError(err, ui.window)
-				})
-				return
-			}
-
-			fyne.Do(func() {
-				ui.updateUI()
-				ui.updateWindowTitle(reader.URI().Name())
-				ui.parametersContainer.Objects[1] = widget.NewLabel("Select a Transformation")
-				ui.parametersContainer.Refresh()
-				ui.transformationsList.UnselectAll()
-				ui.availableTransformationsList.UnselectAll()
-			})
-
-			ui.debugGUI.Log("Image loaded successfully")
-		}()
+		// Process in goroutine with proper Mat lifecycle management
+		go ui.processImageLoad(reader.URI().Path(), reader.URI().Name())
 	}, ui.window)
+}
+
+func (ui *ImageRestorationUI) processImageLoad(path, name string) {
+	// Proper error boundary with Mat cleanup
+	defer func() {
+		if r := recover(); r != nil {
+			ui.debugGUI.Log(fmt.Sprintf("Panic in processImageLoad: %v", r))
+			fyne.Do(func() {
+				dialog.ShowError(fmt.Errorf("error loading image: %v", r), ui.window)
+			})
+		}
+	}()
+
+	mat := gocv.IMRead(path, gocv.IMReadColor)
+	defer func() {
+		if !mat.Empty() {
+			mat.Close()
+		}
+	}()
+
+	if mat.Empty() {
+		fyne.Do(func() {
+			dialog.ShowError(fmt.Errorf("failed to load image"), ui.window)
+		})
+		return
+	}
+
+	size := mat.Size()
+	ui.debugGUI.LogImageInfo(size[1], size[0], mat.Channels())
+
+	ui.pipeline.ClearTransformations()
+
+	if err := ui.pipeline.SetOriginalImage(mat); err != nil {
+		ui.debugGUI.LogError(err)
+		fyne.Do(func() {
+			dialog.ShowError(err, ui.window)
+		})
+		return
+	}
+
+	fyne.Do(func() {
+		ui.updateUI()
+		ui.updateWindowTitle(name)
+		ui.parametersContainer.Objects[1] = widget.NewLabel("Select a Transformation")
+		ui.parametersContainer.Refresh()
+		ui.transformationsList.UnselectAll()
+		ui.availableTransformationsList.UnselectAll()
+	})
+
+	ui.debugGUI.Log("Image loaded successfully")
 }
 
 func (ui *ImageRestorationUI) saveImage() {
@@ -340,43 +345,45 @@ func (ui *ImageRestorationUI) saveImage() {
 			filename = strings.TrimSuffix(filename, ext) + ".png"
 		}
 
-		go func() {
-			defer func() {
-				if r := recover(); r != nil {
-					ui.debugGUI.Log(fmt.Sprintf("Panic in saveImage: %v", r))
-					fyne.Do(func() {
-						dialog.ShowError(fmt.Errorf("error saving image: %v", r), ui.window)
-					})
-				}
-			}()
-
-			processedImage := ui.pipeline.GetProcessedImage()
-			defer processedImage.Close()
-
-			hasImage := !processedImage.Empty()
-			ui.debugGUI.LogSaveOperation(filename, filepath.Ext(filename), hasImage)
-
-			if !hasImage {
-				ui.debugGUI.LogSaveResult(filename, false, "no processed image available")
-				fyne.Do(func() {
-					dialog.ShowError(fmt.Errorf("no processed image available"), ui.window)
-				})
-				return
-			}
-
-			success := gocv.IMWrite(filePath, processedImage)
-			if !success {
-				err := fmt.Errorf("failed to write image to %s", filePath)
-				ui.debugGUI.LogSaveResult(filename, false, err.Error())
-				fyne.Do(func() {
-					dialog.ShowError(err, ui.window)
-				})
-			} else {
-				ui.debugGUI.LogSaveResult(filename, true, "")
-				ui.debugGUI.Log("Image saved successfully")
-			}
-		}()
+		go ui.processSaveImage(filePath, filename)
 	}, ui.window)
+}
+
+func (ui *ImageRestorationUI) processSaveImage(filePath, filename string) {
+	defer func() {
+		if r := recover(); r != nil {
+			ui.debugGUI.Log(fmt.Sprintf("Panic in processSaveImage: %v", r))
+			fyne.Do(func() {
+				dialog.ShowError(fmt.Errorf("error saving image: %v", r), ui.window)
+			})
+		}
+	}()
+
+	processedImage := ui.pipeline.GetProcessedImage()
+	defer processedImage.Close()
+
+	hasImage := !processedImage.Empty()
+	ui.debugGUI.LogSaveOperation(filename, filepath.Ext(filename), hasImage)
+
+	if !hasImage {
+		ui.debugGUI.LogSaveResult(filename, false, "no processed image available")
+		fyne.Do(func() {
+			dialog.ShowError(fmt.Errorf("no processed image available"), ui.window)
+		})
+		return
+	}
+
+	success := gocv.IMWrite(filePath, processedImage)
+	if !success {
+		err := fmt.Errorf("failed to write image to %s", filePath)
+		ui.debugGUI.LogSaveResult(filename, false, err.Error())
+		fyne.Do(func() {
+			dialog.ShowError(err, ui.window)
+		})
+	} else {
+		ui.debugGUI.LogSaveResult(filename, true, "")
+		ui.debugGUI.Log("Image saved successfully")
+	}
 }
 
 func (ui *ImageRestorationUI) resetTransformations() {
@@ -411,45 +418,50 @@ func (ui *ImageRestorationUI) onTransformationSelected(id widget.ListItemID) {
 		return
 	}
 
-	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				ui.debugGUI.Log(fmt.Sprintf("Panic in transformation: %v", r))
-				fyne.Do(func() {
-					dialog.ShowError(fmt.Errorf("error applying transformation: %v", r), ui.window)
-				})
-			}
-		}()
+	go ui.processTransformationSelection(id, transformationName)
+}
 
-		var transformation Transformation
-		switch id {
-		case 0:
-			transformation = NewTwoDOtsu(&debugConfig)
-		case 1:
-			transformation = NewLanczos4Transform(&debugConfig)
-		default:
-			return
-		}
+func (ui *ImageRestorationUI) processTransformationSelection(id widget.ListItemID, transformationName string) {
+	ui.processingMutex.Lock()
+	defer ui.processingMutex.Unlock()
 
-		err := ui.pipeline.AddTransformation(transformation)
-		if err != nil {
-			ui.debugGUI.LogError(err)
+	defer func() {
+		if r := recover(); r != nil {
+			ui.debugGUI.Log(fmt.Sprintf("Panic in transformation: %v", r))
 			fyne.Do(func() {
-				dialog.ShowError(err, ui.window)
+				dialog.ShowError(fmt.Errorf("error applying transformation: %v", r), ui.window)
 			})
-			return
 		}
-
-		ui.debugGUI.LogTransformation(transformation.Name(), transformation.GetParameters())
-		ui.debugGUI.LogTransformationApplication(transformation.Name(), true)
-
-		fyne.Do(func() {
-			ui.updateUI()
-			ui.availableTransformationsList.UnselectAll()
-		})
-
-		ui.debugGUI.LogListUnselect("available transformations")
 	}()
+
+	var transformation Transformation
+	switch id {
+	case 0:
+		transformation = NewTwoDOtsu(&debugConfig)
+	case 1:
+		transformation = NewLanczos4Transform(&debugConfig)
+	default:
+		return
+	}
+
+	err := ui.pipeline.AddTransformation(transformation)
+	if err != nil {
+		ui.debugGUI.LogError(err)
+		fyne.Do(func() {
+			dialog.ShowError(err, ui.window)
+		})
+		return
+	}
+
+	ui.debugGUI.LogTransformation(transformation.Name(), transformation.GetParameters())
+	ui.debugGUI.LogTransformationApplication(transformation.Name(), true)
+
+	fyne.Do(func() {
+		ui.updateUI()
+		ui.availableTransformationsList.UnselectAll()
+	})
+
+	ui.debugGUI.LogListUnselect("available transformations")
 }
 
 func (ui *ImageRestorationUI) onAppliedTransformationSelected(id widget.ListItemID) {
@@ -494,6 +506,9 @@ func (ui *ImageRestorationUI) onParameterChanged() {
 	ui.debugGUI.LogUIEvent("onParameterChanged called")
 
 	go func() {
+		ui.processingMutex.Lock()
+		defer ui.processingMutex.Unlock()
+
 		defer func() {
 			if r := recover(); r != nil {
 				ui.debugGUI.Log(fmt.Sprintf("Panic in onParameterChanged: %v", r))
@@ -530,47 +545,51 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 
 	ui.debugGUI.LogUIEvent("updateImageDisplay called")
 
-	if ui.pipeline.HasImage() && !ui.pipeline.originalImage.Empty() {
-		ui.debugGUI.LogUIEvent("updateImageDisplay: converting original image")
+	if !ui.pipeline.HasImage() {
+		return
+	}
 
-		originalImg, err := ui.pipeline.originalImage.ToImage()
-		if err != nil {
-			ui.debugGUI.LogImageConversion("original", false, err.Error())
-			return
-		}
-		ui.debugGUI.LogImageConversion("original", true, "")
+	// Safe Mat access with proper cleanup
+	originalMat := ui.pipeline.GetProcessedImage() // Get copy for thread safety
+	defer originalMat.Close()
 
-		previewMat := ui.pipeline.GetPreviewImage()
-		defer previewMat.Close()
+	if originalMat.Empty() {
+		return
+	}
 
-		if previewMat.Empty() {
-			ui.debugGUI.LogUIEvent("updateImageDisplay: preview image is empty")
-			return
-		}
+	ui.debugGUI.LogUIEvent("updateImageDisplay: converting original image")
 
-		var previewImg image.Image
-		originalChannels := ui.pipeline.originalImage.Channels()
-		previewChannels := previewMat.Channels()
+	originalImg, err := originalMat.ToImage()
+	if err != nil {
+		ui.debugGUI.LogImageConversion("original", false, err.Error())
+		return
+	}
+	ui.debugGUI.LogImageConversion("original", true, "")
 
-		if originalChannels != previewChannels {
-			ui.debugGUI.LogImageFormatChange("preview", originalChannels, previewChannels)
+	previewMat := ui.pipeline.GetPreviewImage()
+	defer previewMat.Close()
 
-			if previewChannels == 1 && originalChannels == 3 {
-				previewColor := gocv.NewMat()
-				defer previewColor.Close()
-				gocv.CvtColor(previewMat, &previewColor, gocv.ColorGrayToBGR)
+	if previewMat.Empty() {
+		ui.debugGUI.LogUIEvent("updateImageDisplay: preview image is empty")
+		return
+	}
 
-				previewImg, err = previewColor.ToImage()
-				if err != nil {
-					ui.debugGUI.LogImageConversion("preview", false, err.Error())
-					return
-				}
-			} else {
-				previewImg, err = previewMat.ToImage()
-				if err != nil {
-					ui.debugGUI.LogImageConversion("preview", false, err.Error())
-					return
-				}
+	var previewImg image.Image
+	originalChannels := originalMat.Channels()
+	previewChannels := previewMat.Channels()
+
+	if originalChannels != previewChannels {
+		ui.debugGUI.LogImageFormatChange("preview", originalChannels, previewChannels)
+
+		if previewChannels == 1 && originalChannels == 3 {
+			previewColor := gocv.NewMat()
+			defer previewColor.Close()
+			gocv.CvtColor(previewMat, &previewColor, gocv.ColorGrayToBGR)
+
+			previewImg, err = previewColor.ToImage()
+			if err != nil {
+				ui.debugGUI.LogImageConversion("preview", false, err.Error())
+				return
 			}
 		} else {
 			previewImg, err = previewMat.ToImage()
@@ -579,25 +598,39 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 				return
 			}
 		}
-
-		ui.debugGUI.LogImageConversion("preview", true, "")
-
-		ui.originalImage.Image = originalImg
-		ui.previewImage.Image = previewImg
-
-		ui.originalImage.Refresh()
-		ui.previewImage.Refresh()
-
-		ui.debugGUI.LogCanvasRefresh("originalImage")
-		ui.debugGUI.LogCanvasRefresh("previewImage")
-		ui.debugGUI.LogUIEvent("updateImageDisplay: completed successfully")
+	} else {
+		previewImg, err = previewMat.ToImage()
+		if err != nil {
+			ui.debugGUI.LogImageConversion("preview", false, err.Error())
+			return
+		}
 	}
+
+	ui.debugGUI.LogImageConversion("preview", true, "")
+
+	ui.originalImage.Image = originalImg
+	ui.previewImage.Image = previewImg
+
+	ui.originalImage.Refresh()
+	ui.previewImage.Refresh()
+
+	ui.debugGUI.LogCanvasRefresh("originalImage")
+	ui.debugGUI.LogCanvasRefresh("previewImage")
+	ui.debugGUI.LogUIEvent("updateImageDisplay: completed successfully")
 }
 
 func (ui *ImageRestorationUI) updateImageInfo() {
-	if ui.pipeline.HasImage() && !ui.pipeline.originalImage.Empty() {
-		size := ui.pipeline.originalImage.Size()
-		channels := ui.pipeline.originalImage.Channels()
+	if !ui.pipeline.HasImage() {
+		return
+	}
+
+	// Thread-safe access
+	originalMat := ui.pipeline.GetProcessedImage()
+	defer originalMat.Close()
+
+	if !originalMat.Empty() {
+		size := originalMat.Size()
+		channels := originalMat.Channels()
 
 		info := fmt.Sprintf("Size: %dx%d\nChannels: %d", size[1], size[0], channels)
 		ui.imageInfoLabel.ParseMarkdown(info)
