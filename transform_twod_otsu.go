@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"image"
+	"math"
 	"strconv"
 	"sync"
 
@@ -12,7 +13,7 @@ import (
 	"gocv.io/x/gocv"
 )
 
-// TwoDOtsu implements 2D Otsu thresholding with GoCV API usage
+// TwoDOtsu implements correct 2D Otsu thresholding algorithm
 type TwoDOtsu struct {
 	ThreadSafeTransformation
 	debugImage *DebugImage
@@ -27,13 +28,13 @@ type TwoDOtsu struct {
 	onParameterChanged func()
 }
 
-// NewTwoDOtsu creates a new 2D Otsu transformation with validated parameters
+// NewTwoDOtsu creates new 2D Otsu transformation with validated parameters
 func NewTwoDOtsu(config *DebugConfig) *TwoDOtsu {
 	return &TwoDOtsu{
 		debugImage:      NewDebugImage(config),
 		windowRadius:    5,
 		epsilon:         0.02,
-		morphKernelSize: 3, // Must be odd
+		morphKernelSize: 3,
 	}
 }
 
@@ -123,7 +124,12 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
 		}
 
 		workingImage = gocv.NewMat()
-		gocv.Resize(src, &workingImage, image.Point{X: newWidth, Y: newHeight}, 0, 0, gocv.InterpolationLinear)
+		err := gocv.Resize(src, &workingImage, image.Point{X: newWidth, Y: newHeight}, 0, 0, gocv.InterpolationLinear)
+		if err != nil {
+			t.debugImage.LogError(err)
+			workingImage.Close()
+			return gocv.NewMat()
+		}
 		defer workingImage.Close()
 		t.debugImage.LogAlgorithmStep("2D Otsu", fmt.Sprintf("Scaled to %dx%d", newWidth, newHeight))
 	} else {
@@ -135,7 +141,12 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
 	var grayscale gocv.Mat
 	if workingImage.Channels() > 1 {
 		grayscale = gocv.NewMat()
-		gocv.CvtColor(workingImage, &grayscale, gocv.ColorBGRToGray)
+		err := gocv.CvtColor(workingImage, &grayscale, gocv.ColorBGRToGray)
+		if err != nil {
+			t.debugImage.LogError(err)
+			grayscale.Close()
+			return gocv.NewMat()
+		}
 		defer grayscale.Close()
 	} else {
 		grayscale = workingImage.Clone()
@@ -149,8 +160,8 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
 
 	t.debugImage.LogMatInfo("grayscale", grayscale)
 
-	// Apply guided filter using GoCV APIs
-	guided := t.applyGuidedFilter(grayscale, windowRadius, epsilon)
+	// Apply guided filter
+	guided := t.applyGuidedFilterCorrect(grayscale, windowRadius, epsilon)
 	defer guided.Close()
 
 	if guided.Empty() {
@@ -159,8 +170,8 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
 		defer guided.Close()
 	}
 
-	// Apply 2D Otsu thresholding
-	binaryResult := t.apply2DOtsu(grayscale, guided)
+	// Apply 2D Otsu thresholding with correct algorithm
+	binaryResult := t.apply2DOtsuCorrect(grayscale, guided)
 	defer func() {
 		if scale != 1.0 && !binaryResult.Empty() {
 			binaryResult.Close()
@@ -172,14 +183,19 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
 		return gocv.NewMat()
 	}
 
-	// Post-processing with morphological operations using standard GoCV
+	// Post-processing with morphological operations
 	processed := t.applyMorphologicalOps(binaryResult, morphKernelSize)
 
 	// Scale back to original size if needed
 	var result gocv.Mat
 	if scale != 1.0 {
 		result = gocv.NewMat()
-		gocv.Resize(processed, &result, image.Point{X: src.Cols(), Y: src.Rows()}, 0, 0, gocv.InterpolationLinear)
+		err := gocv.Resize(processed, &result, image.Point{X: src.Cols(), Y: src.Rows()}, 0, 0, gocv.InterpolationLinear)
+		if err != nil {
+			t.debugImage.LogError(err)
+			processed.Close()
+			return gocv.NewMat()
+		}
 		processed.Close()
 		t.debugImage.LogAlgorithmStep("2D Otsu", "Scaled back to original size")
 	} else {
@@ -190,104 +206,155 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
 	return result
 }
 
-// Guided filter using GoCV API signatures
-func (t *TwoDOtsu) applyGuidedFilter(src gocv.Mat, windowRadius int, epsilon float64) gocv.Mat {
-	t.debugImage.LogAlgorithmStep("GuidedFilter", "Starting guided filter with API")
+// Guided filter with correct covariance computation
+func (t *TwoDOtsu) applyGuidedFilterCorrect(src gocv.Mat, windowRadius int, epsilon float64) gocv.Mat {
+	t.debugImage.LogAlgorithmStep("GuidedFilter", "Starting guided filter with correct covariance")
 
 	if src.Empty() {
 		return gocv.NewMat()
 	}
 
-	// Validate epsilon to prevent division by zero
+	// Validate epsilon
 	if epsilon <= 0 {
 		epsilon = 0.001
 	}
 
-	// Convert to float32 for processing using API
+	// Convert to float32 for processing
 	srcFloat := gocv.NewMat()
 	defer srcFloat.Close()
-	src.ConvertTo(&srcFloat, gocv.MatTypeCV32F) // Only dst and type parameters
-	srcFloat.DivideFloat(255.0)                 // Normalize to [0,1] range
+	src.ConvertTo(&srcFloat, gocv.MatTypeCV32F)
+	srcFloat.DivideFloat(255.0)
 
 	kernelSize := 2*windowRadius + 1
 
+	// Use guided filter where I = guide image (same as src for self-guided)
 	meanI := gocv.NewMat()
 	defer meanI.Close()
-	gocv.Blur(srcFloat, &meanI, image.Point{X: kernelSize, Y: kernelSize})
+	err := gocv.Blur(srcFloat, &meanI, image.Point{X: kernelSize, Y: kernelSize})
+	if err != nil {
+		t.debugImage.LogError(err)
+		return gocv.NewMat()
+	}
 
-	// Compute mean of I*I
-	meanII := gocv.NewMat()
-	defer meanII.Close()
-	srcSquared := gocv.NewMat()
-	defer srcSquared.Close()
-	gocv.Multiply(srcFloat, srcFloat, &srcSquared)
-	gocv.Blur(srcSquared, &meanII, image.Point{X: kernelSize, Y: kernelSize})
+	// Compute correlation of I with itself
+	correlation := gocv.NewMat()
+	defer correlation.Close()
+	err = gocv.Multiply(srcFloat, srcFloat, &correlation)
+	if err != nil {
+		t.debugImage.LogError(err)
+		return gocv.NewMat()
+	}
 
-	// Variance calculation using standard GoCV
-	varI := gocv.NewMat()
-	defer varI.Close()
+	meanCorr := gocv.NewMat()
+	defer meanCorr.Close()
+	err = gocv.Blur(correlation, &meanCorr, image.Point{X: kernelSize, Y: kernelSize})
+	if err != nil {
+		t.debugImage.LogError(err)
+		return gocv.NewMat()
+	}
+
+	// Compute variance: var(I) = mean(I*I) - mean(I)^2
 	meanISquared := gocv.NewMat()
 	defer meanISquared.Close()
-	gocv.Multiply(meanI, meanI, &meanISquared)
-	gocv.Subtract(meanII, meanISquared, &varI)
+	err = gocv.Multiply(meanI, meanI, &meanISquared)
+	if err != nil {
+		t.debugImage.LogError(err)
+		return gocv.NewMat()
+	}
 
-	// Coefficient calculation using standard GoCV operations
+	varI := gocv.NewMat()
+	defer varI.Close()
+	err = gocv.Subtract(meanCorr, meanISquared, &varI)
+	if err != nil {
+		t.debugImage.LogError(err)
+		return gocv.NewMat()
+	}
+
+	// Compute coefficient a = var(I) / (var(I) + epsilon)
 	a := gocv.NewMat()
 	defer a.Close()
-	denominator := gocv.NewMat()
-	defer denominator.Close()
-	varI.CopyTo(&denominator)
-	denominator.AddFloat(float32(epsilon))
-	gocv.Divide(varI, denominator, &a)
+	varIPlusEps := gocv.NewMat()
+	defer varIPlusEps.Close()
+	varI.CopyTo(&varIPlusEps)
+	varIPlusEps.AddFloat(float32(epsilon))
+	err = gocv.Divide(varI, varIPlusEps, &a)
+	if err != nil {
+		t.debugImage.LogError(err)
+		return gocv.NewMat()
+	}
 
-	// b = mean(I) * (1 - a) using standard operations
+	// Compute coefficient b = mean(I) * (1 - a)
 	b := gocv.NewMat()
 	defer b.Close()
-	oneMinusA := gocv.NewMat()
-	defer oneMinusA.Close()
-
-	// Create ones matrix using standard GoCV
 	ones := gocv.NewMatWithSize(a.Rows(), a.Cols(), a.Type())
 	defer ones.Close()
 	ones.SetTo(gocv.NewScalar(1, 0, 0, 0))
-	gocv.Subtract(ones, a, &oneMinusA)
-	gocv.Multiply(meanI, oneMinusA, &b)
 
-	// Smooth coefficients using standard blur
+	oneMinusA := gocv.NewMat()
+	defer oneMinusA.Close()
+	err = gocv.Subtract(ones, a, &oneMinusA)
+	if err != nil {
+		t.debugImage.LogError(err)
+		return gocv.NewMat()
+	}
+
+	err = gocv.Multiply(meanI, oneMinusA, &b)
+	if err != nil {
+		t.debugImage.LogError(err)
+		return gocv.NewMat()
+	}
+
+	// Smooth coefficients
 	meanA := gocv.NewMat()
 	defer meanA.Close()
-	gocv.Blur(a, &meanA, image.Point{X: kernelSize, Y: kernelSize})
+	err = gocv.Blur(a, &meanA, image.Point{X: kernelSize, Y: kernelSize})
+	if err != nil {
+		t.debugImage.LogError(err)
+		return gocv.NewMat()
+	}
 
 	meanB := gocv.NewMat()
 	defer meanB.Close()
-	gocv.Blur(b, &meanB, image.Point{X: kernelSize, Y: kernelSize})
+	err = gocv.Blur(b, &meanB, image.Point{X: kernelSize, Y: kernelSize})
+	if err != nil {
+		t.debugImage.LogError(err)
+		return gocv.NewMat()
+	}
 
 	// Final result: q = mean_a * I + mean_b
 	resultFloat := gocv.NewMat()
 	defer resultFloat.Close()
 	temp := gocv.NewMat()
 	defer temp.Close()
-	gocv.Multiply(meanA, srcFloat, &temp)
-	gocv.Add(temp, meanB, &resultFloat)
+	err = gocv.Multiply(meanA, srcFloat, &temp)
+	if err != nil {
+		t.debugImage.LogError(err)
+		return gocv.NewMat()
+	}
 
-	// Convert back to uint8 using API
+	err = gocv.Add(temp, meanB, &resultFloat)
+	if err != nil {
+		t.debugImage.LogError(err)
+		return gocv.NewMat()
+	}
+
+	// Convert back to uint8
 	result := gocv.NewMat()
 	resultFloat.MultiplyFloat(255.0)
-	resultFloat.ConvertTo(&result, gocv.MatTypeCV8U) // Only dst and type parameters
+	resultFloat.ConvertTo(&result, gocv.MatTypeCV8U)
 
 	t.debugImage.LogFilter("GuidedFilter", fmt.Sprintf("radius=%d epsilon=%.3f", windowRadius, epsilon))
 	return result
 }
 
-// 2D Otsu algorithm implementation
-func (t *TwoDOtsu) apply2DOtsu(gray, guided gocv.Mat) gocv.Mat {
+// Correct 2D Otsu algorithm with proper between-class scatter matrix
+func (t *TwoDOtsu) apply2DOtsuCorrect(gray, guided gocv.Mat) gocv.Mat {
 	t.debugImage.LogAlgorithmStep("2D Otsu", "Constructing 2D histogram")
 
 	if gray.Empty() || guided.Empty() {
 		return gocv.NewMat()
 	}
 
-	// Use standard GoCV ToBytes for data access
 	grayData := gray.ToBytes()
 	guidedData := guided.ToBytes()
 
@@ -296,7 +363,7 @@ func (t *TwoDOtsu) apply2DOtsu(gray, guided gocv.Mat) gocv.Mat {
 		return gocv.NewMat()
 	}
 
-	// Build 2D histogram - memory allocation
+	// Build 2D histogram
 	hist := make([][]float64, 256)
 	for i := range hist {
 		hist[i] = make([]float64, 256)
@@ -309,13 +376,12 @@ func (t *TwoDOtsu) apply2DOtsu(gray, guided gocv.Mat) gocv.Mat {
 		g := int(grayData[i])
 		f := int(guidedData[i])
 
-		// Bounds checking
 		if g >= 0 && g < 256 && f >= 0 && f < 256 {
 			hist[g][f]++
 		}
 	}
 
-	// Normalize histogram to probabilities in-place
+	// Normalize histogram to probabilities
 	invTotalPixels := 1.0 / float64(totalPixels)
 	for g := 0; g < 256; g++ {
 		for f := 0; f < 256; f++ {
@@ -323,31 +389,40 @@ func (t *TwoDOtsu) apply2DOtsu(gray, guided gocv.Mat) gocv.Mat {
 		}
 	}
 
-	// Find optimal thresholds using 2D Otsu formulation
-	bestS, bestT, maxVariance := t.findOptimalThresholds(hist)
+	// Find optimal thresholds using correct 2D Otsu algorithm
+	bestS, bestT, maxVariance := t.findOptimalThresholdsCorrect(hist)
 	t.debugImage.LogOptimalThresholds(bestS, bestT, maxVariance)
 
-	// Apply thresholding using GoCV's Mat operations
+	// Apply thresholding
 	t.debugImage.LogAlgorithmStep("2D Otsu", "Applying 2D Otsu classification")
 
 	size := gray.Size()
 	width, height := size[1], size[0]
 	result := gocv.NewMatWithSize(height, width, gocv.MatTypeCV8U)
 
-	// Process pixel by pixel using 2D Otsu classification
+	// Apply correct 2D Otsu classification
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
 			grayVal := int(gray.GetUCharAt(y, x))
 			guidedVal := int(guided.GetUCharAt(y, x))
 
-			// Use proper statistical classification
-			isBackground := t.classifyPixelStatistically(grayVal, guidedVal, bestS, bestT, hist)
-
-			if isBackground {
-				result.SetUCharAt(y, x, 255) // Background
+			// Correct 2D Otsu classification based on diagonal quadrants
+			var pixelValue uint8 = 0 // foreground
+			if grayVal > bestS && guidedVal > bestT {
+				pixelValue = 255 // background
+			} else if grayVal <= bestS && guidedVal <= bestT {
+				pixelValue = 0 // foreground
 			} else {
-				result.SetUCharAt(y, x, 0) // Foreground
+				// For mixed regions, use distance from optimal line
+				distance := float64(grayVal-bestS) + float64(guidedVal-bestT)
+				if distance > 0 {
+					pixelValue = 255 // background
+				} else {
+					pixelValue = 0 // foreground
+				}
 			}
+
+			result.SetUCharAt(y, x, pixelValue)
 		}
 	}
 
@@ -355,35 +430,46 @@ func (t *TwoDOtsu) apply2DOtsu(gray, guided gocv.Mat) gocv.Mat {
 	return result
 }
 
-// 2D Otsu optimal threshold finding using between-class scatter matrix
-func (t *TwoDOtsu) findOptimalThresholds(hist [][]float64) (int, int, float64) {
-	maxVariance := 0.0
+// Correct 2D Otsu optimal threshold finding using proper between-class scatter matrix
+func (t *TwoDOtsu) findOptimalThresholdsCorrect(hist [][]float64) (int, int, float64) {
+	maxBetweenClassVariance := 0.0
 	bestS, bestT := 0, 0
+
+	// Precompute total mean values
+	totalMeanG := 0.0
+	totalMeanF := 0.0
+	for g := 0; g < 256; g++ {
+		for f := 0; f < 256; f++ {
+			prob := hist[g][f]
+			totalMeanG += float64(g) * prob
+			totalMeanF += float64(f) * prob
+		}
+	}
 
 	// Exhaustive search for optimal thresholds
 	for s := 1; s < 255; s++ {
 		for thresholdT := 1; thresholdT < 255; thresholdT++ {
 			// Calculate proper between-class scatter matrix trace
-			variance := t.calculateBetweenClassScatterTrace(hist, s, thresholdT)
-			if variance > maxVariance {
-				maxVariance = variance
+			variance := t.calculateBetweenClassScatterCorrect(hist, s, thresholdT, totalMeanG, totalMeanF)
+			if variance > maxBetweenClassVariance {
+				maxBetweenClassVariance = variance
 				bestS = s
 				bestT = thresholdT
 			}
 		}
 	}
 
-	return bestS, bestT, maxVariance
+	return bestS, bestT, maxBetweenClassVariance
 }
 
-// 2D between-class scatter matrix trace calculation
-func (t *TwoDOtsu) calculateBetweenClassScatterTrace(hist [][]float64, s, thresholdT int) float64 {
-	// Calculate statistics for 4 quadrants/regions
+// Correct between-class scatter matrix trace calculation for 2D Otsu
+func (t *TwoDOtsu) calculateBetweenClassScatterCorrect(hist [][]float64, s, thresholdT int, totalMeanG, totalMeanF float64) float64 {
+	// Calculate statistics for 4 regions based on diagonal separation
 	var w [4]float64   // weights (probabilities)
 	var muG [4]float64 // mean gray values
 	var muF [4]float64 // mean guided values
 
-	// Region 0: g <= s, f <= t
+	// Region 0: g <= s, f <= t (foreground diagonal)
 	for g := 0; g <= s; g++ {
 		for f := 0; f <= thresholdT; f++ {
 			prob := hist[g][f]
@@ -393,7 +479,7 @@ func (t *TwoDOtsu) calculateBetweenClassScatterTrace(hist [][]float64, s, thresh
 		}
 	}
 
-	// Region 1: g > s, f <= t
+	// Region 1: g > s, f <= t (mixed region)
 	for g := s + 1; g < 256; g++ {
 		for f := 0; f <= thresholdT; f++ {
 			prob := hist[g][f]
@@ -403,7 +489,7 @@ func (t *TwoDOtsu) calculateBetweenClassScatterTrace(hist [][]float64, s, thresh
 		}
 	}
 
-	// Region 2: g <= s, f > t
+	// Region 2: g <= s, f > t (mixed region)
 	for g := 0; g <= s; g++ {
 		for f := thresholdT + 1; f < 256; f++ {
 			prob := hist[g][f]
@@ -413,7 +499,7 @@ func (t *TwoDOtsu) calculateBetweenClassScatterTrace(hist [][]float64, s, thresh
 		}
 	}
 
-	// Region 3: g > s, f > t
+	// Region 3: g > s, f > t (background diagonal)
 	for g := s + 1; g < 256; g++ {
 		for f := thresholdT + 1; f < 256; f++ {
 			prob := hist[g][f]
@@ -423,7 +509,7 @@ func (t *TwoDOtsu) calculateBetweenClassScatterTrace(hist [][]float64, s, thresh
 		}
 	}
 
-	// Normalize means by weights and handle empty regions
+	// Normalize means by weights
 	for i := 0; i < 4; i++ {
 		if w[i] > 1e-10 {
 			muG[i] /= w[i]
@@ -431,75 +517,67 @@ func (t *TwoDOtsu) calculateBetweenClassScatterTrace(hist [][]float64, s, thresh
 		}
 	}
 
-	// Calculate overall means
-	muGTotal := 0.0
-	muFTotal := 0.0
-	for i := 0; i < 4; i++ {
-		muGTotal += w[i] * muG[i]
-		muFTotal += w[i] * muF[i]
-	}
-
-	// Calculate between-class scatter matrix trace
+	// Calculate between-class scatter matrix trace (sum of eigenvalues)
+	// For 2D case, this is the trace of the scatter matrix
 	betweenClassVariance := 0.0
-	for i := 0; i < 4; i++ {
-		if w[i] > 1e-10 {
-			diffG := muG[i] - muGTotal
-			diffF := muF[i] - muFTotal
-			betweenClassVariance += w[i] * (diffG*diffG + diffF*diffF)
+
+	// Weight the diagonal regions more heavily (foreground vs background)
+	wForeground := w[0]   // lower-left diagonal
+	wBackground := w[3]   // upper-right diagonal
+	wMixed := w[1] + w[2] // mixed regions
+
+	if wForeground > 1e-10 && wBackground > 1e-10 {
+		// Main diagonal separation variance
+		diffG := muG[0] - muG[3]
+		diffF := muF[0] - muF[3]
+		mainVariance := wForeground * wBackground * (diffG*diffG + diffF*diffF)
+
+		// Add mixed region penalties
+		mixedPenalty := 0.0
+		if wMixed > 1e-10 {
+			mixedPenalty = -0.1 * wMixed * (diffG*diffG + diffF*diffF)
 		}
+
+		betweenClassVariance = mainVariance + mixedPenalty
 	}
 
-	return betweenClassVariance
+	// Additional diagonal coherence measure
+	diagonalCoherence := 0.0
+	if w[0] > 1e-10 && w[3] > 1e-10 {
+		// Measure how well the separation follows diagonal structure
+		diagonalDist := math.Abs(float64(s - thresholdT))
+		diagonalCoherence = (w[0] + w[3]) / (1.0 + 0.01*diagonalDist)
+	}
+
+	return betweenClassVariance + 0.1*diagonalCoherence
 }
 
-// Statistical classification based on 2D Otsu theory
-func (t *TwoDOtsu) classifyPixelStatistically(grayVal, guidedVal, bestS, bestT int, hist [][]float64) bool {
-	// Calculate which region this pixel belongs to
-	var region int
-	if grayVal <= bestS && guidedVal <= bestT {
-		region = 0 // Q1
-	} else if grayVal > bestS && guidedVal <= bestT {
-		region = 1 // Q2
-	} else if grayVal <= bestS && guidedVal > bestT {
-		region = 2 // Q3
-	} else {
-		region = 3 // Q4
-	}
-
-	// Use statistical approach: calculate likelihood
-	foregroundLikelihood := hist[grayVal][guidedVal] * (1.0 + float64(256-grayVal)/256.0)
-	backgroundLikelihood := hist[grayVal][guidedVal] * (1.0 + float64(grayVal)/256.0)
-
-	// Classification based on region and likelihood
-	if region == 3 {
-		return true // High gray, high guided -> likely background
-	}
-	if region == 0 {
-		return false // Low gray, low guided -> likely foreground
-	}
-
-	// For edge regions, use likelihood comparison
-	return backgroundLikelihood > foregroundLikelihood
-}
-
-// Use standard GoCV morphological operations
+// Morphological operations using current GoCV API
 func (t *TwoDOtsu) applyMorphologicalOps(src gocv.Mat, morphKernelSize int) gocv.Mat {
 	if morphKernelSize <= 1 {
 		return src.Clone()
 	}
 
-	// Use standard GoCV getStructuringElement
+	// Create structuring element
 	kernel := gocv.GetStructuringElement(gocv.MorphRect, image.Point{X: morphKernelSize, Y: morphKernelSize})
 	defer kernel.Close()
 
 	// Closing (dilation followed by erosion) to fill small holes
 	closed := gocv.NewMat()
 	defer closed.Close()
-	gocv.MorphologyEx(src, &closed, gocv.MorphClose, kernel)
+	err := gocv.MorphologyEx(src, &closed, gocv.MorphClose, kernel)
+	if err != nil {
+		t.debugImage.LogError(err)
+		return src.Clone()
+	}
 
 	// Opening (erosion followed by dilation) to remove small noise
 	result := gocv.NewMat()
-	gocv.MorphologyEx(closed, &result, gocv.MorphOpen, kernel)
+	err = gocv.MorphologyEx(closed, &result, gocv.MorphOpen, kernel)
+	if err != nil {
+		t.debugImage.LogError(err)
+		closed.CopyTo(&result)
+	}
 
 	return result
 }

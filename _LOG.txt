@@ -1,0 +1,521 @@
+gocv.io/x/gocv.Mat profile: total 10
+2 @ 0x102d2dd48 0x102d2dce1 0x10306d938 0x102ab1124
+#	0x102d2dd47	gocv.io/x/gocv.newMat+0x87				/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/mat_profile.go:71
+#	0x102d2dce0	gocv.io/x/gocv.IMRead+0x20				/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/imgcodecs.go:142
+#	0x10306d937	main.(*ImageRestorationUI).openImage.func1.1+0x57	/Users/erst/Library/CloudStorage/Dropbox/Websites/x/ui.go:281
+
+1 @ 0x102d2a22c 0x102d2a22d 0x10305f9a4 0x10306b4ec 0x10305d0f0 0x102a73624 0x102ab1124
+#	0x102d2a22b	gocv.io/x/gocv.newMat+0x3b	/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/mat_profile.go:71
+#	0x102d2a22c	gocv.io/x/gocv.NewMat+0x3c	/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/core.go:243
+#	0x10305f9a3	main.NewImagePipeline+0xa3	/Users/erst/Library/CloudStorage/Dropbox/Websites/x/pipeline.go:31
+#	0x10306b4eb	main.NewImageRestorationUI+0x2b	/Users/erst/Library/CloudStorage/Dropbox/Websites/x/ui.go:48
+#	0x10305d0ef	main.main+0x2ef			/Users/erst/Library/CloudStorage/Dropbox/Websites/x/main.go:68
+#	0x102a73623	runtime.main+0x283		/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/proc.go:283
+
+1 @ 0x102d2a22c 0x102d2a22d 0x10305f9b8 0x10306b4ec 0x10305d0f0 0x102a73624 0x102ab1124
+#	0x102d2a22b	gocv.io/x/gocv.newMat+0x3b	/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/mat_profile.go:71
+#	0x102d2a22c	gocv.io/x/gocv.NewMat+0x3c	/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/core.go:243
+#	0x10305f9b7	main.NewImagePipeline+0xb7	/Users/erst/Library/CloudStorage/Dropbox/Websites/x/pipeline.go:32
+#	0x10306b4eb	main.NewImageRestorationUI+0x2b	/Users/erst/Library/CloudStorage/Dropbox/Websites/x/ui.go:48
+#	0x10305d0ef	main.main+0x2ef			/Users/erst/Library/CloudStorage/Dropbox/Websites/x/main.go:68
+#	0x102a73623	runtime.main+0x283		/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/proc.go:283
+
+1 @ 0x102d2a22c 0x102d2a22d 0x10305f9cc 0x10306b4ec 0x10305d0f0 0x102a73624 0x102ab1124
+#	0x102d2a22b	gocv.io/x/gocv.newMat+0x3b	/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/mat_profile.go:71
+#	0x102d2a22c	gocv.io/x/gocv.NewMat+0x3c	/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/core.go:243
+#	0x10305f9cb	main.NewImagePipeline+0xcb	/Users/erst/Library/CloudStorage/Dropbox/Websites/x/pipeline.go:33
+#	0x10306b4eb	main.NewImageRestorationUI+0x2b	/Users/erst/Library/CloudStorage/Dropbox/Websites/x/ui.go:48
+#	0x10305d0ef	main.main+0x2ef			/Users/erst/Library/CloudStorage/Dropbox/Websites/x/main.go:68
+#	0x102a73623	runtime.main+0x283		/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/proc.go:283
+
+1 @ 0x102d2a22c 0x102d2a22d 0x103067f9c 0x103067708 0x1030620ec 0x103060e00 0x10306f8a4 0x102ab1124
+#	0x102d2a22b	gocv.io/x/gocv.newMat+0x3b					/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/mat_profile.go:71
+#	0x102d2a22c	gocv.io/x/gocv.NewMat+0x3c					/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/core.go:243
+#	0x103067f9b	main.(*TwoDOtsu).applyWithScale+0x7db				/Users/erst/Library/CloudStorage/Dropbox/Websites/x/transform_twod_otsu.go:192
+#	0x103067707	main.(*TwoDOtsu).ApplyPreview+0x27				/Users/erst/Library/CloudStorage/Dropbox/Websites/x/transform_twod_otsu.go:82
+#	0x1030620eb	main.(*ImagePipeline).processPreviewUnsafe+0x41b		/Users/erst/Library/CloudStorage/Dropbox/Websites/x/pipeline.go:381
+#	0x103060dff	main.(*ImagePipeline).ForcePreviewRegeneration+0x9f		/Users/erst/Library/CloudStorage/Dropbox/Websites/x/pipeline.go:199
+#	0x10306f8a3	main.(*ImageRestorationUI).onParameterChanged.func2+0x83	/Users/erst/Library/CloudStorage/Dropbox/Websites/x/ui.go:548
+
+1 @ 0x102d2a2a8 0x102d2a2a9 0x103069c8c 0x103067ed8 0x1030676a8 0x103061884 0x1030604a8 0x10306ee7c 0x102ab1124
+#	0x102d2a2a7	gocv.io/x/gocv.newMat+0x47					/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/mat_profile.go:71
+#	0x102d2a2a8	gocv.io/x/gocv.NewMatWithSize+0x48				/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/core.go:253
+#	0x103069c8b	main.(*TwoDOtsu).apply2DOtsuCorrect+0x2ab			/Users/erst/Library/CloudStorage/Dropbox/Websites/x/transform_twod_otsu.go:401
+#	0x103067ed7	main.(*TwoDOtsu).applyWithScale+0x717				/Users/erst/Library/CloudStorage/Dropbox/Websites/x/transform_twod_otsu.go:174
+#	0x1030676a7	main.(*TwoDOtsu).Apply+0x27					/Users/erst/Library/CloudStorage/Dropbox/Websites/x/transform_twod_otsu.go:78
+#	0x103061883	main.(*ImagePipeline).processImageUnsafe+0x443			/Users/erst/Library/CloudStorage/Dropbox/Websites/x/pipeline.go:306
+#	0x1030604a7	main.(*ImagePipeline).AddTransformation+0x147			/Users/erst/Library/CloudStorage/Dropbox/Websites/x/pipeline.go:128
+#	0x10306ee7b	main.(*ImageRestorationUI).onTransformationSelected.func1+0x15b	/Users/erst/Library/CloudStorage/Dropbox/Websites/x/ui.go:444
+
+1 @ 0x102d2a2a8 0x102d2a2a9 0x103069c8c 0x103067ed8 0x1030676a8 0x103061884 0x103060c9c 0x10306e4dc 0x102ab1124
+#	0x102d2a2a7	gocv.io/x/gocv.newMat+0x47				/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/mat_profile.go:71
+#	0x102d2a2a8	gocv.io/x/gocv.NewMatWithSize+0x48			/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/core.go:253
+#	0x103069c8b	main.(*TwoDOtsu).apply2DOtsuCorrect+0x2ab		/Users/erst/Library/CloudStorage/Dropbox/Websites/x/transform_twod_otsu.go:401
+#	0x103067ed7	main.(*TwoDOtsu).applyWithScale+0x717			/Users/erst/Library/CloudStorage/Dropbox/Websites/x/transform_twod_otsu.go:174
+#	0x1030676a7	main.(*TwoDOtsu).Apply+0x27				/Users/erst/Library/CloudStorage/Dropbox/Websites/x/transform_twod_otsu.go:78
+#	0x103061883	main.(*ImagePipeline).processImageUnsafe+0x443		/Users/erst/Library/CloudStorage/Dropbox/Websites/x/pipeline.go:306
+#	0x103060c9b	main.(*ImagePipeline).ProcessImage+0x7b			/Users/erst/Library/CloudStorage/Dropbox/Websites/x/pipeline.go:186
+#	0x10306e4db	main.(*ImageRestorationUI).saveImage.func1.1+0x6b	/Users/erst/Library/CloudStorage/Dropbox/Websites/x/ui.go:360
+
+1 @ 0x102d2a784 0x102d2a785 0x10305fdf4 0x10306da60 0x102ab1124
+#	0x102d2a783	gocv.io/x/gocv.newMat+0x63				/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/mat_profile.go:71
+#	0x102d2a784	gocv.io/x/gocv.(*Mat).Clone+0x64			/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/core.go:442
+#	0x10305fdf3	main.(*ImagePipeline).SetOriginalImage+0x173		/Users/erst/Library/CloudStorage/Dropbox/Websites/x/pipeline.go:76
+#	0x10306da5f	main.(*ImageRestorationUI).openImage.func1.1+0x17f	/Users/erst/Library/CloudStorage/Dropbox/Websites/x/ui.go:297
+
+1 @ 0x102d2a784 0x102d2a785 0x10306a618 0x103067f44 0x1030676a8 0x103061884 0x103060c9c 0x10306e4dc 0x102ab1124
+#	0x102d2a783	gocv.io/x/gocv.newMat+0x63				/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/mat_profile.go:71
+#	0x102d2a784	gocv.io/x/gocv.(*Mat).Clone+0x64			/Users/erst/go/pkg/mod/gocv.io/x/gocv@v0.41.0/core.go:442
+#	0x10306a617	main.(*TwoDOtsu).applyMorphologicalOps+0x237		/Users/erst/Library/CloudStorage/Dropbox/Websites/x/transform_twod_otsu.go:558
+#	0x103067f43	main.(*TwoDOtsu).applyWithScale+0x783			/Users/erst/Library/CloudStorage/Dropbox/Websites/x/transform_twod_otsu.go:187
+#	0x1030676a7	main.(*TwoDOtsu).Apply+0x27				/Users/erst/Library/CloudStorage/Dropbox/Websites/x/transform_twod_otsu.go:78
+#	0x103061883	main.(*ImagePipeline).processImageUnsafe+0x443		/Users/erst/Library/CloudStorage/Dropbox/Websites/x/pipeline.go:306
+#	0x103060c9b	main.(*ImagePipeline).ProcessImage+0x7b			/Users/erst/Library/CloudStorage/Dropbox/Websites/x/pipeline.go:186
+#	0x10306e4db	main.(*ImageRestorationUI).saveImage.func1.1+0x6b	/Users/erst/Library/CloudStorage/Dropbox/Websites/x/ui.go:360
+
+
+
+
+To build without profiling (production):
+  go build -ldflags='-s -w' -o image-restoration-suite .
+[2:15:24 AM] % ./image-restoration-suite
+2025/06/21 02:15:26 === MEMORY TRACKING INITIALIZED ===
+2025/06/21 02:15:26 Initial MatProfile count: 0
+2025/06/21 02:15:26 Go version: go1.24.4
+2025/06/21 02:15:26 GOMAXPROCS: 8
+2025/06/21 02:15:26 Starting pprof server on :6060
+2025/06/21 02:15:26 Memory profiler available at: http://localhost:6060/debug/pprof/
+2025/06/21 02:15:26 Mat-specific profiling at: http://localhost:6060/debug/pprof/gocv.io/x/gocv.Mat
+2025/06/21 02:15:26 === STARTING IMAGE RESTORATION SUITE ===
+2025/06/21 02:15:26 Debug configuration:
+2025/06/21 02:15:26   GUI debugging: true
+2025/06/21 02:15:26   Image debugging: true
+2025/06/21 02:15:26   Pipeline debugging: true
+2025/06/21 02:15:26   Render debugging: true
+2025/06/21 02:15:26 ========================================
+2025/06/21 02:15:28 [GUI DEBUG] Button clicked: OPEN IMAGE
+2025/06/21 02:15:33 [GUI DEBUG] File operation: open - Ut feritur ferit.tiff
+2025/06/21 02:15:33 [GUI DEBUG] Image Info - Size: 1400x995, Channels: 3
+2025/06/21 02:15:33 [PIPELINE DEBUG] Clearing all transformations
+2025/06/21 02:15:33 [PIPELINE DEBUG] SetOriginalImage called
+2025/06/21 02:15:33 [PIPELINE DEBUG] MatProfile count at start: 4
+2025/06/21 02:15:33 [PIPELINE DEBUG] SetOriginalImage: cloning original image
+2025/06/21 02:15:33 [PIPELINE DEBUG] SetOriginalImage: creating processed image
+2025/06/21 02:15:33 [PIPELINE DEBUG] SetOriginalImage: creating preview image
+2025/06/21 02:15:33 [PIPELINE DEBUG] Image 'original': 1400x995, 3 channels, type 16, size 4179000 bytes
+2025/06/21 02:15:33 [GUI DEBUG] Image loaded successfully
+2025/06/21 02:15:33 [GUI DEBUG] UI Event: updateImageDisplay called
+2025/06/21 02:15:33 [GUI DEBUG] UI Event: updateImageDisplay: converting original image
+2025/06/21 02:15:33 [GUI DEBUG] Image conversion successful: original
+2025/06/21 02:15:33 [RENDER DEBUG] Image 'original' properties: bounds=(0,0,1400,995), size=1400x995
+2025/06/21 02:15:33 [RENDER DEBUG] Image 'original' format: RGBA
+2025/06/21 02:15:33 [RENDER DEBUG] Image 'original' RGBA sample 0 at (5,5): (0,0,0,255)
+2025/06/21 02:15:33 [RENDER DEBUG] Image 'original' RGBA sample 1 at (700,497): (0,0,0,255)
+2025/06/21 02:15:33 [RENDER DEBUG] Image 'original' RGBA sample 2 at (1395,990): (0,0,0,255)
+2025/06/21 02:15:33 [GUI DEBUG] Image conversion successful: preview
+2025/06/21 02:15:33 [RENDER DEBUG] Image 'preview' properties: bounds=(0,0,1400,995), size=1400x995
+2025/06/21 02:15:33 [RENDER DEBUG] Image 'preview' format: RGBA
+2025/06/21 02:15:33 [RENDER DEBUG] Image 'preview' RGBA sample 0 at (5,5): (0,0,0,255)
+2025/06/21 02:15:33 [RENDER DEBUG] Image 'preview' RGBA sample 1 at (700,497): (0,0,0,255)
+2025/06/21 02:15:33 [RENDER DEBUG] Image 'preview' RGBA sample 2 at (1395,990): (0,0,0,255)
+2025/06/21 02:15:33 [GUI DEBUG] Canvas refreshed: originalImage
+2025/06/21 02:15:33 [GUI DEBUG] Canvas refreshed: previewImage
+2025/06/21 02:15:33 [GUI DEBUG] UI Event: updateImageDisplay: completed successfully
+2025/06/21 02:15:33 [GUI DEBUG] Quality metrics update: PSNR=0.00, SSIM=0.0000, hasTransformations=false
+2025/06/21 02:15:35 [GUI DEBUG] Button clicked: OPEN IMAGE
+2025/06/21 02:15:38 [GUI DEBUG] File operation: open - Ut feritur ferit.png
+2025/06/21 02:15:38 [GUI DEBUG] Image Info - Size: 1400x995, Channels: 3
+2025/06/21 02:15:38 [PIPELINE DEBUG] Clearing all transformations
+2025/06/21 02:15:38 [PIPELINE DEBUG] processImage called
+2025/06/21 02:15:38 [PIPELINE DEBUG] MatProfile count at start: 8
+2025/06/21 02:15:38 [PIPELINE DEBUG] processImage: creating new processed image
+2025/06/21 02:15:38 [PIPELINE DEBUG] processImage: applying 0 transformations
+2025/06/21 02:15:38 [PIPELINE DEBUG] processImage: completed successfully
+2025/06/21 02:15:38 [PIPELINE DEBUG] MatProfile count at completion: 8
+2025/06/21 02:15:38 [PIPELINE DEBUG] Operation 'processImage' took 1.344542ms
+2025/06/21 02:15:38 [PIPELINE DEBUG] Pipeline Stats:
+2025/06/21 02:15:38 [PIPELINE DEBUG]   Original size: 1400x995
+2025/06/21 02:15:38 [PIPELINE DEBUG]   Processed size: 1400x995
+2025/06/21 02:15:38 [PIPELINE DEBUG]   Number of transformations: 0
+2025/06/21 02:15:38 [PIPELINE DEBUG]   Total processing time: 0s
+2025/06/21 02:15:38 [PIPELINE DEBUG]   Current MatProfile count: 8
+2025/06/21 02:15:38 [PIPELINE DEBUG] Memory - Go Alloc: 78.03 MB, TotalAlloc: 155.46 MB, Sys: 111.52 MB, NumGC: 10, MatProfile: 8 Mats
+2025/06/21 02:15:38 [PIPELINE DEBUG] processImage called
+2025/06/21 02:15:38 [PIPELINE DEBUG] MatProfile count at start: 8
+2025/06/21 02:15:38 [PIPELINE DEBUG] Operation 'processPreview' took 580.458µs
+2025/06/21 02:15:38 [PIPELINE DEBUG] Pipeline Stats:
+2025/06/21 02:15:38 [PIPELINE DEBUG]   Original size: 1400x995
+2025/06/21 02:15:38 [PIPELINE DEBUG]   Processed size: 1400x995
+2025/06/21 02:15:38 [PIPELINE DEBUG]   Number of transformations: 0
+2025/06/21 02:15:38 [PIPELINE DEBUG]   Total processing time: 0s
+2025/06/21 02:15:38 [PIPELINE DEBUG]   Current MatProfile count: 8
+2025/06/21 02:15:38 [PIPELINE DEBUG] SetOriginalImage called
+2025/06/21 02:15:38 [PIPELINE DEBUG] MatProfile count at start: 8
+2025/06/21 02:15:38 [PIPELINE DEBUG] SetOriginalImage: cleaning up existing resources
+2025/06/21 02:15:38 [PIPELINE DEBUG] Resource cleanup successful: originalImage
+2025/06/21 02:15:38 [PIPELINE DEBUG] MatProfile count after cleanup: 8
+2025/06/21 02:15:38 [PIPELINE DEBUG] Resource cleanup successful: processedImage
+2025/06/21 02:15:38 [PIPELINE DEBUG] MatProfile count after cleanup: 7
+2025/06/21 02:15:38 [PIPELINE DEBUG] Resource cleanup successful: previewImage
+2025/06/21 02:15:38 [PIPELINE DEBUG] MatProfile count after cleanup: 6
+2025/06/21 02:15:38 [PIPELINE DEBUG] SetOriginalImage: cloning original image
+2025/06/21 02:15:38 [PIPELINE DEBUG] SetOriginalImage: creating processed image
+2025/06/21 02:15:38 [PIPELINE DEBUG] SetOriginalImage: creating preview image
+2025/06/21 02:15:38 [PIPELINE DEBUG] Image 'original': 1400x995, 3 channels, type 16, size 4179000 bytes
+2025/06/21 02:15:38 [GUI DEBUG] Image loaded successfully
+2025/06/21 02:15:38 [GUI DEBUG] UI Event: updateImageDisplay called
+2025/06/21 02:15:38 [GUI DEBUG] UI Event: updateImageDisplay: converting original image
+2025/06/21 02:15:38 [GUI DEBUG] Image conversion successful: original
+2025/06/21 02:15:38 [RENDER DEBUG] Image 'original' properties: bounds=(0,0,1400,995), size=1400x995
+2025/06/21 02:15:38 [RENDER DEBUG] Image 'original' format: RGBA
+2025/06/21 02:15:38 [RENDER DEBUG] Image 'original' RGBA sample 0 at (5,5): (255,255,255,255)
+2025/06/21 02:15:38 [RENDER DEBUG] Image 'original' RGBA sample 1 at (700,497): (255,255,255,255)
+2025/06/21 02:15:38 [RENDER DEBUG] Image 'original' RGBA sample 2 at (1395,990): (255,255,255,255)
+2025/06/21 02:15:38 [GUI DEBUG] Image conversion successful: preview
+2025/06/21 02:15:38 [RENDER DEBUG] Image 'preview' properties: bounds=(0,0,1400,995), size=1400x995
+2025/06/21 02:15:38 [RENDER DEBUG] Image 'preview' format: RGBA
+2025/06/21 02:15:38 [RENDER DEBUG] Image 'preview' RGBA sample 0 at (5,5): (255,255,255,255)
+2025/06/21 02:15:38 [RENDER DEBUG] Image 'preview' RGBA sample 1 at (700,497): (255,255,255,255)
+2025/06/21 02:15:38 [RENDER DEBUG] Image 'preview' RGBA sample 2 at (1395,990): (255,255,255,255)
+2025/06/21 02:15:38 [GUI DEBUG] Canvas refreshed: originalImage
+2025/06/21 02:15:38 [GUI DEBUG] Canvas refreshed: previewImage
+2025/06/21 02:15:38 [GUI DEBUG] UI Event: updateImageDisplay: completed successfully
+2025/06/21 02:15:38 [GUI DEBUG] Quality metrics update: PSNR=0.00, SSIM=0.0000, hasTransformations=false
+2025/06/21 02:15:43 [GUI DEBUG] List 'available transformations' selection: ID=1, Name='Lanczos4 Scaling'
+2025/06/21 02:15:43 [PIPELINE DEBUG] processImage called
+2025/06/21 02:15:43 [PIPELINE DEBUG] MatProfile count at start: 8
+2025/06/21 02:15:43 [PIPELINE DEBUG] processImage: creating new processed image
+2025/06/21 02:15:43 [PIPELINE DEBUG] processImage: applying 1 transformations
+2025/06/21 02:15:43 [IMAGE DEBUG] Lanczos4 - Starting full resolution scaling
+2025/06/21 02:15:43 [IMAGE DEBUG] Lanczos4 - Input: 1400x995, scale: 2.00
+2025/06/21 02:15:43 [IMAGE DEBUG] Color conversion: BGR -> Grayscale
+2025/06/21 02:15:43 [IMAGE DEBUG] Mat 'input_working': 1400x995, channels=1, type=0, elemSize=1
+2025/06/21 02:15:43 [IMAGE DEBUG] Lanczos4 PreFilter - Applying adaptive Gaussian blur
+2025/06/21 02:15:43 [IMAGE DEBUG] Applied filter: GaussianBlur with params: [kernel=5x5 sigma=0.83]
+2025/06/21 02:15:43 [IMAGE DEBUG] Lanczos4 - Target dimensions: 2800x1990
+2025/06/21 02:15:43 [IMAGE DEBUG] Lanczos4 PostFilter - Applying bilateral filter for artifact reduction
+2025/06/21 02:15:43 [IMAGE DEBUG] Applied filter: BilateralFilter with params: [d=9 sigmaColor=100.0 sigmaSpace=100.0]
+2025/06/21 02:15:43 [IMAGE DEBUG] Mat 'final_result': 2800x1990, channels=1, type=0, elemSize=1
+2025/06/21 02:15:43 [IMAGE DEBUG] Lanczos4 - Scaling completed successfully
+2025/06/21 02:15:43 [PIPELINE DEBUG] Operation 'transformation_0_Lanczos4 Scaling' took 57.372625ms
+2025/06/21 02:15:43 [PIPELINE DEBUG] Transformation 'Lanczos4 Scaling' applied in 57.372625ms
+2025/06/21 02:15:43 [PIPELINE DEBUG]   Before: 1400x995, 3 channels
+2025/06/21 02:15:43 [PIPELINE DEBUG]   After:  2800x1990, 1 channels
+2025/06/21 02:15:43 [PIPELINE DEBUG] processImage: completed successfully
+2025/06/21 02:15:43 [PIPELINE DEBUG] MatProfile count at completion: 8
+2025/06/21 02:15:43 [PIPELINE DEBUG] Operation 'processImage' took 58.446ms
+2025/06/21 02:15:43 [PIPELINE DEBUG] Pipeline Stats:
+2025/06/21 02:15:43 [PIPELINE DEBUG]   Original size: 1400x995
+2025/06/21 02:15:43 [PIPELINE DEBUG]   Processed size: 2800x1990
+2025/06/21 02:15:43 [PIPELINE DEBUG]   Number of transformations: 1
+2025/06/21 02:15:43 [PIPELINE DEBUG]   Total processing time: 57.372625ms
+2025/06/21 02:15:43 [PIPELINE DEBUG]   Current MatProfile count: 8
+2025/06/21 02:15:43 [PIPELINE DEBUG] Memory - Go Alloc: 68.39 MB, TotalAlloc: 288.60 MB, Sys: 159.59 MB, NumGC: 13, MatProfile: 8 Mats
+2025/06/21 02:15:43 [PIPELINE DEBUG] processImage called
+2025/06/21 02:15:43 [PIPELINE DEBUG] MatProfile count at start: 8
+2025/06/21 02:15:43 [IMAGE DEBUG] Lanczos4 Preview - Starting preview scaling
+2025/06/21 02:15:43 [IMAGE DEBUG] Lanczos4 - Input: 1400x995, scale: 2.00
+2025/06/21 02:15:43 [IMAGE DEBUG] Color conversion: BGR -> Grayscale
+2025/06/21 02:15:43 [IMAGE DEBUG] Mat 'input_working': 1400x995, channels=1, type=0, elemSize=1
+2025/06/21 02:15:43 [IMAGE DEBUG] Lanczos4 PreFilter - Applying adaptive Gaussian blur
+2025/06/21 02:15:43 [IMAGE DEBUG] Applied filter: GaussianBlur with params: [kernel=5x5 sigma=0.83]
+2025/06/21 02:15:43 [IMAGE DEBUG] Lanczos4 - Target dimensions: 2800x1990
+2025/06/21 02:15:43 [IMAGE DEBUG] Lanczos4 PostFilter - Applying bilateral filter for artifact reduction
+2025/06/21 02:15:43 [IMAGE DEBUG] Applied filter: BilateralFilter with params: [d=9 sigmaColor=100.0 sigmaSpace=100.0]
+2025/06/21 02:15:43 [IMAGE DEBUG] Mat 'final_result': 2800x1990, channels=1, type=0, elemSize=1
+2025/06/21 02:15:43 [IMAGE DEBUG] Lanczos4 - Scaling completed successfully
+2025/06/21 02:15:43 [IMAGE DEBUG] Lanczos4 Preview - Preview scaling completed
+2025/06/21 02:15:43 [PIPELINE DEBUG] Operation 'preview_transformation_0_Lanczos4 Scaling' took 33.652583ms
+2025/06/21 02:15:43 [PIPELINE DEBUG] Transformation 'Lanczos4 Scaling (preview)' applied in 33.652583ms
+2025/06/21 02:15:43 [PIPELINE DEBUG]   Before: 1400x995, 3 channels
+2025/06/21 02:15:43 [PIPELINE DEBUG]   After:  2800x1990, 1 channels
+2025/06/21 02:15:43 [PIPELINE DEBUG] Operation 'processPreview' took 34.179833ms
+2025/06/21 02:15:43 [PIPELINE DEBUG] Pipeline Stats:
+2025/06/21 02:15:43 [PIPELINE DEBUG]   Original size: 1400x995
+2025/06/21 02:15:43 [PIPELINE DEBUG]   Processed size: 2800x1990
+2025/06/21 02:15:43 [PIPELINE DEBUG]   Number of transformations: 1
+2025/06/21 02:15:43 [PIPELINE DEBUG]   Total processing time: 91.025208ms
+2025/06/21 02:15:43 [PIPELINE DEBUG]   Current MatProfile count: 8
+2025/06/21 02:15:43 [GUI DEBUG] Applied Transformation: Lanczos4 Scaling with params: map[originalDPI:150 scaleFactor:2 targetDPI:300 useIterative:false]
+2025/06/21 02:15:43 [GUI DEBUG] Transformation 'Lanczos4 Scaling' applied successfully
+2025/06/21 02:15:43 [GUI DEBUG] UI Event: updateImageDisplay called
+2025/06/21 02:15:43 [GUI DEBUG] UI Event: updateImageDisplay: converting original image
+2025/06/21 02:15:43 [GUI DEBUG] Image conversion successful: original
+2025/06/21 02:15:43 [RENDER DEBUG] Image 'original' properties: bounds=(0,0,1400,995), size=1400x995
+2025/06/21 02:15:43 [RENDER DEBUG] Image 'original' format: RGBA
+2025/06/21 02:15:43 [RENDER DEBUG] Image 'original' RGBA sample 0 at (5,5): (255,255,255,255)
+2025/06/21 02:15:43 [RENDER DEBUG] Image 'original' RGBA sample 1 at (700,497): (255,255,255,255)
+2025/06/21 02:15:43 [RENDER DEBUG] Image 'original' RGBA sample 2 at (1395,990): (255,255,255,255)
+2025/06/21 02:15:43 [GUI DEBUG] Image format change 'preview': 3 channels -> 1 channels
+2025/06/21 02:15:43 [RENDER DEBUG] Converting grayscale to color using GoCV API
+2025/06/21 02:15:43 [RENDER DEBUG] SUCCESS: GoCV conversion completed
+2025/06/21 02:15:43 [GUI DEBUG] Image conversion successful: preview
+2025/06/21 02:15:43 [RENDER DEBUG] Image 'preview' properties: bounds=(0,0,2800,1990), size=2800x1990
+2025/06/21 02:15:43 [RENDER DEBUG] Image 'preview' format: RGBA
+2025/06/21 02:15:43 [RENDER DEBUG] Image 'preview' RGBA sample 0 at (5,5): (255,255,255,255)
+2025/06/21 02:15:43 [RENDER DEBUG] Image 'preview' RGBA sample 1 at (1400,995): (255,255,255,255)
+2025/06/21 02:15:43 [RENDER DEBUG] Image 'preview' RGBA sample 2 at (2795,1985): (255,255,255,255)
+2025/06/21 02:15:43 [GUI DEBUG] Canvas refreshed: originalImage
+2025/06/21 02:15:43 [GUI DEBUG] Canvas refreshed: previewImage
+2025/06/21 02:15:43 [GUI DEBUG] UI Event: updateImageDisplay: completed successfully
+2025/06/21 02:15:43 [GUI DEBUG] List 'available transformations' unselected/cleared
+2025/06/21 02:15:43 [GUI DEBUG] Quality metrics update: PSNR=0.00, SSIM=0.0000, hasTransformations=true
+2025/06/21 02:15:45 [GUI DEBUG] List 'available transformations' selection: ID=0, Name='2D Otsu'
+2025/06/21 02:15:45 [PIPELINE DEBUG] processImage called
+2025/06/21 02:15:45 [PIPELINE DEBUG] MatProfile count at start: 8
+2025/06/21 02:15:45 [PIPELINE DEBUG] processImage: creating new processed image
+2025/06/21 02:15:45 [PIPELINE DEBUG] processImage: applying 2 transformations
+2025/06/21 02:15:45 [IMAGE DEBUG] Lanczos4 - Starting full resolution scaling
+2025/06/21 02:15:45 [IMAGE DEBUG] Lanczos4 - Input: 1400x995, scale: 2.00
+2025/06/21 02:15:45 [IMAGE DEBUG] Color conversion: BGR -> Grayscale
+2025/06/21 02:15:45 [IMAGE DEBUG] Mat 'input_working': 1400x995, channels=1, type=0, elemSize=1
+2025/06/21 02:15:45 [IMAGE DEBUG] Lanczos4 PreFilter - Applying adaptive Gaussian blur
+2025/06/21 02:15:45 [IMAGE DEBUG] Applied filter: GaussianBlur with params: [kernel=5x5 sigma=0.83]
+2025/06/21 02:15:45 [IMAGE DEBUG] Lanczos4 - Target dimensions: 2800x1990
+2025/06/21 02:15:45 [IMAGE DEBUG] Lanczos4 PostFilter - Applying bilateral filter for artifact reduction
+2025/06/21 02:15:45 [IMAGE DEBUG] Applied filter: BilateralFilter with params: [d=9 sigmaColor=100.0 sigmaSpace=100.0]
+2025/06/21 02:15:45 [IMAGE DEBUG] Mat 'final_result': 2800x1990, channels=1, type=0, elemSize=1
+2025/06/21 02:15:45 [IMAGE DEBUG] Lanczos4 - Scaling completed successfully
+2025/06/21 02:15:45 [PIPELINE DEBUG] Operation 'transformation_0_Lanczos4 Scaling' took 59.389083ms
+2025/06/21 02:15:45 [PIPELINE DEBUG] Transformation 'Lanczos4 Scaling' applied in 59.389083ms
+2025/06/21 02:15:45 [PIPELINE DEBUG]   Before: 1400x995, 3 channels
+2025/06/21 02:15:45 [PIPELINE DEBUG]   After:  2800x1990, 1 channels
+2025/06/21 02:15:45 [IMAGE DEBUG] 2D Otsu - Starting binarization (scale: 1.00)
+2025/06/21 02:15:45 [IMAGE DEBUG] Mat 'grayscale': 2800x1990, channels=1, type=0, elemSize=1
+2025/06/21 02:15:45 [IMAGE DEBUG] GuidedFilter - Starting guided filter with correct covariance
+2025/06/21 02:15:45 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/21 02:15:45 [IMAGE DEBUG] 2D Otsu - Constructing 2D histogram
+2025/06/21 02:16:01 [IMAGE DEBUG] Optimal thresholds found: s=147, t=147, variance=10310.406411
+2025/06/21 02:16:01 [IMAGE DEBUG] 2D Otsu - Applying 2D Otsu classification
+2025/06/21 02:16:02 [IMAGE DEBUG] 2D Otsu - Binarization completed
+2025/06/21 02:16:02 [IMAGE DEBUG] 2D Otsu - Completed successfully
+2025/06/21 02:16:02 [PIPELINE DEBUG] Operation 'transformation_1_2D Otsu' took 16.554276583s
+2025/06/21 02:16:02 [PIPELINE DEBUG] Transformation '2D Otsu' applied in 16.554276583s
+2025/06/21 02:16:02 [PIPELINE DEBUG]   Before: 2800x1990, 1 channels
+2025/06/21 02:16:02 [PIPELINE DEBUG]   After:  2800x1990, 1 channels
+2025/06/21 02:16:02 [PIPELINE DEBUG] processImage: completed successfully
+2025/06/21 02:16:02 [PIPELINE DEBUG] MatProfile count at completion: 9
+2025/06/21 02:16:02 [PIPELINE DEBUG] Operation 'processImage' took 16.614584834s
+2025/06/21 02:16:02 [PIPELINE DEBUG] Pipeline Stats:
+2025/06/21 02:16:02 [PIPELINE DEBUG]   Original size: 1400x995
+2025/06/21 02:16:02 [PIPELINE DEBUG]   Processed size: 2800x1990
+2025/06/21 02:16:02 [PIPELINE DEBUG]   Number of transformations: 2
+2025/06/21 02:16:02 [PIPELINE DEBUG]   Total processing time: 16.704690874s
+2025/06/21 02:16:02 [PIPELINE DEBUG]   Current MatProfile count: 9
+2025/06/21 02:16:02 [PIPELINE DEBUG] Memory - Go Alloc: 102.98 MB, TotalAlloc: 503.66 MB, Sys: 219.65 MB, NumGC: 16, MatProfile: 9 Mats
+2025/06/21 02:16:02 [PIPELINE DEBUG] processImage called
+2025/06/21 02:16:02 [PIPELINE DEBUG] MatProfile count at start: 9
+2025/06/21 02:16:02 [IMAGE DEBUG] Lanczos4 Preview - Starting preview scaling
+2025/06/21 02:16:02 [IMAGE DEBUG] Lanczos4 - Input: 1400x995, scale: 2.00
+2025/06/21 02:16:02 [IMAGE DEBUG] Color conversion: BGR -> Grayscale
+2025/06/21 02:16:02 [IMAGE DEBUG] Mat 'input_working': 1400x995, channels=1, type=0, elemSize=1
+2025/06/21 02:16:02 [IMAGE DEBUG] Lanczos4 PreFilter - Applying adaptive Gaussian blur
+2025/06/21 02:16:02 [IMAGE DEBUG] Applied filter: GaussianBlur with params: [kernel=5x5 sigma=0.83]
+2025/06/21 02:16:02 [IMAGE DEBUG] Lanczos4 - Target dimensions: 2800x1990
+2025/06/21 02:16:02 [IMAGE DEBUG] Lanczos4 PostFilter - Applying bilateral filter for artifact reduction
+2025/06/21 02:16:02 [IMAGE DEBUG] Applied filter: BilateralFilter with params: [d=9 sigmaColor=100.0 sigmaSpace=100.0]
+2025/06/21 02:16:02 [IMAGE DEBUG] Mat 'final_result': 2800x1990, channels=1, type=0, elemSize=1
+2025/06/21 02:16:02 [IMAGE DEBUG] Lanczos4 - Scaling completed successfully
+2025/06/21 02:16:02 [IMAGE DEBUG] Lanczos4 Preview - Preview scaling completed
+2025/06/21 02:16:02 [PIPELINE DEBUG] Operation 'preview_transformation_0_Lanczos4 Scaling' took 33.067708ms
+2025/06/21 02:16:02 [PIPELINE DEBUG] Transformation 'Lanczos4 Scaling (preview)' applied in 33.067708ms
+2025/06/21 02:16:02 [PIPELINE DEBUG]   Before: 1400x995, 3 channels
+2025/06/21 02:16:02 [PIPELINE DEBUG]   After:  2800x1990, 1 channels
+2025/06/21 02:16:02 [IMAGE DEBUG] 2D Otsu - Starting binarization (scale: 0.50)
+2025/06/21 02:16:02 [IMAGE DEBUG] 2D Otsu - Scaled to 1400x995
+2025/06/21 02:16:02 [IMAGE DEBUG] Mat 'grayscale': 1400x995, channels=1, type=0, elemSize=1
+2025/06/21 02:16:02 [IMAGE DEBUG] GuidedFilter - Starting guided filter with correct covariance
+2025/06/21 02:16:02 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/21 02:16:02 [IMAGE DEBUG] 2D Otsu - Constructing 2D histogram
+2025/06/21 02:16:17 [IMAGE DEBUG] Optimal thresholds found: s=147, t=150, variance=9966.250053
+2025/06/21 02:16:17 [IMAGE DEBUG] 2D Otsu - Applying 2D Otsu classification
+2025/06/21 02:16:17 [IMAGE DEBUG] 2D Otsu - Binarization completed
+2025/06/21 02:16:17 [IMAGE DEBUG] 2D Otsu - Scaled back to original size
+2025/06/21 02:16:17 [IMAGE DEBUG] 2D Otsu - Completed successfully
+2025/06/21 02:16:17 [PIPELINE DEBUG] Operation 'preview_transformation_1_2D Otsu' took 14.804032541s
+2025/06/21 02:16:17 [PIPELINE DEBUG] Transformation '2D Otsu (preview)' applied in 14.804032541s
+2025/06/21 02:16:17 [PIPELINE DEBUG]   Before: 2800x1990, 1 channels
+2025/06/21 02:16:17 [PIPELINE DEBUG]   After:  2800x1990, 1 channels
+2025/06/21 02:16:17 [PIPELINE DEBUG] Operation 'processPreview' took 14.849326542s
+2025/06/21 02:16:17 [PIPELINE DEBUG] Pipeline Stats:
+2025/06/21 02:16:17 [PIPELINE DEBUG]   Original size: 1400x995
+2025/06/21 02:16:17 [PIPELINE DEBUG]   Processed size: 2800x1990
+2025/06/21 02:16:17 [PIPELINE DEBUG]   Number of transformations: 2
+2025/06/21 02:16:17 [PIPELINE DEBUG]   Total processing time: 31.541791123s
+2025/06/21 02:16:17 [PIPELINE DEBUG]   Current MatProfile count: 9
+2025/06/21 02:16:17 [GUI DEBUG] Applied Transformation: 2D Otsu with params: map[epsilon:0.02 morphKernelSize:3 windowRadius:5]
+2025/06/21 02:16:17 [GUI DEBUG] Transformation '2D Otsu' applied successfully
+2025/06/21 02:16:17 [GUI DEBUG] UI Event: updateImageDisplay called
+2025/06/21 02:16:17 [GUI DEBUG] UI Event: updateImageDisplay: converting original image
+2025/06/21 02:16:17 [GUI DEBUG] Image conversion successful: original
+2025/06/21 02:16:17 [RENDER DEBUG] Image 'original' properties: bounds=(0,0,1400,995), size=1400x995
+2025/06/21 02:16:17 [RENDER DEBUG] Image 'original' format: RGBA
+2025/06/21 02:16:17 [RENDER DEBUG] Image 'original' RGBA sample 0 at (5,5): (255,255,255,255)
+2025/06/21 02:16:17 [RENDER DEBUG] Image 'original' RGBA sample 1 at (700,497): (255,255,255,255)
+2025/06/21 02:16:17 [RENDER DEBUG] Image 'original' RGBA sample 2 at (1395,990): (255,255,255,255)
+2025/06/21 02:16:17 [GUI DEBUG] Image format change 'preview': 3 channels -> 1 channels
+2025/06/21 02:16:17 [RENDER DEBUG] Converting grayscale to color using GoCV API
+2025/06/21 02:16:17 [RENDER DEBUG] SUCCESS: GoCV conversion completed
+2025/06/21 02:16:17 [GUI DEBUG] Image conversion successful: preview
+2025/06/21 02:16:17 [RENDER DEBUG] Image 'preview' properties: bounds=(0,0,2800,1990), size=2800x1990
+2025/06/21 02:16:17 [RENDER DEBUG] Image 'preview' format: RGBA
+2025/06/21 02:16:17 [RENDER DEBUG] Image 'preview' RGBA sample 0 at (5,5): (255,255,255,255)
+2025/06/21 02:16:17 [RENDER DEBUG] Image 'preview' RGBA sample 1 at (1400,995): (255,255,255,255)
+2025/06/21 02:16:17 [RENDER DEBUG] Image 'preview' RGBA sample 2 at (2795,1985): (255,255,255,255)
+2025/06/21 02:16:17 [GUI DEBUG] Canvas refreshed: originalImage
+2025/06/21 02:16:17 [GUI DEBUG] Canvas refreshed: previewImage
+2025/06/21 02:16:17 [GUI DEBUG] UI Event: updateImageDisplay: completed successfully
+2025/06/21 02:16:17 [GUI DEBUG] List 'available transformations' unselected/cleared
+2025/06/21 02:16:17 [GUI DEBUG] Quality metrics update: PSNR=0.00, SSIM=0.0000, hasTransformations=true
+2025/06/21 02:16:25 [IMAGE DEBUG] 2D Otsu Parameters - Morphological kernel size changed: 3 -> 1
+2025/06/21 02:16:25 [GUI DEBUG] UI Event: onParameterChanged called - triggering immediate preview update
+2025/06/21 02:16:25 [GUI DEBUG] UI Event: onParameterChanged: starting preview regeneration
+2025/06/21 02:16:25 [PIPELINE DEBUG] ForcePreviewRegeneration: Regenerating preview with current parameters
+2025/06/21 02:16:25 [PIPELINE DEBUG] processImage called
+2025/06/21 02:16:25 [PIPELINE DEBUG] MatProfile count at start: 9
+2025/06/21 02:16:25 [IMAGE DEBUG] Lanczos4 Preview - Starting preview scaling
+2025/06/21 02:16:25 [IMAGE DEBUG] Lanczos4 - Input: 1400x995, scale: 2.00
+2025/06/21 02:16:25 [IMAGE DEBUG] Color conversion: BGR -> Grayscale
+2025/06/21 02:16:25 [IMAGE DEBUG] Mat 'input_working': 1400x995, channels=1, type=0, elemSize=1
+2025/06/21 02:16:25 [IMAGE DEBUG] Lanczos4 PreFilter - Applying adaptive Gaussian blur
+2025/06/21 02:16:25 [IMAGE DEBUG] Applied filter: GaussianBlur with params: [kernel=5x5 sigma=0.83]
+2025/06/21 02:16:25 [IMAGE DEBUG] Lanczos4 - Target dimensions: 2800x1990
+2025/06/21 02:16:25 [IMAGE DEBUG] Lanczos4 PostFilter - Applying bilateral filter for artifact reduction
+2025/06/21 02:16:25 [IMAGE DEBUG] Applied filter: BilateralFilter with params: [d=9 sigmaColor=100.0 sigmaSpace=100.0]
+2025/06/21 02:16:25 [IMAGE DEBUG] Mat 'final_result': 2800x1990, channels=1, type=0, elemSize=1
+2025/06/21 02:16:25 [IMAGE DEBUG] Lanczos4 - Scaling completed successfully
+2025/06/21 02:16:25 [IMAGE DEBUG] Lanczos4 Preview - Preview scaling completed
+2025/06/21 02:16:25 [PIPELINE DEBUG] Operation 'preview_transformation_0_Lanczos4 Scaling' took 58.762042ms
+2025/06/21 02:16:25 [PIPELINE DEBUG] Transformation 'Lanczos4 Scaling (preview)' applied in 58.762042ms
+2025/06/21 02:16:25 [PIPELINE DEBUG]   Before: 1400x995, 3 channels
+2025/06/21 02:16:25 [PIPELINE DEBUG]   After:  2800x1990, 1 channels
+2025/06/21 02:16:25 [IMAGE DEBUG] 2D Otsu - Starting binarization (scale: 0.50)
+2025/06/21 02:16:25 [IMAGE DEBUG] 2D Otsu - Scaled to 1400x995
+2025/06/21 02:16:25 [IMAGE DEBUG] Mat 'grayscale': 1400x995, channels=1, type=0, elemSize=1
+2025/06/21 02:16:25 [IMAGE DEBUG] GuidedFilter - Starting guided filter with correct covariance
+2025/06/21 02:16:25 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/21 02:16:25 [IMAGE DEBUG] 2D Otsu - Constructing 2D histogram
+2025/06/21 02:16:40 [IMAGE DEBUG] Optimal thresholds found: s=147, t=150, variance=9966.250053
+2025/06/21 02:16:40 [IMAGE DEBUG] 2D Otsu - Applying 2D Otsu classification
+2025/06/21 02:16:40 [IMAGE DEBUG] 2D Otsu - Binarization completed
+2025/06/21 02:16:40 [IMAGE DEBUG] 2D Otsu - Scaled back to original size
+2025/06/21 02:16:40 [IMAGE DEBUG] 2D Otsu - Completed successfully
+2025/06/21 02:16:40 [PIPELINE DEBUG] Operation 'preview_transformation_1_2D Otsu' took 14.909421542s
+2025/06/21 02:16:40 [PIPELINE DEBUG] Transformation '2D Otsu (preview)' applied in 14.909421542s
+2025/06/21 02:16:40 [PIPELINE DEBUG]   Before: 2800x1990, 1 channels
+2025/06/21 02:16:40 [PIPELINE DEBUG]   After:  2800x1990, 1 channels
+2025/06/21 02:16:40 [PIPELINE DEBUG] Operation 'processPreview' took 14.969668083s
+2025/06/21 02:16:40 [PIPELINE DEBUG] Pipeline Stats:
+2025/06/21 02:16:40 [PIPELINE DEBUG]   Original size: 1400x995
+2025/06/21 02:16:40 [PIPELINE DEBUG]   Processed size: 2800x1990
+2025/06/21 02:16:40 [PIPELINE DEBUG]   Number of transformations: 2
+2025/06/21 02:16:40 [PIPELINE DEBUG]   Total processing time: 46.509974707s
+2025/06/21 02:16:40 [PIPELINE DEBUG]   Current MatProfile count: 9
+2025/06/21 02:16:40 [GUI DEBUG] UI Event: onParameterChanged: preview regenerated successfully
+2025/06/21 02:16:40 [GUI DEBUG] UI Event: updateImageDisplay called
+2025/06/21 02:16:40 [GUI DEBUG] UI Event: updateImageDisplay: converting original image
+2025/06/21 02:16:40 [GUI DEBUG] Image conversion successful: original
+2025/06/21 02:16:40 [RENDER DEBUG] Image 'original' properties: bounds=(0,0,1400,995), size=1400x995
+2025/06/21 02:16:40 [RENDER DEBUG] Image 'original' format: RGBA
+2025/06/21 02:16:40 [RENDER DEBUG] Image 'original' RGBA sample 0 at (5,5): (255,255,255,255)
+2025/06/21 02:16:40 [RENDER DEBUG] Image 'original' RGBA sample 1 at (700,497): (255,255,255,255)
+2025/06/21 02:16:40 [RENDER DEBUG] Image 'original' RGBA sample 2 at (1395,990): (255,255,255,255)
+2025/06/21 02:16:40 [GUI DEBUG] Image format change 'preview': 3 channels -> 1 channels
+2025/06/21 02:16:40 [RENDER DEBUG] Converting grayscale to color using GoCV API
+2025/06/21 02:16:40 [RENDER DEBUG] SUCCESS: GoCV conversion completed
+2025/06/21 02:16:40 [GUI DEBUG] Image conversion successful: preview
+2025/06/21 02:16:40 [RENDER DEBUG] Image 'preview' properties: bounds=(0,0,2800,1990), size=2800x1990
+2025/06/21 02:16:40 [RENDER DEBUG] Image 'preview' format: RGBA
+2025/06/21 02:16:40 [RENDER DEBUG] Image 'preview' RGBA sample 0 at (5,5): (255,255,255,255)
+2025/06/21 02:16:40 [RENDER DEBUG] Image 'preview' RGBA sample 1 at (1400,995): (255,255,255,255)
+2025/06/21 02:16:40 [RENDER DEBUG] Image 'preview' RGBA sample 2 at (2795,1985): (255,255,255,255)
+2025/06/21 02:16:40 [GUI DEBUG] Canvas refreshed: originalImage
+2025/06/21 02:16:40 [GUI DEBUG] Canvas refreshed: previewImage
+2025/06/21 02:16:40 [GUI DEBUG] UI Event: updateImageDisplay: completed successfully
+2025/06/21 02:16:40 [GUI DEBUG] Quality metrics update: PSNR=0.00, SSIM=0.0000, hasTransformations=true
+2025/06/21 02:16:46 [GUI DEBUG] Button clicked: SAVE IMAGE
+2025/06/21 02:16:49 [GUI DEBUG] File operation: save - 1
+2025/06/21 02:16:49 [GUI DEBUG] File extension check: '1' -> '', valid=false
+2025/06/21 02:16:49 [GUI DEBUG] Added .png extension to filename
+2025/06/21 02:16:49 [GUI DEBUG] Forcing full reprocessing before save to ensure latest parameters
+2025/06/21 02:16:49 [PIPELINE DEBUG] ProcessImage: Force reprocessing full resolution image
+2025/06/21 02:16:49 [PIPELINE DEBUG] processImage called
+2025/06/21 02:16:49 [PIPELINE DEBUG] MatProfile count at start: 9
+2025/06/21 02:16:49 [PIPELINE DEBUG] processImage: creating new processed image
+2025/06/21 02:16:49 [PIPELINE DEBUG] processImage: applying 2 transformations
+2025/06/21 02:16:49 [IMAGE DEBUG] Lanczos4 - Starting full resolution scaling
+2025/06/21 02:16:49 [IMAGE DEBUG] Lanczos4 - Input: 1400x995, scale: 2.00
+2025/06/21 02:16:49 [IMAGE DEBUG] Color conversion: BGR -> Grayscale
+2025/06/21 02:16:49 [IMAGE DEBUG] Mat 'input_working': 1400x995, channels=1, type=0, elemSize=1
+2025/06/21 02:16:49 [IMAGE DEBUG] Lanczos4 PreFilter - Applying adaptive Gaussian blur
+2025/06/21 02:16:49 [IMAGE DEBUG] Applied filter: GaussianBlur with params: [kernel=5x5 sigma=0.83]
+2025/06/21 02:16:49 [IMAGE DEBUG] Lanczos4 - Target dimensions: 2800x1990
+2025/06/21 02:16:49 [IMAGE DEBUG] Lanczos4 PostFilter - Applying bilateral filter for artifact reduction
+2025/06/21 02:16:49 [IMAGE DEBUG] Applied filter: BilateralFilter with params: [d=9 sigmaColor=100.0 sigmaSpace=100.0]
+2025/06/21 02:16:49 [IMAGE DEBUG] Mat 'final_result': 2800x1990, channels=1, type=0, elemSize=1
+2025/06/21 02:16:49 [IMAGE DEBUG] Lanczos4 - Scaling completed successfully
+2025/06/21 02:16:49 [PIPELINE DEBUG] Operation 'transformation_0_Lanczos4 Scaling' took 45.248417ms
+2025/06/21 02:16:49 [PIPELINE DEBUG] Transformation 'Lanczos4 Scaling' applied in 45.248417ms
+2025/06/21 02:16:49 [PIPELINE DEBUG]   Before: 1400x995, 3 channels
+2025/06/21 02:16:49 [PIPELINE DEBUG]   After:  2800x1990, 1 channels
+2025/06/21 02:16:49 [IMAGE DEBUG] 2D Otsu - Starting binarization (scale: 1.00)
+2025/06/21 02:16:49 [IMAGE DEBUG] Mat 'grayscale': 2800x1990, channels=1, type=0, elemSize=1
+2025/06/21 02:16:49 [IMAGE DEBUG] GuidedFilter - Starting guided filter with correct covariance
+2025/06/21 02:16:49 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/21 02:16:49 [IMAGE DEBUG] 2D Otsu - Constructing 2D histogram
+2025/06/21 02:17:04 [IMAGE DEBUG] Optimal thresholds found: s=147, t=147, variance=10310.406411
+2025/06/21 02:17:04 [IMAGE DEBUG] 2D Otsu - Applying 2D Otsu classification
+2025/06/21 02:17:05 [IMAGE DEBUG] 2D Otsu - Binarization completed
+2025/06/21 02:17:05 [IMAGE DEBUG] 2D Otsu - Completed successfully
+2025/06/21 02:17:05 [PIPELINE DEBUG] Operation 'transformation_1_2D Otsu' took 16.415082375s
+2025/06/21 02:17:05 [PIPELINE DEBUG] Transformation '2D Otsu' applied in 16.415082375s
+2025/06/21 02:17:05 [PIPELINE DEBUG]   Before: 2800x1990, 1 channels
+2025/06/21 02:17:05 [PIPELINE DEBUG]   After:  2800x1990, 1 channels
+2025/06/21 02:17:05 [PIPELINE DEBUG] processImage: completed successfully
+2025/06/21 02:17:05 [PIPELINE DEBUG] MatProfile count at completion: 10
+2025/06/21 02:17:05 [PIPELINE DEBUG] Operation 'processImage' took 16.462312667s
+2025/06/21 02:17:05 [PIPELINE DEBUG] Pipeline Stats:
+2025/06/21 02:17:05 [PIPELINE DEBUG]   Original size: 1400x995
+2025/06/21 02:17:05 [PIPELINE DEBUG]   Processed size: 2800x1990
+2025/06/21 02:17:05 [PIPELINE DEBUG]   Number of transformations: 2
+2025/06/21 02:17:05 [PIPELINE DEBUG]   Total processing time: 1m2.970305499s
+2025/06/21 02:17:05 [PIPELINE DEBUG]   Current MatProfile count: 10
+2025/06/21 02:17:05 [PIPELINE DEBUG] Memory - Go Alloc: 144.21 MB, TotalAlloc: 832.11 MB, Sys: 219.65 MB, NumGC: 21, MatProfile: 10 Mats
+2025/06/21 02:17:05 [GUI DEBUG] Save operation: file='1.png', ext='.png', hasImage=true
+2025/06/21 02:17:05 [GUI DEBUG] Save successful: 1.png
+2025/06/21 02:17:05 [GUI DEBUG] Image saved successfully
+2025/06/21 02:19:11 === APPLICATION SHUTDOWN INITIATED ===
+2025/06/21 02:19:11 Performing cleanup...
+2025/06/21 02:19:11 Closing image pipeline...
+2025/06/21 02:19:11 [PIPELINE DEBUG] Resource cleanup successful: originalImage
+2025/06/21 02:19:11 [PIPELINE DEBUG] MatProfile count after cleanup: 10
+2025/06/21 02:19:11 [PIPELINE DEBUG] Resource cleanup successful: processedImage
+2025/06/21 02:19:11 [PIPELINE DEBUG] MatProfile count after cleanup: 9
+2025/06/21 02:19:11 [PIPELINE DEBUG] Resource cleanup successful: previewImage
+2025/06/21 02:19:11 [PIPELINE DEBUG] MatProfile count after cleanup: 8
+2025/06/21 02:19:11 Pipeline closed successfully
+2025/06/21 02:19:11 Waiting for cleanup operations to complete...
+2025/06/21 02:19:11 Running final garbage collection...
+2025/06/21 02:19:11 Cleanup completed in 118.980667ms
+2025/06/21 02:19:11 === FINAL MEMORY ANALYSIS ===
+2025/06/21 02:19:11 Initial MatProfile count: 0
+2025/06/21 02:19:11 Final MatProfile count: 7
+2025/06/21 02:19:11 Net change: +7 Mats
+2025/06/21 02:19:11 Go Memory Stats:
+2025/06/21 02:19:11   Allocated: 42.26 MB
+2025/06/21 02:19:11   Total Allocated: 903.11 MB
+2025/06/21 02:19:11   System Memory: 219.71 MB
+2025/06/21 02:19:11   GC Runs: 27
+2025/06/21 02:19:11   Last GC: 627µs ago
+2025/06/21 02:19:11 ⚠️  WARNING: MEMORY LEAKS DETECTED!
+2025/06/21 02:19:11    7 Mat(s) were not properly closed
+2025/06/21 02:19:11    This indicates missing defer mat.Close() calls
+2025/06/21 02:19:11    Check MatProfile for details: http://localhost:6060/debug/pprof/gocv.io/x/gocv.Mat
+2025/06/21 02:19:11    🔥 ACTIVE LEAK: 7 new Mat(s) created during session
+2025/06/21 02:19:11 === SESSION SUMMARY ===
+2025/06/21 02:19:11 Total operations: 10
+2025/06/21 02:19:11 Total processing time: 1m2.970305499s
+2025/06/21 02:19:11 Average operation time: 6.297030549s
+2025/06/21 02:19:11 Application shutdown complete.
+2025/06/21 02:19:11 =====================================
+[2:19:32 AM] % 

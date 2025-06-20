@@ -48,7 +48,7 @@ func NewImageRestorationUI(window fyne.Window, config *DebugConfig) *ImageRestor
 		pipeline:          NewImagePipeline(config),
 		debugGUI:          NewDebugGUI(config),
 		debugRender:       NewDebugRender(config),
-		parameterDebounce: 200 * time.Millisecond, // Reduced debounce for more responsive updates
+		parameterDebounce: 200 * time.Millisecond,
 	}
 	return ui
 }
@@ -93,7 +93,6 @@ func (ui *ImageRestorationUI) createToolbar() fyne.CanvasObject {
 	)
 
 	toolbarCard := container.NewPadded(toolbar)
-	// toolbar height
 	toolbarCard.Resize(fyne.NewSize(0, 50))
 
 	return toolbarCard
@@ -115,7 +114,7 @@ func (ui *ImageRestorationUI) createLeftPanel() fyne.CanvasObject {
 	scrollableList := container.NewVScroll(ui.availableTransformationsList)
 	scrollableList.SetMinSize(fyne.NewSize(200, 200))
 
-	// Header background with desired color and height (24 DIP)
+	// Header background with color and height
 	headerBg := canvas.NewRectangle(&color.RGBA{R: 233, G: 208, B: 255, A: 255})
 	headerBg.SetMinSize(fyne.NewSize(200, 24))
 
@@ -150,10 +149,10 @@ func (ui *ImageRestorationUI) createCenterPanel() fyne.CanvasObject {
 	ui.previewScroll = container.NewScroll(ui.previewImage)
 	ui.previewScroll.Resize(fyne.NewSize(500, 400))
 
-	// Shared header styling function
+	// Header styling function
 	makeHeader := func(text string) fyne.CanvasObject {
 		bg := canvas.NewRectangle(&color.RGBA{R: 233, G: 208, B: 255, A: 255})
-		bg.SetMinSize(fyne.NewSize(0, 24)) // same height as default card title
+		bg.SetMinSize(fyne.NewSize(0, 24))
 		lbl := canvas.NewText(text, color.Black)
 		lbl.TextStyle = fyne.TextStyle{Bold: true}
 		return container.NewMax(bg, container.NewCenter(lbl))
@@ -237,7 +236,7 @@ func (ui *ImageRestorationUI) createRightPanel() fyne.CanvasObject {
 	)
 	qualityContent.Resize(fyne.NewSize(0, 120))
 
-	// Shared header builder
+	// Header builder
 	makeHeader := func(text string) fyne.CanvasObject {
 		bg := canvas.NewRectangle(&color.RGBA{R: 233, G: 208, B: 255, A: 255})
 		bg.SetMinSize(fyne.NewSize(0, 24))
@@ -246,7 +245,6 @@ func (ui *ImageRestorationUI) createRightPanel() fyne.CanvasObject {
 		return container.NewMax(bg, container.NewCenter(lbl))
 	}
 
-	// Replace Card headers with styled headers
 	imageInfoContainer := container.NewBorder(
 		makeHeader("IMAGE INFORMATION"),
 		nil, nil, nil,
@@ -546,7 +544,7 @@ func (ui *ImageRestorationUI) onParameterChanged() {
 		}
 
 		// Force preview regeneration by calling the pipeline method
-		// that triggers fresh processing with current parameters
+		// that triggers processing with current parameters
 		err := ui.pipeline.ForcePreviewRegeneration()
 		if err != nil {
 			ui.debugGUI.LogError(fmt.Errorf("failed to regenerate preview: %w", err))
@@ -608,15 +606,12 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 			ui.debugGUI.LogImageFormatChange("preview", originalChannels, previewChannels)
 
 			if previewChannels == 1 && originalChannels == 3 {
-				// Conversion: Use standard GoCV API
+				// Use GoCV API for conversion
 				ui.debugRender.Log("Converting grayscale to color using GoCV API")
 
 				previewColor := gocv.NewMat()
 				defer previewColor.Close()
-				gocv.CvtColor(previewMat, &previewColor, gocv.ColorGrayToBGR)
-
-				var err error
-				previewImg, err = previewColor.ToImage()
+				err := gocv.CvtColor(previewMat, &previewColor, gocv.ColorGrayToBGR)
 				if err != nil {
 					ui.debugGUI.LogImageConversion("preview_cvt", false, err.Error())
 					// Fallback: Manual conversion
@@ -633,6 +628,12 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 					}
 					previewImg = manualImg
 				} else {
+					var convErr error
+					previewImg, convErr = previewColor.ToImage()
+					if convErr != nil {
+						ui.debugGUI.LogImageConversion("preview_final", false, convErr.Error())
+						return
+					}
 					ui.debugRender.Log("SUCCESS: GoCV conversion completed")
 				}
 			} else {

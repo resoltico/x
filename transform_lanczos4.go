@@ -12,7 +12,7 @@ import (
 	"gocv.io/x/gocv"
 )
 
-// Lanczos4Transform implements Lanczos4 interpolation with memory management using GoCV APIs
+// Lanczos4Transform implements Lanczos4 interpolation with current GoCV 4.11.0 APIs
 type Lanczos4Transform struct {
 	debugImage   *DebugImage
 	scaleFactor  float64
@@ -24,7 +24,7 @@ type Lanczos4Transform struct {
 	onParameterChanged func()
 }
 
-// NewLanczos4Transform creates a new Lanczos4 transformation with validated parameters
+// NewLanczos4Transform creates new Lanczos4 transformation with validated parameters
 func NewLanczos4Transform(config *DebugConfig) *Lanczos4Transform {
 	return &Lanczos4Transform{
 		debugImage:   NewDebugImage(config),
@@ -80,7 +80,7 @@ func (l *Lanczos4Transform) Apply(src gocv.Mat) gocv.Mat {
 func (l *Lanczos4Transform) ApplyPreview(src gocv.Mat) gocv.Mat {
 	l.debugImage.LogAlgorithmStep("Lanczos4 Preview", "Starting preview scaling")
 
-	// For preview, use a reasonable scale factor to maintain responsiveness
+	// For preview, use reasonable scale factor to maintain responsiveness
 	previewScale := l.scaleFactor
 	if l.scaleFactor > 3.0 {
 		previewScale = 3.0
@@ -121,7 +121,11 @@ func (l *Lanczos4Transform) applyLanczos4(src gocv.Mat, scale float64) gocv.Mat 
 
 	if src.Channels() > 1 {
 		l.debugImage.LogColorConversion("BGR", "Grayscale")
-		gocv.CvtColor(src, &working, gocv.ColorBGRToGray)
+		err := gocv.CvtColor(src, &working, gocv.ColorBGRToGray)
+		if err != nil {
+			l.debugImage.LogError(err)
+			return gocv.NewMat()
+		}
 	} else {
 		working = src.Clone()
 	}
@@ -163,9 +167,14 @@ func (l *Lanczos4Transform) applyLanczos4(src gocv.Mat, scale float64) gocv.Mat 
 		// Use iterative downscaling for large reductions
 		result = l.iterativeLanczos4(filtered, newWidth, newHeight)
 	} else {
-		// Lanczos4 scaling using GoCV Resize with error handling
+		// Direct Lanczos4 scaling using GoCV Resize
 		result = gocv.NewMat()
-		gocv.Resize(filtered, &result, image.Point{X: newWidth, Y: newHeight}, 0, 0, gocv.InterpolationLanczos4)
+		err := gocv.Resize(filtered, &result, image.Point{X: newWidth, Y: newHeight}, 0, 0, gocv.InterpolationLanczos4)
+		if err != nil {
+			l.debugImage.LogError(err)
+			result.Close()
+			return gocv.NewMat()
+		}
 	}
 
 	// Validate result
@@ -217,7 +226,12 @@ func (l *Lanczos4Transform) applyPreFilter(src gocv.Mat) gocv.Mat {
 	// Use GoCV's GaussianBlur with adaptive sigma
 	blurred := gocv.NewMat()
 	sigma := float64(kernelSize) / 6.0 // Standard relationship between kernel size and sigma
-	gocv.GaussianBlur(src, &blurred, image.Point{X: kernelSize, Y: kernelSize}, sigma, sigma, gocv.BorderDefault)
+	err := gocv.GaussianBlur(src, &blurred, image.Point{X: kernelSize, Y: kernelSize}, sigma, sigma, gocv.BorderDefault)
+	if err != nil {
+		l.debugImage.LogError(err)
+		blurred.Close()
+		return src.Clone()
+	}
 
 	l.debugImage.LogFilter("GaussianBlur", fmt.Sprintf("kernel=%dx%d", kernelSize, kernelSize), fmt.Sprintf("sigma=%.2f", sigma))
 	return blurred
@@ -253,7 +267,12 @@ func (l *Lanczos4Transform) applyPostFilter(src gocv.Mat) gocv.Mat {
 		sigmaSpace = 100.0
 	}
 
-	gocv.BilateralFilter(src, &filtered, d, sigmaColor, sigmaSpace)
+	err := gocv.BilateralFilter(src, &filtered, d, sigmaColor, sigmaSpace)
+	if err != nil {
+		l.debugImage.LogError(err)
+		filtered.Close()
+		return src.Clone()
+	}
 
 	l.debugImage.LogFilter("BilateralFilter", fmt.Sprintf("d=%d sigmaColor=%.1f sigmaSpace=%.1f", d, sigmaColor, sigmaSpace))
 	return filtered
@@ -272,7 +291,7 @@ func (l *Lanczos4Transform) iterativeLanczos4(src gocv.Mat, targetWidth, targetH
 	currentWidth, currentHeight := current.Cols(), current.Rows()
 
 	step := 0
-	maxSteps := 15 // Limit max steps for better performance
+	maxSteps := 15 // Reduced max steps for better performance
 
 	// Use more aggressive downscaling steps
 	scalingFactor := 0.6 // Scale down by 40% each step instead of 50%
@@ -300,7 +319,12 @@ func (l *Lanczos4Transform) iterativeLanczos4(src gocv.Mat, targetWidth, targetH
 			interpolation = gocv.InterpolationLanczos4 // Use Lanczos4 for upscaling
 		}
 
-		gocv.Resize(current, &temp, image.Point{X: nextWidth, Y: nextHeight}, 0, 0, interpolation)
+		err := gocv.Resize(current, &temp, image.Point{X: nextWidth, Y: nextHeight}, 0, 0, interpolation)
+		if err != nil {
+			l.debugImage.LogError(err)
+			temp.Close()
+			break
+		}
 
 		// Proper cleanup of previous iteration
 		current.Close()
@@ -310,7 +334,12 @@ func (l *Lanczos4Transform) iterativeLanczos4(src gocv.Mat, targetWidth, targetH
 
 	// Final resize to exact target dimensions using Lanczos4
 	scaled := gocv.NewMat()
-	gocv.Resize(current, &scaled, image.Point{X: targetWidth, Y: targetHeight}, 0, 0, gocv.InterpolationLanczos4)
+	err := gocv.Resize(current, &scaled, image.Point{X: targetWidth, Y: targetHeight}, 0, 0, gocv.InterpolationLanczos4)
+	if err != nil {
+		l.debugImage.LogError(err)
+		scaled.Close()
+		return gocv.NewMat()
+	}
 
 	l.debugImage.LogAlgorithmStep("Lanczos4 Iterative", fmt.Sprintf("Completed in %d steps", step+1))
 	return scaled

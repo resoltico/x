@@ -4,22 +4,22 @@ import (
 	"fmt"
 	"math"
 	"sync"
+	"sync/atomic"
 
 	"gocv.io/x/gocv"
 )
 
 type ImagePipeline struct {
-	// Use proper atomic access patterns for thread safety
+	// Atomic access patterns for thread safety
 	originalImage   gocv.Mat
 	processedImage  gocv.Mat
 	previewImage    gocv.Mat
 	transformations []Transformation
 	debugPipeline   *DebugPipeline
-	initialized     bool
-	mutex           sync.RWMutex // Protect concurrent access
+	initialized     int32 // atomic flag
+	mutex           sync.RWMutex
 
-	// Remove excessive rate limiting for preview processing
-	processingMutex sync.Mutex // Separate mutex for processing operations
+	processingMutex sync.Mutex
 }
 
 func NewImagePipeline(config *DebugConfig) *ImagePipeline {
@@ -28,11 +28,9 @@ func NewImagePipeline(config *DebugConfig) *ImagePipeline {
 	pipeline := &ImagePipeline{
 		transformations: make([]Transformation, 0),
 		debugPipeline:   debugPipeline,
-		initialized:     false,
-		// Initialize with empty Mats using proper GoCV patterns
-		originalImage:  gocv.NewMat(),
-		processedImage: gocv.NewMat(),
-		previewImage:   gocv.NewMat(),
+		originalImage:   gocv.NewMat(),
+		processedImage:  gocv.NewMat(),
+		previewImage:    gocv.NewMat(),
 	}
 
 	return pipeline
@@ -41,11 +39,10 @@ func NewImagePipeline(config *DebugConfig) *ImagePipeline {
 func (p *ImagePipeline) HasImage() bool {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
-	return p.initialized && !p.originalImage.Empty()
+	return atomic.LoadInt32(&p.initialized) == 1 && !p.originalImage.Empty()
 }
 
 func (p *ImagePipeline) SetOriginalImage(img gocv.Mat) (err error) {
-	// Panic recovery with proper error handling
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("panic in SetOriginalImage: %v", r)
@@ -69,7 +66,7 @@ func (p *ImagePipeline) SetOriginalImage(img gocv.Mat) (err error) {
 	}
 
 	// Clean up existing resources properly
-	if p.initialized {
+	if atomic.LoadInt32(&p.initialized) == 1 {
 		p.debugPipeline.LogSetOriginalStep("cleaning up existing resources")
 		p.cleanupResourcesUnsafe()
 	}
@@ -96,7 +93,7 @@ func (p *ImagePipeline) SetOriginalImage(img gocv.Mat) (err error) {
 		return fmt.Errorf("failed to clone preview image")
 	}
 
-	p.initialized = true
+	atomic.StoreInt32(&p.initialized, 1)
 	p.debugPipeline.LogImageStats("original", p.originalImage)
 
 	// Process images only if we have transformations
@@ -181,7 +178,6 @@ func (p *ImagePipeline) ClearTransformations() {
 	}
 }
 
-// Add public ProcessImage method to force full reprocessing
 func (p *ImagePipeline) ProcessImage() error {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
@@ -190,7 +186,6 @@ func (p *ImagePipeline) ProcessImage() error {
 	return p.processImageUnsafe()
 }
 
-// Add method to force preview regeneration with current parameters
 func (p *ImagePipeline) ForcePreviewRegeneration() error {
 	p.debugPipeline.Log("ForcePreviewRegeneration: Regenerating preview with current parameters")
 
@@ -201,11 +196,9 @@ func (p *ImagePipeline) ForcePreviewRegeneration() error {
 		return fmt.Errorf("no image loaded")
 	}
 
-	// Always regenerate preview from scratch with current parameters
 	return p.processPreviewUnsafe()
 }
 
-// Add public method to reprocess preview with current parameters
 func (p *ImagePipeline) ReprocessPreview() error {
 	p.debugPipeline.Log("ReprocessPreview: Force reprocessing preview with current parameters")
 
@@ -232,7 +225,6 @@ func (p *ImagePipeline) GetProcessedImage() gocv.Mat {
 	return p.processedImage.Clone()
 }
 
-// Return thread-safe clones with proper error handling
 func (p *ImagePipeline) GetPreviewImage() gocv.Mat {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
@@ -249,7 +241,6 @@ func (p *ImagePipeline) GetPreviewImage() gocv.Mat {
 	return p.previewImage.Clone()
 }
 
-// Remove debouncing and use separate mutex for processing
 func (p *ImagePipeline) ProcessPreview() error {
 	// Use separate mutex for processing to prevent deadlocks
 	p.processingMutex.Lock()
@@ -263,11 +254,10 @@ func (p *ImagePipeline) ProcessPreview() error {
 
 // Thread-unsafe helper methods (must be called with mutex held)
 func (p *ImagePipeline) HasImageUnsafe() bool {
-	return p.initialized && !p.originalImage.Empty()
+	return atomic.LoadInt32(&p.initialized) == 1 && !p.originalImage.Empty()
 }
 
 func (p *ImagePipeline) processImageUnsafe() (err error) {
-	// Panic recovery with proper cleanup
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("panic in processImage: %v", r)
@@ -288,7 +278,7 @@ func (p *ImagePipeline) processImageUnsafe() (err error) {
 	p.debugPipeline.StartTimer("processImage")
 	defer func() {
 		p.debugPipeline.EndTimer("processImage")
-		if p.initialized && !p.processedImage.Empty() {
+		if atomic.LoadInt32(&p.initialized) == 1 && !p.processedImage.Empty() {
 			p.debugPipeline.LogPipelineStats(p.originalImage.Size(), p.processedImage.Size(), len(p.transformations))
 		}
 		p.debugPipeline.LogMemoryUsage()
@@ -345,7 +335,6 @@ func (p *ImagePipeline) processImageUnsafe() (err error) {
 }
 
 func (p *ImagePipeline) processPreviewUnsafe() (err error) {
-	// Panic recovery
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("panic in processPreview: %v", r)
@@ -366,7 +355,7 @@ func (p *ImagePipeline) processPreviewUnsafe() (err error) {
 	p.debugPipeline.StartTimer("processPreview")
 	defer func() {
 		p.debugPipeline.EndTimer("processPreview")
-		if p.initialized && !p.previewImage.Empty() {
+		if atomic.LoadInt32(&p.initialized) == 1 && !p.previewImage.Empty() {
 			p.debugPipeline.LogPipelineStats(p.originalImage.Size(), p.previewImage.Size(), len(p.transformations))
 		}
 	}()
@@ -436,7 +425,7 @@ func (p *ImagePipeline) cleanupResourcesUnsafe() {
 	}
 }
 
-// Proper PSNR calculation with numerical stability
+// PSNR calculation with numerical stability
 func (p *ImagePipeline) CalculatePSNR() float64 {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
@@ -461,26 +450,47 @@ func (p *ImagePipeline) CalculatePSNR() float64 {
 		if proc.Type() == gocv.MatTypeCV8U && orig.Channels() == 3 {
 			temp := gocv.NewMat()
 			defer temp.Close()
-			gocv.CvtColor(proc, &temp, gocv.ColorGrayToBGR)
+			err := gocv.CvtColor(proc, &temp, gocv.ColorGrayToBGR)
+			if err != nil {
+				return 0.0
+			}
 			proc.Close()
 			proc = temp.Clone()
 		} else if orig.Type() == gocv.MatTypeCV8U && proc.Channels() == 3 {
 			temp := gocv.NewMat()
 			defer temp.Close()
-			gocv.CvtColor(orig, &temp, gocv.ColorGrayToBGR)
+			err := gocv.CvtColor(orig, &temp, gocv.ColorGrayToBGR)
+			if err != nil {
+				return 0.0
+			}
 			orig.Close()
 			orig = temp.Clone()
 		}
 	}
 
+	// Convert to float32 for precise calculations
+	origFloat := gocv.NewMat()
+	defer origFloat.Close()
+	procFloat := gocv.NewMat()
+	defer procFloat.Close()
+
+	orig.ConvertTo(&origFloat, gocv.MatTypeCV32F)
+	proc.ConvertTo(&procFloat, gocv.MatTypeCV32F)
+
 	// Calculate MSE with proper numerical handling
 	diff := gocv.NewMat()
 	defer diff.Close()
-	gocv.Subtract(orig, proc, &diff)
+	err := gocv.Subtract(origFloat, procFloat, &diff)
+	if err != nil {
+		return 0.0
+	}
 
 	diffSq := gocv.NewMat()
 	defer diffSq.Close()
-	gocv.Multiply(diff, diff, &diffSq)
+	err = gocv.Multiply(diff, diff, &diffSq)
+	if err != nil {
+		return 0.0
+	}
 
 	sumResult := diffSq.Sum()
 	totalPixels := float64(orig.Total())
@@ -492,9 +502,9 @@ func (p *ImagePipeline) CalculatePSNR() float64 {
 
 	mse := sumResult.Val1 / totalPixels
 
-	// Edge case handling
+	// Handle edge cases
 	if mse == 0 {
-		return 100.0 // Perfect match - return large finite value instead of infinity
+		return 100.0 // Perfect match
 	}
 	if mse < 1e-10 {
 		return 100.0 // Very small differences
@@ -507,7 +517,7 @@ func (p *ImagePipeline) CalculatePSNR() float64 {
 
 	psnr := 20*math.Log10(255) - 10*math.Log10(mse)
 
-	// Clamp to reasonable range and handle edge cases
+	// Clamp to reasonable range
 	if math.IsInf(psnr, 0) || math.IsNaN(psnr) {
 		return 100.0
 	}
@@ -521,7 +531,7 @@ func (p *ImagePipeline) CalculatePSNR() float64 {
 	return psnr
 }
 
-// Proper SSIM calculation with numerical stability
+// SSIM calculation with numerical stability
 func (p *ImagePipeline) CalculateSSIM() float64 {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
@@ -546,13 +556,19 @@ func (p *ImagePipeline) CalculateSSIM() float64 {
 		if proc.Type() == gocv.MatTypeCV8U && orig.Channels() == 3 {
 			temp := gocv.NewMat()
 			defer temp.Close()
-			gocv.CvtColor(proc, &temp, gocv.ColorGrayToBGR)
+			err := gocv.CvtColor(proc, &temp, gocv.ColorGrayToBGR)
+			if err != nil {
+				return 0.0
+			}
 			proc.Close()
 			proc = temp.Clone()
 		} else if orig.Type() == gocv.MatTypeCV8U && proc.Channels() == 3 {
 			temp := gocv.NewMat()
 			defer temp.Close()
-			gocv.CvtColor(orig, &temp, gocv.ColorGrayToBGR)
+			err := gocv.CvtColor(orig, &temp, gocv.ColorGrayToBGR)
+			if err != nil {
+				return 0.0
+			}
 			orig.Close()
 			orig = temp.Clone()
 		}
@@ -562,7 +578,10 @@ func (p *ImagePipeline) CalculateSSIM() float64 {
 	if orig.Channels() > 1 {
 		origGray := gocv.NewMat()
 		defer origGray.Close()
-		gocv.CvtColor(orig, &origGray, gocv.ColorBGRToGray)
+		err := gocv.CvtColor(orig, &origGray, gocv.ColorBGRToGray)
+		if err != nil {
+			return 0.0
+		}
 		orig.Close()
 		orig = origGray.Clone()
 	}
@@ -570,7 +589,10 @@ func (p *ImagePipeline) CalculateSSIM() float64 {
 	if proc.Channels() > 1 {
 		procGray := gocv.NewMat()
 		defer procGray.Close()
-		gocv.CvtColor(proc, &procGray, gocv.ColorBGRToGray)
+		err := gocv.CvtColor(proc, &procGray, gocv.ColorBGRToGray)
+		if err != nil {
+			return 0.0
+		}
 		proc.Close()
 		proc = procGray.Clone()
 	}
@@ -587,7 +609,7 @@ func (p *ImagePipeline) CalculateSSIM() float64 {
 	c1 := math.Pow(0.01*255, 2)
 	c2 := math.Pow(0.03*255, 2)
 
-	// Calculate means with proper error handling
+	// Calculate means
 	origMean := origF.Mean()
 	procMean := procF.Mean()
 
@@ -600,7 +622,7 @@ func (p *ImagePipeline) CalculateSSIM() float64 {
 	mu1 := origMean.Val1
 	mu2 := procMean.Val1
 
-	// Calculate variances and covariance using proper formulas
+	// Calculate variances and covariance
 	origSub := gocv.NewMat()
 	defer origSub.Close()
 	procSub := gocv.NewMat()
@@ -611,8 +633,14 @@ func (p *ImagePipeline) CalculateSSIM() float64 {
 	procMeanMat := gocv.NewMatFromScalar(procMean, procF.Type())
 	defer procMeanMat.Close()
 
-	gocv.Subtract(origF, origMeanMat, &origSub)
-	gocv.Subtract(procF, procMeanMat, &procSub)
+	err := gocv.Subtract(origF, origMeanMat, &origSub)
+	if err != nil {
+		return 0.0
+	}
+	err = gocv.Subtract(procF, procMeanMat, &procSub)
+	if err != nil {
+		return 0.0
+	}
 
 	// Calculate sigma1^2, sigma2^2, and sigma12
 	sigma1Sq := gocv.NewMat()
@@ -622,9 +650,18 @@ func (p *ImagePipeline) CalculateSSIM() float64 {
 	sigma12 := gocv.NewMat()
 	defer sigma12.Close()
 
-	gocv.Multiply(origSub, origSub, &sigma1Sq)
-	gocv.Multiply(procSub, procSub, &sigma2Sq)
-	gocv.Multiply(origSub, procSub, &sigma12)
+	err = gocv.Multiply(origSub, origSub, &sigma1Sq)
+	if err != nil {
+		return 0.0
+	}
+	err = gocv.Multiply(procSub, procSub, &sigma2Sq)
+	if err != nil {
+		return 0.0
+	}
+	err = gocv.Multiply(origSub, procSub, &sigma12)
+	if err != nil {
+		return 0.0
+	}
 
 	sigma1SqVal := sigma1Sq.Mean().Val1
 	sigma2SqVal := sigma2Sq.Mean().Val1
@@ -637,7 +674,7 @@ func (p *ImagePipeline) CalculateSSIM() float64 {
 		return 0.0
 	}
 
-	// Calculate SSIM using proper formula with numerical stability
+	// Calculate SSIM using proper formula
 	numerator := (2*mu1*mu2 + c1) * (2*sigma12Val + c2)
 	denominator := (mu1*mu1 + mu2*mu2 + c1) * (sigma1SqVal + sigma2SqVal + c2)
 
@@ -668,7 +705,7 @@ func (p *ImagePipeline) Close() {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
-	if p.initialized {
+	if atomic.LoadInt32(&p.initialized) == 1 {
 		p.cleanupResourcesUnsafe()
 		for _, transform := range p.transformations {
 			if transform != nil {
@@ -676,6 +713,6 @@ func (p *ImagePipeline) Close() {
 			}
 		}
 		p.transformations = nil
-		p.initialized = false
+		atomic.StoreInt32(&p.initialized, 0)
 	}
 }
