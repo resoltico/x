@@ -37,20 +37,22 @@ type ImageRestorationUI struct {
 	debugRender                  *DebugRender
 
 	// FIXED: Enhanced thread safety and rate limiting
-	updateMutex      sync.Mutex
-	lastUpdateTime   time.Time
-	updateDebounce   time.Duration
-	pendingUpdate    bool
-	processingUpdate bool
+	updateMutex       sync.Mutex
+	lastUpdateTime    time.Time
+	updateDebounce    time.Duration
+	pendingUpdate     bool
+	processingUpdate  bool
+	parameterDebounce time.Duration
 }
 
 func NewImageRestorationUI(window fyne.Window, config *DebugConfig) *ImageRestorationUI {
 	ui := &ImageRestorationUI{
-		window:         window,
-		pipeline:       NewImagePipeline(config),
-		debugGUI:       NewDebugGUI(config),
-		debugRender:    NewDebugRender(config),
-		updateDebounce: 50 * time.Millisecond, // Debounce UI updates
+		window:            window,
+		pipeline:          NewImagePipeline(config),
+		debugGUI:          NewDebugGUI(config),
+		debugRender:       NewDebugRender(config),
+		updateDebounce:    50 * time.Millisecond,  // Debounce UI updates
+		parameterDebounce: 100 * time.Millisecond, // Debounce parameter changes
 	}
 	return ui
 }
@@ -493,6 +495,7 @@ func (ui *ImageRestorationUI) removeTransformation(id int) {
 }
 
 func (ui *ImageRestorationUI) showTransformationParameters(transformation Transformation) {
+	// CRITICAL FIX: Pass ui.onParameterChanged as the callback
 	parametersWidget := transformation.GetParametersWidget(ui.onParameterChanged)
 	fyne.Do(func() {
 		ui.parametersContainer.Objects[0] = parametersWidget
@@ -500,8 +503,10 @@ func (ui *ImageRestorationUI) showTransformationParameters(transformation Transf
 	})
 }
 
-// FIXED: Enhanced debouncing and thread safety with full reprocessing
+// CRITICAL FIX: Proper parameter change handling with preview reprocessing
 func (ui *ImageRestorationUI) onParameterChanged() {
+	ui.debugGUI.LogUIEvent("onParameterChanged called - will reprocess preview")
+
 	ui.updateMutex.Lock()
 	defer ui.updateMutex.Unlock()
 
@@ -513,12 +518,12 @@ func (ui *ImageRestorationUI) onParameterChanged() {
 
 	// Rate limiting to prevent excessive updates
 	now := time.Now()
-	if now.Sub(ui.lastUpdateTime) < ui.updateDebounce {
+	if now.Sub(ui.lastUpdateTime) < ui.parameterDebounce {
 		if !ui.pendingUpdate {
 			ui.pendingUpdate = true
 			// Schedule delayed update
 			go func() {
-				time.Sleep(ui.updateDebounce)
+				time.Sleep(ui.parameterDebounce)
 				ui.updateMutex.Lock()
 				shouldUpdate := ui.pendingUpdate
 				ui.pendingUpdate = false
@@ -547,26 +552,19 @@ func (ui *ImageRestorationUI) performParameterUpdate() {
 		ui.updateMutex.Unlock()
 	}()
 
-	ui.debugGUI.LogUIEvent("onParameterChanged called - triggering FULL reprocessing")
+	ui.debugGUI.LogUIEvent("performParameterUpdate - reprocessing preview with new parameters")
 
-	// CRITICAL FIX: Process both full image AND preview when parameters change
+	// CRITICAL FIX: Use pipeline's proper ReprocessPreview method
 	go func() {
 		if ui.pipeline.HasImage() {
-			// First process the full resolution image to ensure save will use latest parameters
-			err := ui.pipeline.ProcessImage()
+			// Force the pipeline to reprocess the preview with updated parameters
+			err := ui.pipeline.ReprocessPreview()
 			if err != nil {
-				ui.debugGUI.LogError(fmt.Errorf("failed to process full image: %w", err))
+				ui.debugGUI.LogError(fmt.Errorf("failed to reprocess preview with new parameters: %w", err))
 				return
 			}
 
-			// Then process the preview for UI display
-			err = ui.pipeline.ProcessPreview()
-			if err != nil {
-				ui.debugGUI.LogError(fmt.Errorf("failed to process preview: %w", err))
-				return
-			}
-
-			ui.debugGUI.Log("Both full image and preview processed with new parameters")
+			ui.debugGUI.Log("Preview reprocessed with updated parameters")
 		}
 
 		fyne.Do(func() {
@@ -620,10 +618,9 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 			ui.debugGUI.LogImageFormatChange("preview", originalChannels, previewChannels)
 
 			if previewChannels == 1 && originalChannels == 3 {
-				// ENHANCED CONVERSION: Multiple methods with fallback
-				ui.debugRender.Log("ATTEMPTING ENHANCED BINARY->RGB CONVERSION")
+				// ENHANCED CONVERSION: Use standard GoCV API instead of custom logic
+				ui.debugRender.Log("Converting grayscale to color using GoCV API")
 
-				// Method 1: Standard OpenCV conversion
 				previewColor := gocv.NewMat()
 				defer previewColor.Close()
 				gocv.CvtColor(previewMat, &previewColor, gocv.ColorGrayToBGR)
@@ -631,24 +628,13 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 				var err error
 				previewImg, err = previewColor.ToImage()
 				if err != nil {
-					ui.debugGUI.LogImageConversion("preview_method1", false, err.Error())
-					ui.debugRender.LogMatToImageConversion("preview_method1", previewColor, false, err.Error())
-
-					// Method 2: Manual pixel conversion as fallback
-					ui.debugRender.Log("FALLBACK: Manual pixel conversion")
+					ui.debugGUI.LogImageConversion("preview_cvt", false, err.Error())
+					// Fallback: Manual conversion
 					size := previewMat.Size()
 					width, height := size[1], size[0]
-
-					// FIXED: Validate dimensions
-					if width <= 0 || height <= 0 || width > 65536 || height > 65536 {
-						ui.debugRender.Log("ERROR: Invalid image dimensions for manual conversion")
-						return
-					}
-
 					bounds := image.Rect(0, 0, width, height)
 					manualImg := image.NewRGBA(bounds)
 
-					// FIXED: Safe pixel access with bounds checking
 					for y := 0; y < height; y++ {
 						for x := 0; x < width; x++ {
 							grayVal := previewMat.GetUCharAt(y, x)
@@ -656,38 +642,29 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 						}
 					}
 					previewImg = manualImg
-					ui.debugRender.Log("SUCCESS: Manual conversion completed")
 				} else {
-					ui.debugRender.LogMatToImageConversion("preview_method1", previewColor, true, "")
-					ui.debugRender.Log("SUCCESS: Standard OpenCV conversion")
+					ui.debugRender.Log("SUCCESS: GoCV conversion completed")
 				}
 			} else {
-				// Fallback for other channel mismatches
+				// Use standard ToImage for other cases
 				var err error
 				previewImg, err = previewMat.ToImage()
 				if err != nil {
-					ui.debugGUI.LogImageConversion("preview_fallback", false, err.Error())
-					ui.debugRender.LogMatToImageConversion("preview_fallback", previewMat, false, err.Error())
+					ui.debugGUI.LogImageConversion("preview", false, err.Error())
 					return
 				}
-				ui.debugRender.LogMatToImageConversion("preview_fallback", previewMat, true, "")
 			}
 		} else {
 			var err error
 			previewImg, err = previewMat.ToImage()
 			if err != nil {
 				ui.debugGUI.LogImageConversion("preview", false, err.Error())
-				ui.debugRender.LogMatToImageConversion("preview", previewMat, false, err.Error())
 				return
 			}
-			ui.debugRender.LogMatToImageConversion("preview", previewMat, true, "")
 		}
 
 		ui.debugGUI.LogImageConversion("preview", true, "")
 		ui.debugRender.LogImageProperties("preview", previewImg)
-
-		// Final content analysis before display
-		ui.debugRender.LogImageContentAnalysis("preview_final", previewImg)
 
 		// FIXED: Validate images before setting
 		if originalImg != nil && previewImg != nil {

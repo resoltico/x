@@ -194,6 +194,16 @@ func (p *ImagePipeline) ProcessImage() error {
 	return p.processImageUnsafe()
 }
 
+// CRITICAL FIX: Add public method to reprocess preview with current parameters
+func (p *ImagePipeline) ReprocessPreview() error {
+	p.debugPipeline.Log("ReprocessPreview: Force reprocessing preview with current parameters")
+
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
+	return p.processPreviewUnsafe()
+}
+
 // FIXED: Return thread-safe clones with proper error handling
 func (p *ImagePipeline) GetProcessedImage() gocv.Mat {
 	p.mutex.RLock()

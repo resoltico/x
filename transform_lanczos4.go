@@ -12,7 +12,7 @@ import (
 	"gocv.io/x/gocv"
 )
 
-// Lanczos4Transform implements Lanczos4 interpolation with FIXED memory management and numerical stability
+// Lanczos4Transform implements Lanczos4 interpolation with FIXED memory management using standard GoCV APIs
 type Lanczos4Transform struct {
 	debugImage   *DebugImage
 	scaleFactor  float64
@@ -134,7 +134,7 @@ func (l *Lanczos4Transform) applyLanczos4Fixed(src gocv.Mat, scale float64) gocv
 		return gocv.NewMat()
 	}
 
-	// Apply optional pre-filtering to reduce ringing artifacts
+	// Apply optional pre-filtering using standard GoCV Gaussian blur
 	filtered := l.applyPreFilterFixed(working)
 	defer filtered.Close()
 
@@ -163,7 +163,7 @@ func (l *Lanczos4Transform) applyLanczos4Fixed(src gocv.Mat, scale float64) gocv
 		// Use iterative downscaling for large reductions
 		result = l.iterativeLanczos4Fixed(filtered, newWidth, newHeight)
 	} else {
-		// Standard Lanczos4 scaling
+		// Standard Lanczos4 scaling using GoCV Resize
 		result = gocv.NewMat()
 		gocv.Resize(filtered, &result, image.Point{X: newWidth, Y: newHeight}, 0, 0, gocv.InterpolationLanczos4)
 	}
@@ -174,7 +174,7 @@ func (l *Lanczos4Transform) applyLanczos4Fixed(src gocv.Mat, scale float64) gocv
 		return gocv.NewMat()
 	}
 
-	// Apply post-processing guided filter for artifact reduction
+	// Apply post-processing using standard GoCV blur for artifact reduction
 	final := l.applyPostFilterFixed(result)
 	if !result.Empty() {
 		result.Close()
@@ -186,15 +186,13 @@ func (l *Lanczos4Transform) applyLanczos4Fixed(src gocv.Mat, scale float64) gocv
 	return final
 }
 
+// FIXED: Use standard GoCV GaussianBlur for pre-filtering
 func (l *Lanczos4Transform) applyPreFilterFixed(src gocv.Mat) gocv.Mat {
 	if src.Empty() {
 		return gocv.NewMat()
 	}
 
 	l.debugImage.LogAlgorithmStep("Lanczos4 PreFilter Fixed", "Applying Gaussian blur to reduce ringing")
-
-	// Light Gaussian blur to reduce potential ringing artifacts
-	blurred := gocv.NewMat()
 
 	// FIXED: Validate kernel size based on image dimensions
 	kernelSize := 3
@@ -204,143 +202,31 @@ func (l *Lanczos4Transform) applyPreFilterFixed(src gocv.Mat) gocv.Mat {
 		return src.Clone()
 	}
 
+	// Use standard GoCV GaussianBlur
+	blurred := gocv.NewMat()
 	gocv.GaussianBlur(src, &blurred, image.Point{X: kernelSize, Y: kernelSize}, 0.5, 0.5, gocv.BorderDefault)
 
 	l.debugImage.LogFilter("GaussianBlur Fixed", "kernel=3x3", "sigma=0.5")
 	return blurred
 }
 
+// FIXED: Use standard GoCV blur instead of custom guided filter for post-processing
 func (l *Lanczos4Transform) applyPostFilterFixed(src gocv.Mat) gocv.Mat {
 	if src.Empty() {
 		return gocv.NewMat()
 	}
 
-	l.debugImage.LogAlgorithmStep("Lanczos4 PostFilter Fixed", "Applying guided filter for artifact reduction")
+	l.debugImage.LogAlgorithmStep("Lanczos4 PostFilter Fixed", "Applying blur for artifact reduction")
 
-	// FIXED: Implement safe guided filter with proper bounds checking
-	filtered := l.applySimpleGuidedFilterFixed(src, src, 3, 0.01)
+	// FIXED: Use simple blur instead of complex guided filter for post-processing
+	filtered := gocv.NewMat()
+	gocv.Blur(src, &filtered, image.Point{X: 3, Y: 3})
 
-	l.debugImage.LogFilter("GuidedFilter Fixed", "radius=3", "epsilon=0.01")
+	l.debugImage.LogFilter("Blur Fixed", "kernel=3x3")
 	return filtered
 }
 
-// FIXED: Proper memory management and numerical stability for guided filter
-func (l *Lanczos4Transform) applySimpleGuidedFilterFixed(guide, input gocv.Mat, radius int, epsilon float64) gocv.Mat {
-	if guide.Empty() || input.Empty() {
-		return gocv.NewMat()
-	}
-
-	// FIXED: Validate epsilon to prevent division by zero
-	if epsilon <= 0 || math.IsInf(epsilon, 0) || math.IsNaN(epsilon) {
-		epsilon = 0.01
-	}
-
-	// FIXED: Validate radius
-	if radius <= 0 {
-		radius = 1
-	}
-
-	// Convert to float32 for processing
-	guideFloat := gocv.NewMat()
-	defer guideFloat.Close()
-	inputFloat := gocv.NewMat()
-	defer inputFloat.Close()
-
-	guide.ConvertTo(&guideFloat, gocv.MatTypeCV32F)
-	input.ConvertTo(&inputFloat, gocv.MatTypeCV32F)
-
-	// FIXED: Normalize to [0,1] range to prevent overflow
-	guideFloat.DivideFloat(255.0)
-	inputFloat.DivideFloat(255.0)
-
-	kernelSize := 2*radius + 1
-
-	// FIXED: Validate kernel size against image dimensions
-	if kernelSize > guideFloat.Cols() || kernelSize > guideFloat.Rows() {
-		l.debugImage.LogFilter("GuidedFilter Fixed", "Kernel too large for image, returning input")
-		return input.Clone()
-	}
-
-	// Mean filters with proper cleanup
-	meanI := gocv.NewMat()
-	defer meanI.Close()
-	gocv.BoxFilter(guideFloat, &meanI, -1, image.Point{X: kernelSize, Y: kernelSize})
-
-	meanP := gocv.NewMat()
-	defer meanP.Close()
-	gocv.BoxFilter(inputFloat, &meanP, -1, image.Point{X: kernelSize, Y: kernelSize})
-
-	// Correlation and variance with proper cleanup
-	corrIP := gocv.NewMat()
-	defer corrIP.Close()
-	temp := gocv.NewMat()
-	defer temp.Close()
-	gocv.Multiply(guideFloat, inputFloat, &temp)
-	gocv.BoxFilter(temp, &corrIP, -1, image.Point{X: kernelSize, Y: kernelSize})
-
-	varI := gocv.NewMat()
-	defer varI.Close()
-	temp2 := gocv.NewMat()
-	defer temp2.Close()
-	gocv.Multiply(guideFloat, guideFloat, &temp2)
-	gocv.BoxFilter(temp2, &varI, -1, image.Point{X: kernelSize, Y: kernelSize})
-
-	meanISquared := gocv.NewMat()
-	defer meanISquared.Close()
-	gocv.Multiply(meanI, meanI, &meanISquared)
-	gocv.Subtract(varI, meanISquared, &varI)
-
-	// Calculate coefficients with proper cleanup
-	a := gocv.NewMat()
-	defer a.Close()
-	covIP := gocv.NewMat()
-	defer covIP.Close()
-	temp3 := gocv.NewMat()
-	defer temp3.Close()
-	gocv.Multiply(meanI, meanP, &temp3)
-	gocv.Subtract(corrIP, temp3, &covIP)
-
-	denominator := gocv.NewMat()
-	defer denominator.Close()
-	varI.CopyTo(&denominator)
-	denominator.AddFloat(float32(epsilon))
-	gocv.Divide(covIP, denominator, &a)
-
-	b := gocv.NewMat()
-	defer b.Close()
-	temp4 := gocv.NewMat()
-	defer temp4.Close()
-	gocv.Multiply(a, meanI, &temp4)
-	gocv.Subtract(meanP, temp4, &b)
-
-	// Smooth coefficients with proper cleanup
-	meanA := gocv.NewMat()
-	defer meanA.Close()
-	gocv.BoxFilter(a, &meanA, -1, image.Point{X: kernelSize, Y: kernelSize})
-
-	meanB := gocv.NewMat()
-	defer meanB.Close()
-	gocv.BoxFilter(b, &meanB, -1, image.Point{X: kernelSize, Y: kernelSize})
-
-	// Final result with proper cleanup
-	resultFloat := gocv.NewMat()
-	defer resultFloat.Close()
-	temp5 := gocv.NewMat()
-	defer temp5.Close()
-	gocv.Multiply(meanA, guideFloat, &temp5)
-	gocv.Add(temp5, meanB, &resultFloat)
-
-	// FIXED: Clamp values to valid range before conversion
-	resultFloat.MultiplyFloat(255.0)
-
-	// Convert back to uint8 with proper range checking
-	result := gocv.NewMat()
-	resultFloat.ConvertTo(&result, gocv.MatTypeCV8U)
-
-	return result
-}
-
-// FIXED: Proper memory management for iterative scaling
+// FIXED: Proper memory management for iterative scaling using standard GoCV
 func (l *Lanczos4Transform) iterativeLanczos4Fixed(src gocv.Mat, targetWidth, targetHeight int) gocv.Mat {
 	if src.Empty() || targetWidth <= 0 || targetHeight <= 0 {
 		return gocv.NewMat()
@@ -370,6 +256,7 @@ func (l *Lanczos4Transform) iterativeLanczos4Fixed(src gocv.Mat, targetWidth, ta
 		l.debugImage.LogAlgorithmStep("Lanczos4 Iterative Fixed", fmt.Sprintf("Step %d: %dx%d -> %dx%d",
 			step, currentWidth, currentHeight, nextWidth, nextHeight))
 
+		// Use standard GoCV Resize with Lanczos4
 		gocv.Resize(current, &temp, image.Point{X: nextWidth, Y: nextHeight}, 0, 0, gocv.InterpolationLanczos4)
 
 		// FIXED: Proper cleanup of previous iteration
@@ -378,7 +265,7 @@ func (l *Lanczos4Transform) iterativeLanczos4Fixed(src gocv.Mat, targetWidth, ta
 		currentWidth, currentHeight = nextWidth, nextHeight
 	}
 
-	// Final resize to exact target dimensions
+	// Final resize to exact target dimensions using standard GoCV
 	scaled := gocv.NewMat()
 	gocv.Resize(current, &scaled, image.Point{X: targetWidth, Y: targetHeight}, 0, 0, gocv.InterpolationLanczos4)
 
