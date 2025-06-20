@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"image"
 	"strconv"
-	"sync"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -15,7 +14,6 @@ import (
 // Lanczos4Transform implements Lanczos4 interpolation for high-quality image scaling
 type Lanczos4Transform struct {
 	debugImage   *DebugImage
-	paramMutex   sync.RWMutex
 	scaleFactor  float64
 	targetDPI    float64
 	originalDPI  float64
@@ -41,9 +39,6 @@ func (l *Lanczos4Transform) Name() string {
 }
 
 func (l *Lanczos4Transform) GetParameters() map[string]interface{} {
-	l.paramMutex.RLock()
-	defer l.paramMutex.RUnlock()
-
 	return map[string]interface{}{
 		"scaleFactor":  l.scaleFactor,
 		"targetDPI":    l.targetDPI,
@@ -53,9 +48,6 @@ func (l *Lanczos4Transform) GetParameters() map[string]interface{} {
 }
 
 func (l *Lanczos4Transform) SetParameters(params map[string]interface{}) {
-	l.paramMutex.Lock()
-	defer l.paramMutex.Unlock()
-
 	if scale, ok := params["scaleFactor"].(float64); ok {
 		l.scaleFactor = scale
 	}
@@ -72,22 +64,15 @@ func (l *Lanczos4Transform) SetParameters(params map[string]interface{}) {
 
 func (l *Lanczos4Transform) Apply(src gocv.Mat) gocv.Mat {
 	l.debugImage.LogAlgorithmStep("Lanczos4", "Starting full resolution scaling")
-	l.paramMutex.RLock()
-	scale := l.scaleFactor
-	l.paramMutex.RUnlock()
-	return l.applyLanczos4(src, scale)
+	return l.applyLanczos4(src, l.scaleFactor)
 }
 
 func (l *Lanczos4Transform) ApplyPreview(src gocv.Mat) gocv.Mat {
 	l.debugImage.LogAlgorithmStep("Lanczos4 Preview", "Starting preview scaling")
 
-	l.paramMutex.RLock()
-	scale := l.scaleFactor
-	l.paramMutex.RUnlock()
-
 	// For preview, use a smaller scale factor to maintain responsiveness
-	previewScale := scale
-	if scale > 2.0 {
+	previewScale := l.scaleFactor
+	if l.scaleFactor > 2.0 {
 		previewScale = 2.0
 	}
 
@@ -121,29 +106,137 @@ func (l *Lanczos4Transform) applyLanczos4(src gocv.Mat, scale float64) gocv.Mat 
 
 	l.debugImage.LogMatInfo("input_working", working)
 
+	// Apply optional pre-filtering to reduce ringing artifacts
+	filtered := l.applyPreFilter(working)
+	defer filtered.Close()
+
 	// Calculate target dimensions
-	newWidth := int(float64(working.Cols()) * scale)
-	newHeight := int(float64(working.Rows()) * scale)
+	newWidth := int(float64(filtered.Cols()) * scale)
+	newHeight := int(float64(filtered.Rows()) * scale)
 
 	l.debugImage.LogAlgorithmStep("Lanczos4", fmt.Sprintf("Target dimensions: %dx%d", newWidth, newHeight))
 
 	var result gocv.Mat
 
-	l.paramMutex.RLock()
-	useIterative := l.useIterative
-	l.paramMutex.RUnlock()
-
-	if useIterative && scale < 0.5 {
+	if l.useIterative && scale < 0.5 {
 		// Use iterative downscaling for large reductions
-		result = l.iterativeLanczos4(working, newWidth, newHeight)
+		result = l.iterativeLanczos4(filtered, newWidth, newHeight)
 	} else {
-		// Standard Lanczos4 scaling without pre-filtering (which degrades quality)
+		// Standard Lanczos4 scaling
 		result = gocv.NewMat()
-		gocv.Resize(working, &result, image.Point{X: newWidth, Y: newHeight}, 0, 0, gocv.InterpolationLanczos4)
+		gocv.Resize(filtered, &result, image.Point{X: newWidth, Y: newHeight}, 0, 0, gocv.InterpolationLanczos4)
 	}
 
-	l.debugImage.LogMatInfo("final_result", result)
+	// Apply post-processing guided filter for artifact reduction
+	final := l.applyPostFilter(result)
+	result.Close()
+
+	l.debugImage.LogMatInfo("final_result", final)
 	l.debugImage.LogAlgorithmStep("Lanczos4", "Scaling completed")
+
+	return final
+}
+
+func (l *Lanczos4Transform) applyPreFilter(src gocv.Mat) gocv.Mat {
+	l.debugImage.LogAlgorithmStep("Lanczos4 PreFilter", "Applying Gaussian blur to reduce ringing")
+
+	// Light Gaussian blur to reduce potential ringing artifacts
+	blurred := gocv.NewMat()
+	gocv.GaussianBlur(src, &blurred, image.Point{X: 3, Y: 3}, 0.5, 0.5, gocv.BorderDefault)
+
+	l.debugImage.LogFilter("GaussianBlur", "kernel=3x3", "sigma=0.5")
+	return blurred
+}
+
+func (l *Lanczos4Transform) applyPostFilter(src gocv.Mat) gocv.Mat {
+	l.debugImage.LogAlgorithmStep("Lanczos4 PostFilter", "Applying guided filter for artifact reduction")
+
+	// Simple guided filter implementation using box filter
+	filtered := l.applySimpleGuidedFilter(src, src, 3, 0.01)
+
+	l.debugImage.LogFilter("GuidedFilter", "radius=3", "epsilon=0.01")
+	return filtered
+}
+
+func (l *Lanczos4Transform) applySimpleGuidedFilter(guide, input gocv.Mat, radius int, epsilon float64) gocv.Mat {
+	// Convert to float32 for processing
+	guideFloat := gocv.NewMat()
+	defer guideFloat.Close()
+	inputFloat := gocv.NewMat()
+	defer inputFloat.Close()
+
+	guide.ConvertTo(&guideFloat, gocv.MatTypeCV32F)
+	input.ConvertTo(&inputFloat, gocv.MatTypeCV32F)
+
+	guideFloat.DivideFloat(255.0)
+	inputFloat.DivideFloat(255.0)
+
+	kernelSize := 2*radius + 1
+
+	// Mean filters
+	meanI := gocv.NewMat()
+	defer meanI.Close()
+	gocv.BoxFilter(guideFloat, &meanI, -1, image.Point{X: kernelSize, Y: kernelSize})
+
+	meanP := gocv.NewMat()
+	defer meanP.Close()
+	gocv.BoxFilter(inputFloat, &meanP, -1, image.Point{X: kernelSize, Y: kernelSize})
+
+	// Correlation and variance
+	corrIP := gocv.NewMat()
+	defer corrIP.Close()
+	temp := gocv.NewMat()
+	defer temp.Close()
+	gocv.Multiply(guideFloat, inputFloat, &temp)
+	gocv.BoxFilter(temp, &corrIP, -1, image.Point{X: kernelSize, Y: kernelSize})
+
+	varI := gocv.NewMat()
+	defer varI.Close()
+	gocv.Multiply(guideFloat, guideFloat, &temp)
+	gocv.BoxFilter(temp, &varI, -1, image.Point{X: kernelSize, Y: kernelSize})
+	meanISquared := gocv.NewMat()
+	defer meanISquared.Close()
+	gocv.Multiply(meanI, meanI, &meanISquared)
+	gocv.Subtract(varI, meanISquared, &varI)
+
+	// Calculate coefficients
+	a := gocv.NewMat()
+	defer a.Close()
+	covIP := gocv.NewMat()
+	defer covIP.Close()
+	gocv.Multiply(meanI, meanP, &temp)
+	gocv.Subtract(corrIP, temp, &covIP)
+
+	denominator := gocv.NewMat()
+	defer denominator.Close()
+	varI.CopyTo(&denominator)
+	denominator.AddFloat(float32(epsilon))
+	gocv.Divide(covIP, denominator, &a)
+
+	b := gocv.NewMat()
+	defer b.Close()
+	gocv.Multiply(a, meanI, &temp)
+	gocv.Subtract(meanP, temp, &b)
+
+	// Smooth coefficients
+	meanA := gocv.NewMat()
+	defer meanA.Close()
+	gocv.BoxFilter(a, &meanA, -1, image.Point{X: kernelSize, Y: kernelSize})
+
+	meanB := gocv.NewMat()
+	defer meanB.Close()
+	gocv.BoxFilter(b, &meanB, -1, image.Point{X: kernelSize, Y: kernelSize})
+
+	// Final result
+	resultFloat := gocv.NewMat()
+	defer resultFloat.Close()
+	gocv.Multiply(meanA, guideFloat, &temp)
+	gocv.Add(temp, meanB, &resultFloat)
+
+	// Convert back to uint8
+	result := gocv.NewMat()
+	resultFloat.MultiplyFloat(255.0)
+	resultFloat.ConvertTo(&result, gocv.MatTypeCV8U)
 
 	return result
 }
@@ -180,9 +273,6 @@ func (l *Lanczos4Transform) iterativeLanczos4(src gocv.Mat, targetWidth, targetH
 }
 
 func (l *Lanczos4Transform) calculateScaleFactor() float64 {
-	l.paramMutex.RLock()
-	defer l.paramMutex.RUnlock()
-
 	if l.originalDPI > 0 && l.targetDPI > 0 {
 		calculated := l.targetDPI / l.originalDPI
 		l.debugImage.LogAlgorithmStep("Lanczos4", fmt.Sprintf("Calculated scale factor: %.3f (%.0f DPI -> %.0f DPI)",
@@ -196,18 +286,11 @@ func (l *Lanczos4Transform) createParameterUI() *fyne.Container {
 	// Scale Factor parameter
 	scaleLabel := widget.NewLabel("Scale Factor (0.1-5.0):")
 	scaleEntry := widget.NewEntry()
-
-	l.paramMutex.RLock()
 	scaleEntry.SetText(fmt.Sprintf("%.2f", l.scaleFactor))
-	l.paramMutex.RUnlock()
-
 	scaleEntry.OnSubmitted = func(text string) {
 		if value, err := strconv.ParseFloat(text, 64); err == nil && value >= 0.1 && value <= 5.0 {
-			l.paramMutex.Lock()
 			oldValue := l.scaleFactor
 			l.scaleFactor = value
-			l.paramMutex.Unlock()
-
 			l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", fmt.Sprintf("Scale factor changed: %.3f -> %.3f", oldValue, value))
 			if l.onParameterChanged != nil {
 				l.onParameterChanged()
@@ -220,24 +303,16 @@ func (l *Lanczos4Transform) createParameterUI() *fyne.Container {
 	// Target DPI parameter
 	targetDPILabel := widget.NewLabel("Target DPI (72-1200):")
 	targetDPIEntry := widget.NewEntry()
-
-	l.paramMutex.RLock()
 	targetDPIEntry.SetText(fmt.Sprintf("%.0f", l.targetDPI))
-	l.paramMutex.RUnlock()
-
 	targetDPIEntry.OnSubmitted = func(text string) {
 		if value, err := strconv.ParseFloat(text, 64); err == nil && value >= 72 && value <= 1200 {
-			l.paramMutex.Lock()
 			oldValue := l.targetDPI
 			l.targetDPI = value
 			// Recalculate scale factor based on DPI
 			if l.originalDPI > 0 {
-				l.scaleFactor = l.targetDPI / l.originalDPI
+				l.scaleFactor = l.calculateScaleFactor()
+				scaleEntry.SetText(fmt.Sprintf("%.2f", l.scaleFactor))
 			}
-			newScale := l.scaleFactor
-			l.paramMutex.Unlock()
-
-			scaleEntry.SetText(fmt.Sprintf("%.2f", newScale))
 			l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", fmt.Sprintf("Target DPI changed: %.0f -> %.0f", oldValue, value))
 			if l.onParameterChanged != nil {
 				l.onParameterChanged()
@@ -250,22 +325,14 @@ func (l *Lanczos4Transform) createParameterUI() *fyne.Container {
 	// Original DPI parameter
 	originalDPILabel := widget.NewLabel("Original DPI (72-1200):")
 	originalDPIEntry := widget.NewEntry()
-
-	l.paramMutex.RLock()
 	originalDPIEntry.SetText(fmt.Sprintf("%.0f", l.originalDPI))
-	l.paramMutex.RUnlock()
-
 	originalDPIEntry.OnSubmitted = func(text string) {
 		if value, err := strconv.ParseFloat(text, 64); err == nil && value >= 72 && value <= 1200 {
-			l.paramMutex.Lock()
 			oldValue := l.originalDPI
 			l.originalDPI = value
 			// Recalculate scale factor based on DPI
-			l.scaleFactor = l.targetDPI / l.originalDPI
-			newScale := l.scaleFactor
-			l.paramMutex.Unlock()
-
-			scaleEntry.SetText(fmt.Sprintf("%.2f", newScale))
+			l.scaleFactor = l.calculateScaleFactor()
+			scaleEntry.SetText(fmt.Sprintf("%.2f", l.scaleFactor))
 			l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", fmt.Sprintf("Original DPI changed: %.0f -> %.0f", oldValue, value))
 			if l.onParameterChanged != nil {
 				l.onParameterChanged()
@@ -277,29 +344,19 @@ func (l *Lanczos4Transform) createParameterUI() *fyne.Container {
 
 	// Iterative downscaling checkbox
 	iterativeCheck := widget.NewCheck("Use Iterative Downscaling", func(checked bool) {
-		l.paramMutex.Lock()
 		oldValue := l.useIterative
 		l.useIterative = checked
-		l.paramMutex.Unlock()
-
 		l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", fmt.Sprintf("Iterative mode changed: %t -> %t", oldValue, checked))
 		if l.onParameterChanged != nil {
 			l.onParameterChanged()
 		}
 	})
-
-	l.paramMutex.RLock()
 	iterativeCheck.SetChecked(l.useIterative)
-	l.paramMutex.RUnlock()
 
 	// Calculate button
 	calculateBtn := widget.NewButton("Calculate Scale from DPI", func() {
-		l.paramMutex.Lock()
-		l.scaleFactor = l.calculateScaleFactorUnsafe()
-		newScale := l.scaleFactor
-		l.paramMutex.Unlock()
-
-		scaleEntry.SetText(fmt.Sprintf("%.2f", newScale))
+		l.scaleFactor = l.calculateScaleFactor()
+		scaleEntry.SetText(fmt.Sprintf("%.2f", l.scaleFactor))
 		l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", "Scale factor recalculated from DPI values")
 		if l.onParameterChanged != nil {
 			l.onParameterChanged()
@@ -313,14 +370,4 @@ func (l *Lanczos4Transform) createParameterUI() *fyne.Container {
 		iterativeCheck,
 		calculateBtn,
 	)
-}
-
-func (l *Lanczos4Transform) calculateScaleFactorUnsafe() float64 {
-	if l.originalDPI > 0 && l.targetDPI > 0 {
-		calculated := l.targetDPI / l.originalDPI
-		l.debugImage.LogAlgorithmStep("Lanczos4", fmt.Sprintf("Calculated scale factor: %.3f (%.0f DPI -> %.0f DPI)",
-			calculated, l.originalDPI, l.targetDPI))
-		return calculated
-	}
-	return l.scaleFactor
 }

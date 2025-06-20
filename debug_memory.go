@@ -3,11 +3,23 @@ package main
 import (
 	"log"
 	"runtime"
+	"sync"
 	"time"
 )
 
+type MatInfo struct {
+	ID        uint64
+	Name      string
+	CreatedAt time.Time
+	Stack     string
+	Closed    bool
+}
+
 type DebugMemory struct {
 	enabled bool
+	mats    map[uint64]*MatInfo
+	nextID  uint64
+	mutex   sync.RWMutex
 }
 
 func NewDebugMemory(config *DebugConfig) *DebugMemory {
@@ -17,37 +29,80 @@ func NewDebugMemory(config *DebugConfig) *DebugMemory {
 	}
 	return &DebugMemory{
 		enabled: enabled,
+		mats:    make(map[uint64]*MatInfo),
+		nextID:  1,
 	}
 }
 
 func (d *DebugMemory) Log(message string) {
+	if d.enabled {
+		log.Println("[MEMORY DEBUG]", message)
+	}
+}
+
+func (d *DebugMemory) LogMatCreation(name string) uint64 {
+	if !d.enabled {
+		return 0
+	}
+
+	// Get stack trace
+	buf := make([]byte, 4096)
+	n := runtime.Stack(buf, false)
+	stack := string(buf[:n])
+
+	d.mutex.Lock()
+	id := d.nextID
+	d.nextID++
+	d.mats[id] = &MatInfo{
+		ID:        id,
+		Name:      name,
+		CreatedAt: time.Now(),
+		Stack:     stack,
+		Closed:    false,
+	}
+	d.mutex.Unlock()
+
+	log.Printf("[MEMORY DEBUG] Mat '%s' created with ID %d", name, id)
+	return id
+}
+
+func (d *DebugMemory) LogMatCleanup(name string, id uint64) {
 	if !d.enabled {
 		return
 	}
-	log.Println("[MEMORY DEBUG]", message)
-}
 
-func (d *DebugMemory) LogError(err error) {
-	if !d.enabled || err == nil {
-		return
+	d.mutex.Lock()
+	if info, exists := d.mats[id]; exists {
+		info.Closed = true
+		log.Printf("[MEMORY DEBUG] Mat '%s' cleaned up (ID %d, age: %v)", name, id, time.Since(info.CreatedAt))
+	} else {
+		log.Printf("[MEMORY DEBUG] WARNING: Mat '%s' cleanup attempted but not tracked (ID %d)", name, id)
 	}
-	log.Println("[MEMORY ERROR]", err)
+	d.mutex.Unlock()
 }
 
-func (d *DebugMemory) LogMemoryUsage() {
+func (d *DebugMemory) ValidateMatID(name string, id uint64) bool {
 	if !d.enabled {
-		return
+		return true
 	}
 
-	var m runtime.MemStats
-	runtime.GC()
-	runtime.ReadMemStats(&m)
+	d.mutex.RLock()
+	info, exists := d.mats[id]
+	d.mutex.RUnlock()
 
-	log.Printf("[MEMORY DEBUG] Memory - Alloc: %.2f MB, TotalAlloc: %.2f MB, Sys: %.2f MB, NumGC: %d",
-		float64(m.Alloc)/1024/1024,
-		float64(m.TotalAlloc)/1024/1024,
-		float64(m.Sys)/1024/1024,
-		m.NumGC)
+	if !exists {
+		log.Printf("[MEMORY DEBUG] WARNING: Mat '%s' ID %d not tracked", name, id)
+		return false
+	}
+
+	if info.Closed {
+		log.Printf("[MEMORY DEBUG] ERROR: Mat '%s' ID %d was already closed! Created at %v",
+			name, id, info.CreatedAt)
+		log.Printf("[MEMORY DEBUG] Original creation stack:\n%s", info.Stack)
+		return false
+	}
+
+	return true
 }
 
 func (d *DebugMemory) LogMemorySummary() {
@@ -55,64 +110,63 @@ func (d *DebugMemory) LogMemorySummary() {
 		return
 	}
 
-	var m runtime.MemStats
-	runtime.ReadMemStats(&m)
+	d.mutex.RLock()
+	total := len(d.mats)
+	active := 0
+	closed := 0
 
-	d.Log("=== Memory Summary ===")
-	log.Printf("[MEMORY DEBUG] Final Memory Stats:")
-	log.Printf("[MEMORY DEBUG]   Allocated: %.2f MB", float64(m.Alloc)/1024/1024)
-	log.Printf("[MEMORY DEBUG]   Total Allocated: %.2f MB", float64(m.TotalAlloc)/1024/1024)
-	log.Printf("[MEMORY DEBUG]   System Memory: %.2f MB", float64(m.Sys)/1024/1024)
-	log.Printf("[MEMORY DEBUG]   Garbage Collections: %d", m.NumGC)
-	log.Printf("[MEMORY DEBUG]   Last GC: %s", time.Unix(0, int64(m.LastGC)).Format(time.RFC3339))
-	d.Log("=====================")
+	for _, info := range d.mats {
+		if info.Closed {
+			closed++
+		} else {
+			active++
+		}
+	}
+	d.mutex.RUnlock()
+
+	log.Printf("[MEMORY DEBUG] Summary: %d total Mats tracked, %d active, %d closed",
+		total, active, closed)
 }
 
-func (d *DebugMemory) LogAllocation(resource string, size int) {
+func (d *DebugMemory) LogActiveMatDetails() {
 	if !d.enabled {
 		return
 	}
-	log.Printf("[MEMORY DEBUG] Allocated %s: %d bytes", resource, size)
+
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+
+	log.Printf("[MEMORY DEBUG] Active Mat details:")
+	for id, info := range d.mats {
+		if !info.Closed {
+			age := time.Since(info.CreatedAt)
+			log.Printf("[MEMORY DEBUG]   '%s' (ID=%d, age=%v)", info.Name, id, age)
+		}
+	}
 }
 
-func (d *DebugMemory) LogDeallocation(resource string) {
+func (d *DebugMemory) LogMemoryLeak(name string, id uint64) {
 	if !d.enabled {
 		return
 	}
-	log.Printf("[MEMORY DEBUG] Deallocated %s", resource)
+
+	d.mutex.RLock()
+	info, exists := d.mats[id]
+	d.mutex.RUnlock()
+
+	if exists && !info.Closed {
+		age := time.Since(info.CreatedAt)
+		log.Printf("[MEMORY DEBUG] POTENTIAL LEAK: Mat '%s' (ID=%d) has been active for %v", name, id, age)
+		log.Printf("[MEMORY DEBUG] Creation stack:\n%s", info.Stack)
+	}
 }
 
-func (d *DebugMemory) LogMatCreation(name string, width, height, channels int) {
+func (d *DebugMemory) LogDeferOverwritePattern(name string, originalID uint64, newMatInfo string) {
 	if !d.enabled {
 		return
 	}
-	size := width * height * channels
-	log.Printf("[MEMORY DEBUG] Mat created '%s': %dx%d, %d channels, ~%d bytes", 
-		name, width, height, channels, size)
-}
-
-func (d *DebugMemory) LogMatDestruction(name string) {
-	if !d.enabled {
-		return
-	}
-	log.Printf("[MEMORY DEBUG] Mat destroyed '%s'", name)
-}
-
-func (d *DebugMemory) LogGC() {
-	if !d.enabled {
-		return
-	}
-	
-	var before runtime.MemStats
-	runtime.ReadMemStats(&before)
-	
-	runtime.GC()
-	
-	var after runtime.MemStats
-	runtime.ReadMemStats(&after)
-	
-	freed := before.Alloc - after.Alloc
-	log.Printf("[MEMORY DEBUG] GC triggered - freed %.2f MB", float64(freed)/1024/1024)
+	log.Printf("[MEMORY DEBUG] DEFER OVERWRITE DETECTED: Mat '%s' (ID=%d) overwritten with %s - original will leak!",
+		name, originalID, newMatInfo)
 }
 
 func (d *DebugMemory) IsEnabled() bool {
@@ -121,7 +175,7 @@ func (d *DebugMemory) IsEnabled() bool {
 
 func (d *DebugMemory) Enable() {
 	d.enabled = true
-	d.Log("Memory debugging enabled")
+	d.Log("Memory debugging enabled with ID-based tracking")
 }
 
 func (d *DebugMemory) Disable() {
