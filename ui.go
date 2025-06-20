@@ -351,6 +351,8 @@ func (ui *ImageRestorationUI) saveImage() {
 			}()
 
 			processedImage := ui.pipeline.GetProcessedImage()
+			defer processedImage.Close()
+
 			hasImage := !processedImage.Empty()
 			ui.debugGUI.LogSaveOperation(filename, filepath.Ext(filename), hasImage)
 
@@ -531,8 +533,7 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 	if ui.pipeline.HasImage() && !ui.pipeline.originalImage.Empty() {
 		ui.debugGUI.LogUIEvent("updateImageDisplay: converting original image")
 
-		originalMat := ui.pipeline.originalImage
-		originalImg, err := originalMat.ToImage()
+		originalImg, err := ui.pipeline.originalImage.ToImage()
 		if err != nil {
 			ui.debugGUI.LogImageConversion("original", false, err.Error())
 			return
@@ -540,13 +541,15 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 		ui.debugGUI.LogImageConversion("original", true, "")
 
 		previewMat := ui.pipeline.GetPreviewImage()
+		defer previewMat.Close()
+
 		if previewMat.Empty() {
 			ui.debugGUI.LogUIEvent("updateImageDisplay: preview image is empty")
 			return
 		}
 
 		var previewImg image.Image
-		originalChannels := originalMat.Channels()
+		originalChannels := ui.pipeline.originalImage.Channels()
 		previewChannels := previewMat.Channels()
 
 		if originalChannels != previewChannels {
@@ -593,9 +596,8 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 
 func (ui *ImageRestorationUI) updateImageInfo() {
 	if ui.pipeline.HasImage() && !ui.pipeline.originalImage.Empty() {
-		originalMat := ui.pipeline.originalImage
-		size := originalMat.Size()
-		channels := originalMat.Channels()
+		size := ui.pipeline.originalImage.Size()
+		channels := ui.pipeline.originalImage.Channels()
 
 		info := fmt.Sprintf("Size: %dx%d\nChannels: %d", size[1], size[0], channels)
 		ui.imageInfoLabel.ParseMarkdown(info)

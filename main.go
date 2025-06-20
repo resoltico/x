@@ -17,7 +17,10 @@ type DebugConfig struct {
 // Global debug configuration - centralized control
 var debugConfig = DebugConfig{
 	GUI:      true, // Toggle GUI debugging
+	Image:    true, // Toggle image debugging
+	Memory:   true, // Toggle memory debugging
 	Pipeline: true, // Toggle pipeline debugging
+	Render:   true, // Toggle render debugging
 }
 
 func main() {

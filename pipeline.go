@@ -8,70 +8,10 @@ import (
 	"gocv.io/x/gocv"
 )
 
-// SafeMat provides safe OpenCV Mat management
-type SafeMat struct {
-	mat    gocv.Mat
-	closed bool
-	mutex  sync.Mutex
-}
-
-func NewSafeMat() *SafeMat {
-	return &SafeMat{
-		mat:    gocv.NewMat(),
-		closed: false,
-	}
-}
-
-func (s *SafeMat) Close() {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	if !s.closed && !s.mat.Empty() {
-		s.mat.Close()
-	}
-	s.closed = true
-}
-
-func (s *SafeMat) Mat() gocv.Mat {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	if s.closed {
-		return gocv.NewMat() // Return empty Mat if closed
-	}
-	return s.mat
-}
-
-func (s *SafeMat) IsEmpty() bool {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	return s.closed || s.mat.Empty()
-}
-
-func (s *SafeMat) IsClosed() bool {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	return s.closed
-}
-
-// FIXED: Safe replacement that recreates SafeMat instead of replacing content
-func (s *SafeMat) Replace(newMat gocv.Mat) error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	// Close old mat if it exists and not already closed
-	if !s.closed && !s.mat.Empty() {
-		s.mat.Close()
-	}
-
-	s.mat = newMat
-	s.closed = false // Reset closed state
-	return nil
-}
-
 type ImagePipeline struct {
-	originalImage   *SafeMat
-	processedImage  *SafeMat
-	previewImage    *SafeMat
+	originalImage   gocv.Mat
+	processedImage  gocv.Mat
+	previewImage    gocv.Mat
 	transformations []Transformation
 	debugPipeline   *DebugPipeline
 	debugMemory     *DebugMemory
@@ -88,12 +28,10 @@ func NewImagePipeline(config *DebugConfig) *ImagePipeline {
 		debugPipeline:   debugPipeline,
 		debugMemory:     debugMemory,
 		initialized:     false,
+		originalImage:   gocv.NewMat(),
+		processedImage:  gocv.NewMat(),
+		previewImage:    gocv.NewMat(),
 	}
-
-	// Initialize with safe Mat wrappers
-	pipeline.originalImage = NewSafeMat()
-	pipeline.processedImage = NewSafeMat()
-	pipeline.previewImage = NewSafeMat()
 
 	return pipeline
 }
@@ -101,10 +39,9 @@ func NewImagePipeline(config *DebugConfig) *ImagePipeline {
 func (p *ImagePipeline) HasImage() bool {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
-	return p.initialized && !p.originalImage.IsEmpty()
+	return p.initialized && !p.originalImage.Empty()
 }
 
-// FIXED: Completely recreate SafeMats instead of trying to reuse closed ones
 func (p *ImagePipeline) SetOriginalImage(img gocv.Mat) error {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
@@ -116,64 +53,44 @@ func (p *ImagePipeline) SetOriginalImage(img gocv.Mat) error {
 		return fmt.Errorf("input image is empty")
 	}
 
-	// FIXED: Always create new SafeMats for clean state
-	p.debugPipeline.LogSetOriginalStep("creating new SafeMats")
+	p.debugPipeline.LogSetOriginalStep("closing existing images")
 
-	// Close existing SafeMats
+	// Close existing images if they exist
 	if p.initialized {
-		p.debugPipeline.LogSetOriginalStep("closing existing SafeMats")
-		p.originalImage.Close()
-		p.processedImage.Close()
-		p.previewImage.Close()
+		if !p.originalImage.Empty() {
+			p.originalImage.Close()
+		}
+		if !p.processedImage.Empty() {
+			p.processedImage.Close()
+		}
+		if !p.previewImage.Empty() {
+			p.previewImage.Close()
+		}
 	}
 
-	// Create completely new SafeMats
-	p.originalImage = NewSafeMat()
-	p.processedImage = NewSafeMat()
-	p.previewImage = NewSafeMat()
-
-	// Create clones
+	// Create new images
 	p.debugPipeline.LogSetOriginalStep("cloning images safely")
 
-	originalClone := img.Clone()
-	if originalClone.Empty() {
+	p.originalImage = img.Clone()
+	if p.originalImage.Empty() {
 		return fmt.Errorf("failed to clone original image")
 	}
 
-	processedClone := img.Clone()
-	if processedClone.Empty() {
-		originalClone.Close()
+	p.processedImage = img.Clone()
+	if p.processedImage.Empty() {
+		p.originalImage.Close()
 		return fmt.Errorf("failed to clone processed image")
 	}
 
-	previewClone := img.Clone()
-	if previewClone.Empty() {
-		originalClone.Close()
-		processedClone.Close()
+	p.previewImage = img.Clone()
+	if p.previewImage.Empty() {
+		p.originalImage.Close()
+		p.processedImage.Close()
 		return fmt.Errorf("failed to clone preview image")
 	}
 
-	// Replace content in the new SafeMats
-	if err := p.originalImage.Replace(originalClone); err != nil {
-		originalClone.Close()
-		processedClone.Close()
-		previewClone.Close()
-		return fmt.Errorf("failed to set original image: %w", err)
-	}
-
-	if err := p.processedImage.Replace(processedClone); err != nil {
-		processedClone.Close()
-		previewClone.Close()
-		return fmt.Errorf("failed to set processed image: %w", err)
-	}
-
-	if err := p.previewImage.Replace(previewClone); err != nil {
-		previewClone.Close()
-		return fmt.Errorf("failed to set preview image: %w", err)
-	}
-
 	p.initialized = true
-	p.debugPipeline.LogImageStats("original", p.originalImage.Mat())
+	p.debugPipeline.LogImageStats("original", p.originalImage)
 
 	// Process images only if we have transformations
 	if len(p.transformations) > 0 {
@@ -253,11 +170,11 @@ func (p *ImagePipeline) GetProcessedImage() gocv.Mat {
 		p.debugPipeline.LogGetProcessedImage("not initialized, returning empty Mat")
 		return gocv.NewMat()
 	}
-	if p.processedImage.IsEmpty() {
+	if p.processedImage.Empty() {
 		p.debugPipeline.LogGetProcessedImage("processed image empty, returning original")
-		return p.originalImage.Mat()
+		return p.originalImage.Clone()
 	}
-	return p.processedImage.Mat()
+	return p.processedImage.Clone()
 }
 
 func (p *ImagePipeline) GetPreviewImage() gocv.Mat {
@@ -268,11 +185,11 @@ func (p *ImagePipeline) GetPreviewImage() gocv.Mat {
 		p.debugPipeline.LogGetProcessedImage("preview not initialized, returning empty Mat")
 		return gocv.NewMat()
 	}
-	if p.previewImage.IsEmpty() {
+	if p.previewImage.Empty() {
 		p.debugPipeline.LogGetProcessedImage("preview image empty, returning original")
-		return p.originalImage.Mat()
+		return p.originalImage.Clone()
 	}
-	return p.previewImage.Mat()
+	return p.previewImage.Clone()
 }
 
 func (p *ImagePipeline) ProcessPreview() error {
@@ -283,7 +200,7 @@ func (p *ImagePipeline) ProcessPreview() error {
 
 // Thread-unsafe helper methods (must be called with mutex held)
 func (p *ImagePipeline) HasImageUnsafe() bool {
-	return p.initialized && !p.originalImage.IsEmpty()
+	return p.initialized && !p.originalImage.Empty()
 }
 
 func (p *ImagePipeline) processImageUnsafe() error {
@@ -292,7 +209,7 @@ func (p *ImagePipeline) processImageUnsafe() error {
 		p.debugPipeline.LogProcessEarlyReturn("not initialized")
 		return fmt.Errorf("pipeline not initialized")
 	}
-	if p.originalImage.IsEmpty() {
+	if p.originalImage.Empty() {
 		p.debugPipeline.LogProcessEarlyReturn("original image is empty")
 		return fmt.Errorf("original image is empty")
 	}
@@ -300,17 +217,14 @@ func (p *ImagePipeline) processImageUnsafe() error {
 	p.debugPipeline.StartTimer("processImage")
 	defer func() {
 		p.debugPipeline.EndTimer("processImage")
-		if p.initialized && !p.processedImage.IsEmpty() {
-			originalMat := p.originalImage.Mat()
-			processedMat := p.processedImage.Mat()
-			p.debugPipeline.LogPipelineStats(originalMat.Size(), processedMat.Size(), len(p.transformations))
+		if p.initialized && !p.processedImage.Empty() {
+			p.debugPipeline.LogPipelineStats(p.originalImage.Size(), p.processedImage.Size(), len(p.transformations))
 		}
 		p.debugPipeline.LogMemoryUsage()
 	}()
 
 	p.debugPipeline.LogProcessStep("creating working copy")
-	originalMat := p.originalImage.Mat()
-	currentResult := originalMat.Clone()
+	currentResult := p.originalImage.Clone()
 	if currentResult.Empty() {
 		return fmt.Errorf("failed to clone original for processing")
 	}
@@ -340,10 +254,11 @@ func (p *ImagePipeline) processImageUnsafe() error {
 		}
 	}
 
-	if err := p.processedImage.Replace(currentResult); err != nil {
-		currentResult.Close()
-		return fmt.Errorf("failed to update processed image: %w", err)
+	// Replace processed image
+	if !p.processedImage.Empty() {
+		p.processedImage.Close()
 	}
+	p.processedImage = currentResult
 
 	p.debugPipeline.LogProcessComplete()
 	return nil
@@ -355,7 +270,7 @@ func (p *ImagePipeline) processPreviewUnsafe() error {
 		p.debugPipeline.LogProcessEarlyReturn("preview not initialized")
 		return fmt.Errorf("pipeline not initialized")
 	}
-	if p.originalImage.IsEmpty() {
+	if p.originalImage.Empty() {
 		p.debugPipeline.LogProcessEarlyReturn("original image is empty for preview")
 		return fmt.Errorf("original image is empty")
 	}
@@ -363,15 +278,12 @@ func (p *ImagePipeline) processPreviewUnsafe() error {
 	p.debugPipeline.StartTimer("processPreview")
 	defer func() {
 		p.debugPipeline.EndTimer("processPreview")
-		if p.initialized && !p.previewImage.IsEmpty() {
-			originalMat := p.originalImage.Mat()
-			previewMat := p.previewImage.Mat()
-			p.debugPipeline.LogPipelineStats(originalMat.Size(), previewMat.Size(), len(p.transformations))
+		if p.initialized && !p.previewImage.Empty() {
+			p.debugPipeline.LogPipelineStats(p.originalImage.Size(), p.previewImage.Size(), len(p.transformations))
 		}
 	}()
 
-	originalMat := p.originalImage.Mat()
-	currentResult := originalMat.Clone()
+	currentResult := p.originalImage.Clone()
 	if currentResult.Empty() {
 		return fmt.Errorf("failed to clone original for preview")
 	}
@@ -400,10 +312,11 @@ func (p *ImagePipeline) processPreviewUnsafe() error {
 		}
 	}
 
-	if err := p.previewImage.Replace(currentResult); err != nil {
-		currentResult.Close()
-		return fmt.Errorf("failed to update preview image: %w", err)
+	// Replace preview image
+	if !p.previewImage.Empty() {
+		p.previewImage.Close()
 	}
+	p.previewImage = currentResult
 
 	return nil
 }
@@ -412,16 +325,13 @@ func (p *ImagePipeline) CalculatePSNR() float64 {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
 
-	if !p.HasImageUnsafe() || p.originalImage.IsEmpty() || p.processedImage.IsEmpty() {
+	if !p.HasImageUnsafe() || p.originalImage.Empty() || p.processedImage.Empty() {
 		return 0.0
 	}
 
-	originalMat := p.originalImage.Mat()
-	processedMat := p.processedImage.Mat()
-
-	orig := originalMat.Clone()
+	orig := p.originalImage.Clone()
 	defer orig.Close()
-	proc := processedMat.Clone()
+	proc := p.processedImage.Clone()
 	defer proc.Close()
 
 	if orig.Type() != proc.Type() {
@@ -453,16 +363,13 @@ func (p *ImagePipeline) CalculateSSIM() float64 {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
 
-	if !p.HasImageUnsafe() || p.originalImage.IsEmpty() || p.processedImage.IsEmpty() {
+	if !p.HasImageUnsafe() || p.originalImage.Empty() || p.processedImage.Empty() {
 		return 0.0
 	}
 
-	originalMat := p.originalImage.Mat()
-	processedMat := p.processedImage.Mat()
-
-	orig := originalMat.Clone()
+	orig := p.originalImage.Clone()
 	defer orig.Close()
-	proc := processedMat.Clone()
+	proc := p.processedImage.Clone()
 	defer proc.Close()
 
 	if orig.Type() != proc.Type() {
@@ -543,9 +450,15 @@ func (p *ImagePipeline) Close() {
 	defer p.mutex.Unlock()
 
 	if p.initialized {
-		p.originalImage.Close()
-		p.processedImage.Close()
-		p.previewImage.Close()
+		if !p.originalImage.Empty() {
+			p.originalImage.Close()
+		}
+		if !p.processedImage.Empty() {
+			p.processedImage.Close()
+		}
+		if !p.previewImage.Empty() {
+			p.previewImage.Close()
+		}
 		for _, transform := range p.transformations {
 			transform.Close()
 		}
