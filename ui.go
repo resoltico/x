@@ -355,6 +355,17 @@ func (ui *ImageRestorationUI) saveImage() {
 
 		// FIXED: Run in goroutine to prevent UI blocking
 		go func() {
+			// CRITICAL FIX: Force reprocessing of the full image to ensure latest parameters are applied
+			ui.debugGUI.Log("Forcing full reprocessing before save to ensure latest parameters")
+			err := ui.pipeline.ProcessImage()
+			if err != nil {
+				ui.debugGUI.LogError(fmt.Errorf("failed to reprocess image before save: %w", err))
+				fyne.Do(func() {
+					dialog.ShowError(err, ui.window)
+				})
+				return
+			}
+
 			// FIXED: Get cloned image to prevent race conditions
 			processedImage := ui.pipeline.GetProcessedImage()
 			defer processedImage.Close() // Clean up cloned image
@@ -485,7 +496,7 @@ func (ui *ImageRestorationUI) showTransformationParameters(transformation Transf
 	})
 }
 
-// FIXED: Add debouncing and thread safety
+// FIXED: Add debouncing and thread safety with full reprocessing
 func (ui *ImageRestorationUI) onParameterChanged() {
 	ui.updateMutex.Lock()
 	defer ui.updateMutex.Unlock()
@@ -512,17 +523,26 @@ func (ui *ImageRestorationUI) onParameterChanged() {
 }
 
 func (ui *ImageRestorationUI) performParameterUpdate() {
-	ui.debugGUI.LogUIEvent("onParameterChanged called - triggering preview reprocessing")
+	ui.debugGUI.LogUIEvent("onParameterChanged called - triggering FULL reprocessing")
 
-	// FIXED: Run processing in goroutine to prevent UI blocking
+	// CRITICAL FIX: Process both full image AND preview when parameters change
 	go func() {
-		// Trigger preview reprocessing when parameters change
 		if ui.pipeline.HasImage() {
-			err := ui.pipeline.ProcessPreview()
+			// First process the full resolution image to ensure save will use latest parameters
+			err := ui.pipeline.ProcessImage()
 			if err != nil {
-				ui.debugGUI.LogError(err)
+				ui.debugGUI.LogError(fmt.Errorf("failed to process full image: %w", err))
 				return
 			}
+
+			// Then process the preview for UI display
+			err = ui.pipeline.ProcessPreview()
+			if err != nil {
+				ui.debugGUI.LogError(fmt.Errorf("failed to process preview: %w", err))
+				return
+			}
+
+			ui.debugGUI.Log("Both full image and preview processed with new parameters")
 		}
 
 		fyne.Do(func() {

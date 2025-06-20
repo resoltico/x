@@ -163,6 +163,15 @@ func (p *ImagePipeline) ClearTransformations() {
 	}
 }
 
+// CRITICAL FIX: Add public ProcessImage method to force full reprocessing
+func (p *ImagePipeline) ProcessImage() error {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
+	p.debugPipeline.Log("ProcessImage: Force reprocessing full resolution image")
+	return p.processImageUnsafe()
+}
+
 // FIXED: Return cloned Mat to prevent race conditions
 func (p *ImagePipeline) GetProcessedImage() gocv.Mat {
 	p.mutex.RLock()
