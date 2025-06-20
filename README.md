@@ -1,19 +1,19 @@
 # Image Restoration Suite
 
-A modern image processing application built with Go and Fyne, featuring advanced restoration algorithms for historical illustrations and documents.
+A modern image processing application built with Go and Fyne, featuring restoration algorithms for historical illustrations and documents.
 
 ## Features
 
 - **Modern GUI**: Built with Fyne v2.6.1 for cross-platform compatibility
 - **Image Processing**: Powered by OpenCV 4.11.0 through GoCV bindings
-- **Real-time Preview**: Live preview of transformations with memory-efficient processing
+- **Real-time Preview**: Live preview of transformations with memory-safe processing
 - **Quality Metrics**: PSNR and SSIM calculations for processed images
 - **Memory Profiling**: Built-in memory leak detection using GoCV's MatProfile
-- **Extensible Architecture**: Modular transformation system for easy algorithm additions
+- **Modular Architecture**: Extensible transformation system for easy algorithm additions
 
 ### Currently Supported Transformations
 
-- **2D Otsu Binarization**: Advanced two-dimensional Otsu algorithm optimized for historical illustrations with adjustable parameters:
+- **2D Otsu Binarization**: Two-dimensional Otsu algorithm for historical illustrations with adjustable parameters:
   - Window Radius (1-20)
   - Epsilon smoothing factor (0.001-0.1)
   - Morphological kernel size (1-15, odd values only)
@@ -88,7 +88,7 @@ make run-profile
 
 ### Production Build
 ```bash
-# Production build (optimized, no profiling)
+# Production build (no profiling)
 make build
 make run
 ```
@@ -98,11 +98,11 @@ make run
 # Build with GoCV MatProfile enabled
 make build-profile
 
-# Run with comprehensive memory leak detection
+# Run with memory leak detection
 make run-profile
 ```
 
-The MatProfile build enables comprehensive memory tracking for all GoCV Mat operations. Access the memory profiler at:
+The MatProfile build enables memory tracking for all GoCV Mat operations. Access the memory profiler at:
 - **Main pprof interface**: http://localhost:6060/debug/pprof/
 - **Mat-specific profiling**: http://localhost:6060/debug/pprof/gocv.io/x/gocv.Mat
 
@@ -148,17 +148,17 @@ make run-profile
 
 ### Memory Leak Detection
 ```bash
-# Run with enhanced leak detection and monitoring
+# Run with leak detection and monitoring
 make check-leaks
 ```
 
 ## Memory Management
 
-This application uses proper memory management with comprehensive leak detection:
+This application uses proper memory management with leak detection:
 
 ### Monitoring Memory Usage
 
-1. **Build with profiling** (now default for development):
+1. **Build with profiling** (default for development):
    ```bash
    make build-profile
    ```
@@ -209,7 +209,7 @@ MEMORY LEAK: 5 Mat(s) were created but not cleaned up during session
    ```go
    for i := 0; i < iterations; i++ {
        temp := gocv.NewMat()
-       defer temp.Close() // Added missing cleanup
+       defer temp.Close()
        // process...
    }
    ```
@@ -219,7 +219,7 @@ MEMORY LEAK: 5 Mat(s) were created but not cleaned up during session
 1. **Open Image**: Click "OPEN IMAGE" to load an image file
 2. **Apply Transformations**: Select transformations from the left panel
 3. **Adjust Parameters**: Fine-tune parameters using controls in the Parameters panel
-4. **Preview Results**: View real-time preview with memory-efficient processing
+4. **Preview Results**: View real-time preview with memory-safe processing
 5. **Monitor Quality**: Check PSNR and SSIM metrics in the right panel
 6. **Monitor Memory**: Watch MatProfile count in terminal output
 7. **Save Result**: Click "SAVE IMAGE" to export the processed image
@@ -230,7 +230,7 @@ MEMORY LEAK: 5 Mat(s) were created but not cleaned up during session
 ```
 image-restoration-suite/
 ├── go.mod                  # Go module dependencies
-├── Makefile               # Enhanced build system with MatProfile
+├── Makefile               # Build system with MatProfile
 ├── main.go                # Application entry point with pprof server
 ├── ui.go                  # Thread-safe UI implementation
 ├── pipeline.go            # Memory-safe pipeline with proper cleanup
@@ -243,8 +243,6 @@ image-restoration-suite/
 └── README_macOS.md       # macOS-specific build instructions
 ```
 
-## Architecture
-
 ## Development Workflow
 
 ### Setting Up Development Environment
@@ -255,7 +253,7 @@ make dev
 
 ### Testing Memory Management
 ```bash
-# Run with comprehensive leak detection
+# Run with leak detection
 make check-leaks
 
 # Monitor during development

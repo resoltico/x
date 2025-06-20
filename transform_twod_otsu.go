@@ -150,7 +150,7 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
 	t.debugImage.LogMatInfo("grayscale", grayscale)
 
 	// Apply guided filter using GoCV APIs
-	guided := t.applyGuidedFilterCorrected(grayscale, windowRadius, epsilon)
+	guided := t.applyGuidedFilter(grayscale, windowRadius, epsilon)
 	defer guided.Close()
 
 	if guided.Empty() {
@@ -160,7 +160,7 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
 	}
 
 	// Apply 2D Otsu thresholding
-	binaryResult := t.apply2DOtsuFixed(grayscale, guided)
+	binaryResult := t.apply2DOtsu(grayscale, guided)
 	defer func() {
 		if scale != 1.0 && !binaryResult.Empty() {
 			binaryResult.Close()
@@ -191,7 +191,7 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
 }
 
 // Guided filter using GoCV API signatures
-func (t *TwoDOtsu) applyGuidedFilterCorrected(src gocv.Mat, windowRadius int, epsilon float64) gocv.Mat {
+func (t *TwoDOtsu) applyGuidedFilter(src gocv.Mat, windowRadius int, epsilon float64) gocv.Mat {
 	t.debugImage.LogAlgorithmStep("GuidedFilter", "Starting guided filter with API")
 
 	if src.Empty() {
@@ -280,7 +280,7 @@ func (t *TwoDOtsu) applyGuidedFilterCorrected(src gocv.Mat, windowRadius int, ep
 }
 
 // 2D Otsu algorithm implementation
-func (t *TwoDOtsu) apply2DOtsuFixed(gray, guided gocv.Mat) gocv.Mat {
+func (t *TwoDOtsu) apply2DOtsu(gray, guided gocv.Mat) gocv.Mat {
 	t.debugImage.LogAlgorithmStep("2D Otsu", "Constructing 2D histogram")
 
 	if gray.Empty() || guided.Empty() {
@@ -296,7 +296,7 @@ func (t *TwoDOtsu) apply2DOtsuFixed(gray, guided gocv.Mat) gocv.Mat {
 		return gocv.NewMat()
 	}
 
-	// Build 2D histogram - optimized memory allocation
+	// Build 2D histogram - memory allocation
 	hist := make([][]float64, 256)
 	for i := range hist {
 		hist[i] = make([]float64, 256)
@@ -324,7 +324,7 @@ func (t *TwoDOtsu) apply2DOtsuFixed(gray, guided gocv.Mat) gocv.Mat {
 	}
 
 	// Find optimal thresholds using 2D Otsu formulation
-	bestS, bestT, maxVariance := t.findOptimalThresholdsFixed(hist)
+	bestS, bestT, maxVariance := t.findOptimalThresholds(hist)
 	t.debugImage.LogOptimalThresholds(bestS, bestT, maxVariance)
 
 	// Apply thresholding using GoCV's Mat operations
@@ -356,7 +356,7 @@ func (t *TwoDOtsu) apply2DOtsuFixed(gray, guided gocv.Mat) gocv.Mat {
 }
 
 // 2D Otsu optimal threshold finding using between-class scatter matrix
-func (t *TwoDOtsu) findOptimalThresholdsFixed(hist [][]float64) (int, int, float64) {
+func (t *TwoDOtsu) findOptimalThresholds(hist [][]float64) (int, int, float64) {
 	maxVariance := 0.0
 	bestS, bestT := 0, 0
 

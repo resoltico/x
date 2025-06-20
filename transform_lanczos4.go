@@ -12,7 +12,7 @@ import (
 	"gocv.io/x/gocv"
 )
 
-// Lanczos4Transform implements Lanczos4 interpolation with OPTIMIZED memory management using enhanced GoCV APIs
+// Lanczos4Transform implements Lanczos4 interpolation with memory management using GoCV APIs
 type Lanczos4Transform struct {
 	debugImage   *DebugImage
 	scaleFactor  float64
@@ -73,12 +73,12 @@ func (l *Lanczos4Transform) SetParameters(params map[string]interface{}) {
 }
 
 func (l *Lanczos4Transform) Apply(src gocv.Mat) gocv.Mat {
-	l.debugImage.LogAlgorithmStep("Lanczos4 Optimized", "Starting full resolution scaling")
-	return l.applyLanczos4Optimized(src, l.scaleFactor)
+	l.debugImage.LogAlgorithmStep("Lanczos4", "Starting full resolution scaling")
+	return l.applyLanczos4(src, l.scaleFactor)
 }
 
 func (l *Lanczos4Transform) ApplyPreview(src gocv.Mat) gocv.Mat {
-	l.debugImage.LogAlgorithmStep("Lanczos4 Preview Optimized", "Starting preview scaling")
+	l.debugImage.LogAlgorithmStep("Lanczos4 Preview", "Starting preview scaling")
 
 	// For preview, use a reasonable scale factor to maintain responsiveness
 	previewScale := l.scaleFactor
@@ -86,8 +86,8 @@ func (l *Lanczos4Transform) ApplyPreview(src gocv.Mat) gocv.Mat {
 		previewScale = 3.0
 	}
 
-	result := l.applyLanczos4Optimized(src, previewScale)
-	l.debugImage.LogAlgorithmStep("Lanczos4 Preview Optimized", "Preview scaling completed")
+	result := l.applyLanczos4(src, previewScale)
+	l.debugImage.LogAlgorithmStep("Lanczos4 Preview", "Preview scaling completed")
 	return result
 }
 
@@ -100,20 +100,20 @@ func (l *Lanczos4Transform) Close() {
 	// No resources to cleanup
 }
 
-func (l *Lanczos4Transform) applyLanczos4Optimized(src gocv.Mat, scale float64) gocv.Mat {
+func (l *Lanczos4Transform) applyLanczos4(src gocv.Mat, scale float64) gocv.Mat {
 	// Input validation
 	if src.Empty() {
-		l.debugImage.LogAlgorithmStep("Lanczos4 Optimized", "ERROR: Input matrix is empty")
+		l.debugImage.LogAlgorithmStep("Lanczos4", "ERROR: Input matrix is empty")
 		return gocv.NewMat()
 	}
 
 	// Validate scale factor to prevent extreme scaling
 	if scale <= 0 || math.IsInf(scale, 0) || math.IsNaN(scale) {
-		l.debugImage.LogAlgorithmStep("Lanczos4 Optimized", fmt.Sprintf("ERROR: Invalid scale factor: %.3f", scale))
+		l.debugImage.LogAlgorithmStep("Lanczos4", fmt.Sprintf("ERROR: Invalid scale factor: %.3f", scale))
 		return gocv.NewMat()
 	}
 
-	l.debugImage.LogAlgorithmStep("Lanczos4 Optimized", fmt.Sprintf("Input: %dx%d, scale: %.2f", src.Cols(), src.Rows(), scale))
+	l.debugImage.LogAlgorithmStep("Lanczos4", fmt.Sprintf("Input: %dx%d, scale: %.2f", src.Cols(), src.Rows(), scale))
 
 	// Convert to grayscale if multi-channel for compatibility with 2D Otsu
 	working := gocv.NewMat()
@@ -130,12 +130,12 @@ func (l *Lanczos4Transform) applyLanczos4Optimized(src gocv.Mat, scale float64) 
 
 	// Validate dimensions before processing
 	if working.Cols() <= 0 || working.Rows() <= 0 {
-		l.debugImage.LogAlgorithmStep("Lanczos4 Optimized", "ERROR: Invalid input dimensions")
+		l.debugImage.LogAlgorithmStep("Lanczos4", "ERROR: Invalid input dimensions")
 		return gocv.NewMat()
 	}
 
-	// Apply pre-filtering using enhanced GoCV APIs
-	filtered := l.applyPreFilterOptimized(working)
+	// Apply pre-filtering using GoCV APIs
+	filtered := l.applyPreFilter(working)
 	defer filtered.Close()
 
 	// Calculate target dimensions with bounds checking
@@ -144,24 +144,24 @@ func (l *Lanczos4Transform) applyLanczos4Optimized(src gocv.Mat, scale float64) 
 
 	// Validate output dimensions
 	if newWidth <= 0 || newHeight <= 0 {
-		l.debugImage.LogAlgorithmStep("Lanczos4 Optimized", fmt.Sprintf("ERROR: Invalid target dimensions: %dx%d", newWidth, newHeight))
+		l.debugImage.LogAlgorithmStep("Lanczos4", fmt.Sprintf("ERROR: Invalid target dimensions: %dx%d", newWidth, newHeight))
 		return gocv.NewMat()
 	}
 
 	// Prevent excessive memory usage
 	maxDimension := 32768
 	if newWidth > maxDimension || newHeight > maxDimension {
-		l.debugImage.LogAlgorithmStep("Lanczos4 Optimized", fmt.Sprintf("ERROR: Target dimensions too large: %dx%d (max: %d)", newWidth, newHeight, maxDimension))
+		l.debugImage.LogAlgorithmStep("Lanczos4", fmt.Sprintf("ERROR: Target dimensions too large: %dx%d (max: %d)", newWidth, newHeight, maxDimension))
 		return gocv.NewMat()
 	}
 
-	l.debugImage.LogAlgorithmStep("Lanczos4 Optimized", fmt.Sprintf("Target dimensions: %dx%d", newWidth, newHeight))
+	l.debugImage.LogAlgorithmStep("Lanczos4", fmt.Sprintf("Target dimensions: %dx%d", newWidth, newHeight))
 
 	var result gocv.Mat
 
 	if l.useIterative && scale < 0.5 {
 		// Use iterative downscaling for large reductions
-		result = l.iterativeLanczos4Optimized(filtered, newWidth, newHeight)
+		result = l.iterativeLanczos4(filtered, newWidth, newHeight)
 	} else {
 		// Lanczos4 scaling using GoCV Resize with error handling
 		result = gocv.NewMat()
@@ -170,29 +170,29 @@ func (l *Lanczos4Transform) applyLanczos4Optimized(src gocv.Mat, scale float64) 
 
 	// Validate result
 	if result.Empty() {
-		l.debugImage.LogAlgorithmStep("Lanczos4 Optimized", "ERROR: Scaling operation failed")
+		l.debugImage.LogAlgorithmStep("Lanczos4", "ERROR: Scaling operation failed")
 		return gocv.NewMat()
 	}
 
-	// Apply post-processing using enhanced GoCV blur
-	final := l.applyPostFilterOptimized(result)
+	// Apply post-processing using GoCV blur
+	final := l.applyPostFilter(result)
 	if !result.Empty() {
 		result.Close()
 	}
 
 	l.debugImage.LogMatInfo("final_result", final)
-	l.debugImage.LogAlgorithmStep("Lanczos4 Optimized", "Scaling completed successfully")
+	l.debugImage.LogAlgorithmStep("Lanczos4", "Scaling completed successfully")
 
 	return final
 }
 
-// Use enhanced GoCV GaussianBlur with adaptive kernel sizing
-func (l *Lanczos4Transform) applyPreFilterOptimized(src gocv.Mat) gocv.Mat {
+// Use GoCV GaussianBlur with adaptive kernel sizing
+func (l *Lanczos4Transform) applyPreFilter(src gocv.Mat) gocv.Mat {
 	if src.Empty() {
 		return gocv.NewMat()
 	}
 
-	l.debugImage.LogAlgorithmStep("Lanczos4 PreFilter Optimized", "Applying adaptive Gaussian blur")
+	l.debugImage.LogAlgorithmStep("Lanczos4 PreFilter", "Applying adaptive Gaussian blur")
 
 	// Adaptive kernel size based on image dimensions
 	minDim := min(src.Cols(), src.Rows())
@@ -219,17 +219,17 @@ func (l *Lanczos4Transform) applyPreFilterOptimized(src gocv.Mat) gocv.Mat {
 	sigma := float64(kernelSize) / 6.0 // Standard relationship between kernel size and sigma
 	gocv.GaussianBlur(src, &blurred, image.Point{X: kernelSize, Y: kernelSize}, sigma, sigma, gocv.BorderDefault)
 
-	l.debugImage.LogFilter("GaussianBlur Optimized", fmt.Sprintf("kernel=%dx%d", kernelSize, kernelSize), fmt.Sprintf("sigma=%.2f", sigma))
+	l.debugImage.LogFilter("GaussianBlur", fmt.Sprintf("kernel=%dx%d", kernelSize, kernelSize), fmt.Sprintf("sigma=%.2f", sigma))
 	return blurred
 }
 
 // Use GoCV's bilateral filter for better edge-preserving post-processing
-func (l *Lanczos4Transform) applyPostFilterOptimized(src gocv.Mat) gocv.Mat {
+func (l *Lanczos4Transform) applyPostFilter(src gocv.Mat) gocv.Mat {
 	if src.Empty() {
 		return gocv.NewMat()
 	}
 
-	l.debugImage.LogAlgorithmStep("Lanczos4 PostFilter Optimized", "Applying bilateral filter for artifact reduction")
+	l.debugImage.LogAlgorithmStep("Lanczos4 PostFilter", "Applying bilateral filter for artifact reduction")
 
 	// Use bilateral filter for better edge preservation
 	filtered := gocv.NewMat()
@@ -255,24 +255,24 @@ func (l *Lanczos4Transform) applyPostFilterOptimized(src gocv.Mat) gocv.Mat {
 
 	gocv.BilateralFilter(src, &filtered, d, sigmaColor, sigmaSpace)
 
-	l.debugImage.LogFilter("BilateralFilter Optimized", fmt.Sprintf("d=%d sigmaColor=%.1f sigmaSpace=%.1f", d, sigmaColor, sigmaSpace))
+	l.debugImage.LogFilter("BilateralFilter", fmt.Sprintf("d=%d sigmaColor=%.1f sigmaSpace=%.1f", d, sigmaColor, sigmaSpace))
 	return filtered
 }
 
-// Enhanced iterative scaling with better memory management
-func (l *Lanczos4Transform) iterativeLanczos4Optimized(src gocv.Mat, targetWidth, targetHeight int) gocv.Mat {
+// Iterative scaling with better memory management
+func (l *Lanczos4Transform) iterativeLanczos4(src gocv.Mat, targetWidth, targetHeight int) gocv.Mat {
 	if src.Empty() || targetWidth <= 0 || targetHeight <= 0 {
 		return gocv.NewMat()
 	}
 
-	l.debugImage.LogAlgorithmStep("Lanczos4 Iterative Optimized", "Starting optimized iterative downscaling")
+	l.debugImage.LogAlgorithmStep("Lanczos4 Iterative", "Starting iterative downscaling")
 
 	current := src.Clone()
 	defer current.Close()
 	currentWidth, currentHeight := current.Cols(), current.Rows()
 
 	step := 0
-	maxSteps := 15 // Reduced max steps for better performance
+	maxSteps := 15 // Limit max steps for better performance
 
 	// Use more aggressive downscaling steps
 	scalingFactor := 0.6 // Scale down by 40% each step instead of 50%
@@ -289,12 +289,12 @@ func (l *Lanczos4Transform) iterativeLanczos4Optimized(src gocv.Mat, targetWidth
 			break
 		}
 
-		l.debugImage.LogAlgorithmStep("Lanczos4 Iterative Optimized", fmt.Sprintf("Step %d: %dx%d -> %dx%d",
+		l.debugImage.LogAlgorithmStep("Lanczos4 Iterative", fmt.Sprintf("Step %d: %dx%d -> %dx%d",
 			step, currentWidth, currentHeight, nextWidth, nextHeight))
 
 		temp := gocv.NewMat()
 
-		// OPTIMIZED: Use area interpolation for downscaling (better quality than Lanczos for large reductions)
+		// Use area interpolation for downscaling (better quality than Lanczos for large reductions)
 		interpolation := gocv.InterpolationArea
 		if nextWidth > currentWidth || nextHeight > currentHeight {
 			interpolation = gocv.InterpolationLanczos4 // Use Lanczos4 for upscaling
@@ -312,7 +312,7 @@ func (l *Lanczos4Transform) iterativeLanczos4Optimized(src gocv.Mat, targetWidth
 	scaled := gocv.NewMat()
 	gocv.Resize(current, &scaled, image.Point{X: targetWidth, Y: targetHeight}, 0, 0, gocv.InterpolationLanczos4)
 
-	l.debugImage.LogAlgorithmStep("Lanczos4 Iterative Optimized", fmt.Sprintf("Completed in %d steps", step+1))
+	l.debugImage.LogAlgorithmStep("Lanczos4 Iterative", fmt.Sprintf("Completed in %d steps", step+1))
 	return scaled
 }
 
@@ -323,7 +323,7 @@ func (l *Lanczos4Transform) calculateScaleFactor() float64 {
 
 		// Clamp to reasonable range
 		if calculated > 0.01 && calculated < 100.0 {
-			l.debugImage.LogAlgorithmStep("Lanczos4 Optimized", fmt.Sprintf("Calculated scale factor: %.3f (%.0f DPI -> %.0f DPI)",
+			l.debugImage.LogAlgorithmStep("Lanczos4", fmt.Sprintf("Calculated scale factor: %.3f (%.0f DPI -> %.0f DPI)",
 				calculated, l.originalDPI, l.targetDPI))
 			return calculated
 		}
@@ -340,12 +340,12 @@ func (l *Lanczos4Transform) createParameterUI() *fyne.Container {
 		if value, err := strconv.ParseFloat(text, 64); err == nil && value >= 0.1 && value <= 10.0 {
 			oldValue := l.scaleFactor
 			l.scaleFactor = value
-			l.debugImage.LogAlgorithmStep("Lanczos4 Optimized Parameters", fmt.Sprintf("Scale factor changed: %.3f -> %.3f", oldValue, value))
+			l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", fmt.Sprintf("Scale factor changed: %.3f -> %.3f", oldValue, value))
 			if l.onParameterChanged != nil {
 				l.onParameterChanged()
 			}
 		} else {
-			l.debugImage.LogAlgorithmStep("Lanczos4 Optimized Parameters", fmt.Sprintf("Invalid scale factor: %s (must be 0.1-10.0)", text))
+			l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", fmt.Sprintf("Invalid scale factor: %s (must be 0.1-10.0)", text))
 		}
 	}
 
@@ -362,12 +362,12 @@ func (l *Lanczos4Transform) createParameterUI() *fyne.Container {
 				l.scaleFactor = l.calculateScaleFactor()
 				scaleEntry.SetText(fmt.Sprintf("%.2f", l.scaleFactor))
 			}
-			l.debugImage.LogAlgorithmStep("Lanczos4 Optimized Parameters", fmt.Sprintf("Target DPI changed: %.0f -> %.0f", oldValue, value))
+			l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", fmt.Sprintf("Target DPI changed: %.0f -> %.0f", oldValue, value))
 			if l.onParameterChanged != nil {
 				l.onParameterChanged()
 			}
 		} else {
-			l.debugImage.LogAlgorithmStep("Lanczos4 Optimized Parameters", fmt.Sprintf("Invalid target DPI: %s (must be 72-2400)", text))
+			l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", fmt.Sprintf("Invalid target DPI: %s (must be 72-2400)", text))
 		}
 	}
 
@@ -382,12 +382,12 @@ func (l *Lanczos4Transform) createParameterUI() *fyne.Container {
 			// Recalculate scale factor based on DPI
 			l.scaleFactor = l.calculateScaleFactor()
 			scaleEntry.SetText(fmt.Sprintf("%.2f", l.scaleFactor))
-			l.debugImage.LogAlgorithmStep("Lanczos4 Optimized Parameters", fmt.Sprintf("Original DPI changed: %.0f -> %.0f", oldValue, value))
+			l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", fmt.Sprintf("Original DPI changed: %.0f -> %.0f", oldValue, value))
 			if l.onParameterChanged != nil {
 				l.onParameterChanged()
 			}
 		} else {
-			l.debugImage.LogAlgorithmStep("Lanczos4 Optimized Parameters", fmt.Sprintf("Invalid original DPI: %s (must be 72-2400)", text))
+			l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", fmt.Sprintf("Invalid original DPI: %s (must be 72-2400)", text))
 		}
 	}
 
@@ -395,7 +395,7 @@ func (l *Lanczos4Transform) createParameterUI() *fyne.Container {
 	iterativeCheck := widget.NewCheck("Use Iterative Downscaling", func(checked bool) {
 		oldValue := l.useIterative
 		l.useIterative = checked
-		l.debugImage.LogAlgorithmStep("Lanczos4 Optimized Parameters", fmt.Sprintf("Iterative mode changed: %t -> %t", oldValue, checked))
+		l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", fmt.Sprintf("Iterative mode changed: %t -> %t", oldValue, checked))
 		if l.onParameterChanged != nil {
 			l.onParameterChanged()
 		}
@@ -406,7 +406,7 @@ func (l *Lanczos4Transform) createParameterUI() *fyne.Container {
 	calculateBtn := widget.NewButton("Calculate Scale from DPI", func() {
 		l.scaleFactor = l.calculateScaleFactor()
 		scaleEntry.SetText(fmt.Sprintf("%.2f", l.scaleFactor))
-		l.debugImage.LogAlgorithmStep("Lanczos4 Optimized Parameters", "Scale factor recalculated from DPI values")
+		l.debugImage.LogAlgorithmStep("Lanczos4 Parameters", "Scale factor recalculated from DPI values")
 		if l.onParameterChanged != nil {
 			l.onParameterChanged()
 		}

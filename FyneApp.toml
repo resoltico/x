@@ -1,4 +1,4 @@
-Website = "https://github.com/ervinsstrauhmanis/image-restoration-suite"
+Website = "https://github.com/resoltico/image-restoration-suite"
 
 [Details]
   Icon = "icon.png"
@@ -10,5 +10,5 @@ Website = "https://github.com/ervinsstrauhmanis/image-restoration-suite"
 [LinuxAndBSD]
   GenericName = "Image Processing Tool"
   Categories = ["Graphics", "Photography"]
-  Comment = "Advanced image restoration and processing suite for historical documents and illustrations."
-  Keywords = ["image", "restoration", "processing", "opencv", "otsu"]
+  Comment = "Image restoration and processing suite for historical documents and illustrations."
+  Keywords = ["image", "restoration", "processing", "opencv", "otsu", "lanczos"]

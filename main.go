@@ -61,7 +61,7 @@ func main() {
 	log.Printf("GOMAXPROCS: %d", runtime.GOMAXPROCS(0))
 
 	myApp := app.NewWithID("com.imagerestoration.suite")
-	myWindow := myApp.NewWindow("Image Restoration Suite (Fixed)")
+	myWindow := myApp.NewWindow("Image Restoration Suite")
 	myWindow.Resize(fyne.NewSize(1600, 900))
 
 	// Create UI with error handling
@@ -107,7 +107,7 @@ func main() {
 		cleanupDuration := time.Since(startCleanupTime)
 		log.Printf("Cleanup completed in %v", cleanupDuration)
 
-		// Comprehensive memory analysis
+		// Memory analysis
 		var memStats runtime.MemStats
 		runtime.ReadMemStats(&memStats)
 

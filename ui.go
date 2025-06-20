@@ -60,7 +60,7 @@ func (ui *ImageRestorationUI) BuildUI() fyne.CanvasObject {
 	centerPanel := ui.createCenterPanel()
 	rightPanel := ui.createRightPanel()
 
-	// Main container with fixed structure
+	// Main container with structure
 	mainContainer := container.NewBorder(
 		toolbar, // top
 		nil,     // bottom
@@ -133,7 +133,7 @@ func (ui *ImageRestorationUI) createLeftPanel() fyne.CanvasObject {
 }
 
 func (ui *ImageRestorationUI) createCenterPanel() fyne.CanvasObject {
-	// Image display area with fixed constraints
+	// Image display area with constraints
 	ui.originalImage = canvas.NewImageFromImage(image.NewRGBA(image.Rect(0, 0, 1, 1)))
 	ui.originalImage.FillMode = canvas.ImageFillContain
 	ui.originalImage.ScaleMode = canvas.ImageScaleSmooth
@@ -545,7 +545,7 @@ func (ui *ImageRestorationUI) onParameterChanged() {
 			return
 		}
 
-		// CRITICAL: Force preview regeneration by calling the pipeline method
+		// Force preview regeneration by calling the pipeline method
 		// that triggers fresh processing with current parameters
 		err := ui.pipeline.ForcePreviewRegeneration()
 		if err != nil {
@@ -608,7 +608,7 @@ func (ui *ImageRestorationUI) updateImageDisplay() {
 			ui.debugGUI.LogImageFormatChange("preview", originalChannels, previewChannels)
 
 			if previewChannels == 1 && originalChannels == 3 {
-				// ENHANCED CONVERSION: Use standard GoCV API
+				// Conversion: Use standard GoCV API
 				ui.debugRender.Log("Converting grayscale to color using GoCV API")
 
 				previewColor := gocv.NewMat()

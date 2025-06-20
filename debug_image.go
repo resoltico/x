@@ -369,7 +369,7 @@ func (d *DebugImage) LogBinarizationResult(inputName, outputName string, inputMa
 	}
 
 	if !outputMat.Empty() {
-		// Enhanced analysis with detailed regional sampling
+		// Detailed analysis with regional sampling
 		d.LogPixelDistributionDetailed(outputName+"_output", outputMat, 5)
 
 		// Check if result is all black or all white

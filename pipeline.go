@@ -45,7 +45,7 @@ func (p *ImagePipeline) HasImage() bool {
 }
 
 func (p *ImagePipeline) SetOriginalImage(img gocv.Mat) (err error) {
-	// Enhanced panic recovery with proper error handling
+	// Panic recovery with proper error handling
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("panic in SetOriginalImage: %v", r)
@@ -181,7 +181,7 @@ func (p *ImagePipeline) ClearTransformations() {
 	}
 }
 
-// CRITICAL FIX: Add public ProcessImage method to force full reprocessing
+// Add public ProcessImage method to force full reprocessing
 func (p *ImagePipeline) ProcessImage() error {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
@@ -190,7 +190,7 @@ func (p *ImagePipeline) ProcessImage() error {
 	return p.processImageUnsafe()
 }
 
-// CRITICAL FIX: Add method to force preview regeneration with current parameters
+// Add method to force preview regeneration with current parameters
 func (p *ImagePipeline) ForcePreviewRegeneration() error {
 	p.debugPipeline.Log("ForcePreviewRegeneration: Regenerating preview with current parameters")
 
@@ -201,11 +201,11 @@ func (p *ImagePipeline) ForcePreviewRegeneration() error {
 		return fmt.Errorf("no image loaded")
 	}
 
-	// CRITICAL: Always regenerate preview from scratch with current parameters
+	// Always regenerate preview from scratch with current parameters
 	return p.processPreviewUnsafe()
 }
 
-// CRITICAL FIX: Add public method to reprocess preview with current parameters
+// Add public method to reprocess preview with current parameters
 func (p *ImagePipeline) ReprocessPreview() error {
 	p.debugPipeline.Log("ReprocessPreview: Force reprocessing preview with current parameters")
 
@@ -267,7 +267,7 @@ func (p *ImagePipeline) HasImageUnsafe() bool {
 }
 
 func (p *ImagePipeline) processImageUnsafe() (err error) {
-	// Enhanced panic recovery with proper cleanup
+	// Panic recovery with proper cleanup
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("panic in processImage: %v", r)
@@ -345,7 +345,7 @@ func (p *ImagePipeline) processImageUnsafe() (err error) {
 }
 
 func (p *ImagePipeline) processPreviewUnsafe() (err error) {
-	// Enhanced panic recovery
+	// Panic recovery
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("panic in processPreview: %v", r)
@@ -371,7 +371,7 @@ func (p *ImagePipeline) processPreviewUnsafe() (err error) {
 		}
 	}()
 
-	// CRITICAL FIX: Always create new preview image from original to ensure current parameters are used
+	// Always create new preview image from original to ensure current parameters are used
 	newPreview := p.originalImage.Clone()
 	if newPreview.Empty() {
 		return fmt.Errorf("failed to clone original for preview")
@@ -436,7 +436,7 @@ func (p *ImagePipeline) cleanupResourcesUnsafe() {
 	}
 }
 
-// Proper PSNR calculation with enhanced numerical stability
+// Proper PSNR calculation with numerical stability
 func (p *ImagePipeline) CalculatePSNR() float64 {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
@@ -492,7 +492,7 @@ func (p *ImagePipeline) CalculatePSNR() float64 {
 
 	mse := sumResult.Val1 / totalPixels
 
-	// Enhanced edge case handling
+	// Edge case handling
 	if mse == 0 {
 		return 100.0 // Perfect match - return large finite value instead of infinity
 	}
@@ -521,7 +521,7 @@ func (p *ImagePipeline) CalculatePSNR() float64 {
 	return psnr
 }
 
-// Proper SSIM calculation with enhanced numerical stability
+// Proper SSIM calculation with numerical stability
 func (p *ImagePipeline) CalculateSSIM() float64 {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
@@ -583,7 +583,7 @@ func (p *ImagePipeline) CalculateSSIM() float64 {
 	orig.ConvertTo(&origF, gocv.MatTypeCV32F)
 	proc.ConvertTo(&procF, gocv.MatTypeCV32F)
 
-	// Enhanced SSIM constants for better numerical stability
+	// SSIM constants for numerical stability
 	c1 := math.Pow(0.01*255, 2)
 	c2 := math.Pow(0.03*255, 2)
 
@@ -648,7 +648,7 @@ func (p *ImagePipeline) CalculateSSIM() float64 {
 
 	ssim := numerator / denominator
 
-	// Enhanced bounds checking and numerical stability
+	// Bounds checking and numerical stability
 	if math.IsInf(ssim, 0) || math.IsNaN(ssim) {
 		return 0.0
 	}

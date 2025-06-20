@@ -51,7 +51,7 @@ func (d *DebugRender) LogMatToImageConversion(matName string, mat gocv.Mat, succ
 		log.Printf("[RENDER DEBUG] Mat '%s' conversion: %dx%d, channels=%d, type=%d",
 			matName, size[1], size[0], channels, int(matType))
 
-		// Enhanced debugging for binary images
+		// Analysis for binary images
 		if channels == 1 {
 			// Sample pixel values to understand the data distribution
 			data := mat.ToBytes()
@@ -59,7 +59,7 @@ func (d *DebugRender) LogMatToImageConversion(matName string, mat gocv.Mat, succ
 				log.Printf("[RENDER DEBUG] Mat '%s' sample pixels: [%d, %d, %d, %d, %d]",
 					matName, data[0], data[1], data[2], data[3], data[4])
 
-				// Check for all-black condition that's plaguing us
+				// Check for all-black condition
 				allBlack := true
 				allWhite := true
 				mixedCount := 0
@@ -168,7 +168,7 @@ func (d *DebugRender) LogImageDetails(name string, img *canvas.Image) {
 			name, bounds.Min.X, bounds.Min.Y, bounds.Max.X, bounds.Max.Y,
 			bounds.Dx(), bounds.Dy())
 
-		// Enhanced black pixel analysis for binary images
+		// Black pixel analysis for binary images
 		d.LogImageContentAnalysis(name, img.Image)
 	}
 }
@@ -185,7 +185,7 @@ func (d *DebugRender) LogImageContentAnalysis(name string, img image.Image) {
 
 	log.Printf("[RENDER DEBUG] CONTENT ANALYSIS for '%s':", name)
 
-	// Comprehensive pixel sampling
+	// Pixel sampling
 	samplePoints := []image.Point{
 		{bounds.Min.X + 5, bounds.Min.Y + 5},                             // Top-left
 		{bounds.Min.X + bounds.Dx()/4, bounds.Min.Y + bounds.Dy()/4},     // Quarter
@@ -250,9 +250,9 @@ func (d *DebugRender) LogImageContentAnalysis(name string, img image.Image) {
 
 	// Detect problematic patterns
 	if colorCounts["black"] == totalSamples {
-		log.Printf("[RENDER DEBUG] *** CRITICAL: Image '%s' appears to be ALL BLACK ***", name)
+		log.Printf("[RENDER DEBUG] *** ISSUE: Image '%s' appears to be ALL BLACK ***", name)
 	} else if colorCounts["white"] == totalSamples {
-		log.Printf("[RENDER DEBUG] *** CRITICAL: Image '%s' appears to be ALL WHITE ***", name)
+		log.Printf("[RENDER DEBUG] *** ISSUE: Image '%s' appears to be ALL WHITE ***", name)
 	} else if colorCounts["black"]+colorCounts["white"] == totalSamples {
 		log.Printf("[RENDER DEBUG] Image '%s' appears to be properly binary", name)
 	} else {
