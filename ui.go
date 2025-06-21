@@ -279,12 +279,7 @@ func (ui *ImageRestorationUI) openImage() {
 		go func() {
 			// Load image using OpenCV with proper cleanup
 			mat := gocv.IMRead(reader.URI().Path(), gocv.IMReadColor)
-			defer func() {
-				// Ensure Mat is closed even if SetOriginalImage fails
-				if !mat.Empty() {
-					mat.Close()
-				}
-			}()
+			defer mat.Close() // Always close the loaded Mat
 
 			if mat.Empty() {
 				err := fmt.Errorf("failed to load image")

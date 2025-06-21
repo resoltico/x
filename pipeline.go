@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"image"
 	"math"
 	"sync"
 	"sync/atomic"
@@ -291,11 +292,18 @@ func (p *ImagePipeline) processImageUnsafe() (err error) {
 		return fmt.Errorf("failed to clone original for processing")
 	}
 
+	// Ensure proper cleanup even on early returns
+	defer func() {
+		// Only close newProcessed if we haven't assigned it to p.processedImage
+		if err != nil && !newProcessed.Empty() {
+			newProcessed.Close()
+		}
+	}()
+
 	// Apply all transformations sequentially with proper error handling
 	p.debugPipeline.LogTransformationCount(len(p.transformations))
 	for i, transformation := range p.transformations {
 		if transformation == nil {
-			newProcessed.Close()
 			return fmt.Errorf("transformation %d is nil", i)
 		}
 
@@ -309,9 +317,6 @@ func (p *ImagePipeline) processImageUnsafe() (err error) {
 		p.debugPipeline.LogTransformationApplied(transformation.Name(), before, result, duration)
 
 		// Proper cleanup and validation
-		if !newProcessed.Empty() {
-			newProcessed.Close()
-		}
 		if !before.Empty() {
 			before.Close()
 		}
@@ -321,6 +326,10 @@ func (p *ImagePipeline) processImageUnsafe() (err error) {
 			return fmt.Errorf("transformation %s returned empty result", transformation.Name())
 		}
 
+		// Close the old newProcessed before replacing it
+		if !newProcessed.Empty() {
+			newProcessed.Close()
+		}
 		newProcessed = result
 	}
 
@@ -366,10 +375,17 @@ func (p *ImagePipeline) processPreviewUnsafe() (err error) {
 		return fmt.Errorf("failed to clone original for preview")
 	}
 
+	// Ensure proper cleanup even on early returns
+	defer func() {
+		// Only close newPreview if we haven't assigned it to p.previewImage
+		if err != nil && !newPreview.Empty() {
+			newPreview.Close()
+		}
+	}()
+
 	// Apply all transformations using their current parameters via ApplyPreview
 	for i, transformation := range p.transformations {
 		if transformation == nil {
-			newPreview.Close()
 			return fmt.Errorf("preview transformation %d is nil", i)
 		}
 
@@ -384,9 +400,6 @@ func (p *ImagePipeline) processPreviewUnsafe() (err error) {
 		p.debugPipeline.LogTransformationApplied(transformation.Name()+" (preview)", before, result, duration)
 
 		// Proper cleanup
-		if !newPreview.Empty() {
-			newPreview.Close()
-		}
 		if !before.Empty() {
 			before.Close()
 		}
@@ -396,6 +409,10 @@ func (p *ImagePipeline) processPreviewUnsafe() (err error) {
 			return fmt.Errorf("preview transformation %s returned empty result", transformation.Name())
 		}
 
+		// Close the old newPreview before replacing it
+		if !newPreview.Empty() {
+			newPreview.Close()
+		}
 		newPreview = result
 	}
 
@@ -428,7 +445,7 @@ func (p *ImagePipeline) cleanupResourcesUnsafe() {
 	}
 }
 
-// PSNR calculation with numerical stability
+// PSNR calculation with mathematical correctness and numerical stability
 func (p *ImagePipeline) CalculatePSNR() float64 {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
@@ -448,9 +465,10 @@ func (p *ImagePipeline) CalculatePSNR() float64 {
 		return 0.0
 	}
 
-	// Handle channel mismatch properly
+	// Handle channel mismatch properly - convert to same format
 	if orig.Type() != proc.Type() {
 		if proc.Type() == gocv.MatTypeCV8U && orig.Channels() == 3 {
+			// Convert grayscale processed to BGR
 			temp := gocv.NewMat()
 			defer temp.Close()
 			err := gocv.CvtColor(proc, &temp, gocv.ColorGrayToBGR)
@@ -460,9 +478,10 @@ func (p *ImagePipeline) CalculatePSNR() float64 {
 			proc.Close()
 			proc = temp.Clone()
 		} else if orig.Type() == gocv.MatTypeCV8U && proc.Channels() == 3 {
+			// Convert BGR original to grayscale
 			temp := gocv.NewMat()
 			defer temp.Close()
-			err := gocv.CvtColor(orig, &temp, gocv.ColorGrayToBGR)
+			err := gocv.CvtColor(orig, &temp, gocv.ColorBGRToGray)
 			if err != nil {
 				return 0.0
 			}
@@ -471,31 +490,27 @@ func (p *ImagePipeline) CalculatePSNR() float64 {
 		}
 	}
 
-	// Convert to float32 for precise calculations
+	// Convert to float64 for precise calculations
 	origFloat := gocv.NewMat()
 	defer origFloat.Close()
 	procFloat := gocv.NewMat()
 	defer procFloat.Close()
 
-	orig.ConvertTo(&origFloat, gocv.MatTypeCV32F)
-	proc.ConvertTo(&procFloat, gocv.MatTypeCV32F)
+	orig.ConvertTo(&origFloat, gocv.MatTypeCV64F)
+	proc.ConvertTo(&procFloat, gocv.MatTypeCV64F)
 
-	// Calculate MSE with proper numerical handling
+	// Calculate MSE using OpenCV norm function for better precision
 	diff := gocv.NewMat()
 	defer diff.Close()
+
 	err := gocv.Subtract(origFloat, procFloat, &diff)
 	if err != nil {
 		return 0.0
 	}
 
-	diffSq := gocv.NewMat()
-	defer diffSq.Close()
-	err = gocv.Multiply(diff, diff, &diffSq)
-	if err != nil {
-		return 0.0
-	}
-
-	sumResult := diffSq.Sum()
+	// Use L2 norm squared for MSE calculation
+	normValue := gocv.Norm(diff, gocv.NormL2)
+	normValueSquared := normValue * normValue
 	totalPixels := float64(orig.Total())
 
 	// Handle potential division by zero
@@ -503,13 +518,13 @@ func (p *ImagePipeline) CalculatePSNR() float64 {
 		return 0.0
 	}
 
-	mse := sumResult.Val1 / totalPixels
+	mse := normValueSquared / totalPixels
 
 	// Handle edge cases
 	if mse == 0 {
-		return 100.0 // Perfect match
+		return 100.0 // Perfect match - return high but finite value
 	}
-	if mse < 1e-10 {
+	if mse < 1e-15 {
 		return 100.0 // Very small differences
 	}
 
@@ -518,7 +533,10 @@ func (p *ImagePipeline) CalculatePSNR() float64 {
 		return 0.0
 	}
 
-	psnr := 20*math.Log10(255) - 10*math.Log10(mse)
+	// Standard PSNR formula: PSNR = 20 * log10(MAX_I / sqrt(MSE))
+	// where MAX_I = 255 for 8-bit images
+	maxI := 255.0
+	psnr := 20*math.Log10(maxI) - 10*math.Log10(mse)
 
 	// Clamp to reasonable range
 	if math.IsInf(psnr, 0) || math.IsNaN(psnr) {
@@ -534,7 +552,7 @@ func (p *ImagePipeline) CalculatePSNR() float64 {
 	return psnr
 }
 
-// SSIM calculation with numerical stability
+// SSIM calculation with mathematical correctness and numerical stability
 func (p *ImagePipeline) CalculateSSIM() float64 {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
@@ -554,30 +572,7 @@ func (p *ImagePipeline) CalculateSSIM() float64 {
 		return 0.0
 	}
 
-	// Handle channel mismatch properly
-	if orig.Type() != proc.Type() {
-		if proc.Type() == gocv.MatTypeCV8U && orig.Channels() == 3 {
-			temp := gocv.NewMat()
-			defer temp.Close()
-			err := gocv.CvtColor(proc, &temp, gocv.ColorGrayToBGR)
-			if err != nil {
-				return 0.0
-			}
-			proc.Close()
-			proc = temp.Clone()
-		} else if orig.Type() == gocv.MatTypeCV8U && proc.Channels() == 3 {
-			temp := gocv.NewMat()
-			defer temp.Close()
-			err := gocv.CvtColor(orig, &temp, gocv.ColorGrayToBGR)
-			if err != nil {
-				return 0.0
-			}
-			orig.Close()
-			orig = temp.Clone()
-		}
-	}
-
-	// Convert to grayscale for SSIM calculation
+	// Convert to grayscale for SSIM calculation if needed
 	if orig.Channels() > 1 {
 		origGray := gocv.NewMat()
 		defer origGray.Close()
@@ -600,52 +595,83 @@ func (p *ImagePipeline) CalculateSSIM() float64 {
 		proc = procGray.Clone()
 	}
 
-	// Convert to float for calculations
+	// Convert to float64 for calculations with proper normalization
 	origF := gocv.NewMat()
 	defer origF.Close()
 	procF := gocv.NewMat()
 	defer procF.Close()
-	orig.ConvertTo(&origF, gocv.MatTypeCV32F)
-	proc.ConvertTo(&procF, gocv.MatTypeCV32F)
 
-	// SSIM constants for numerical stability
-	c1 := math.Pow(0.01*255, 2)
-	c2 := math.Pow(0.03*255, 2)
+	orig.ConvertTo(&origF, gocv.MatTypeCV64F)
+	proc.ConvertTo(&procF, gocv.MatTypeCV64F)
 
-	// Calculate means
-	origMean := origF.Mean()
-	procMean := procF.Mean()
+	// Scale to [0,1] range for mathematical correctness
+	origF.DivideFloat(255.0)
+	procF.DivideFloat(255.0)
 
-	// Validate mean calculations
-	if math.IsInf(origMean.Val1, 0) || math.IsNaN(origMean.Val1) ||
-		math.IsInf(procMean.Val1, 0) || math.IsNaN(procMean.Val1) {
-		return 0.0
-	}
+	// SSIM constants with standard values
+	c1 := 0.01 * 0.01 // (k1 * L)^2 where k1=0.01, L=1 for normalized images
+	c2 := 0.03 * 0.03 // (k2 * L)^2 where k2=0.03, L=1 for normalized images
 
-	mu1 := origMean.Val1
-	mu2 := procMean.Val1
+	// Calculate means using Gaussian kernel for better perceptual relevance
+	kernel := gocv.GetGaussianKernel(11, 1.5, gocv.MatTypeCV64F)
+	defer kernel.Close()
 
-	// Calculate variances and covariance
-	origSub := gocv.NewMat()
-	defer origSub.Close()
-	procSub := gocv.NewMat()
-	defer procSub.Close()
+	mu1 := gocv.NewMat()
+	defer mu1.Close()
+	mu2 := gocv.NewMat()
+	defer mu2.Close()
 
-	origMeanMat := gocv.NewMatFromScalar(origMean, origF.Type())
-	defer origMeanMat.Close()
-	procMeanMat := gocv.NewMatFromScalar(procMean, procF.Type())
-	defer procMeanMat.Close()
-
-	err := gocv.Subtract(origF, origMeanMat, &origSub)
+	err := gocv.Filter2D(origF, &mu1, -1, kernel, image.Point{X: -1, Y: -1}, 0, gocv.BorderReflect101)
 	if err != nil {
 		return 0.0
 	}
-	err = gocv.Subtract(procF, procMeanMat, &procSub)
+	err = gocv.Filter2D(procF, &mu2, -1, kernel, image.Point{X: -1, Y: -1}, 0, gocv.BorderReflect101)
 	if err != nil {
 		return 0.0
 	}
 
-	// Calculate sigma1^2, sigma2^2, and sigma12
+	// Calculate mu1*mu2, mu1^2, mu2^2
+	mu1Mu2 := gocv.NewMat()
+	defer mu1Mu2.Close()
+	mu1Sq := gocv.NewMat()
+	defer mu1Sq.Close()
+	mu2Sq := gocv.NewMat()
+	defer mu2Sq.Close()
+
+	err = gocv.Multiply(mu1, mu2, &mu1Mu2)
+	if err != nil {
+		return 0.0
+	}
+	err = gocv.Multiply(mu1, mu1, &mu1Sq)
+	if err != nil {
+		return 0.0
+	}
+	err = gocv.Multiply(mu2, mu2, &mu2Sq)
+	if err != nil {
+		return 0.0
+	}
+
+	// Calculate sigma1^2, sigma2^2, sigma12
+	origF2 := gocv.NewMat()
+	defer origF2.Close()
+	procF2 := gocv.NewMat()
+	defer procF2.Close()
+	origFProcF := gocv.NewMat()
+	defer origFProcF.Close()
+
+	err = gocv.Multiply(origF, origF, &origF2)
+	if err != nil {
+		return 0.0
+	}
+	err = gocv.Multiply(procF, procF, &procF2)
+	if err != nil {
+		return 0.0
+	}
+	err = gocv.Multiply(origF, procF, &origFProcF)
+	if err != nil {
+		return 0.0
+	}
+
 	sigma1Sq := gocv.NewMat()
 	defer sigma1Sq.Close()
 	sigma2Sq := gocv.NewMat()
@@ -653,47 +679,117 @@ func (p *ImagePipeline) CalculateSSIM() float64 {
 	sigma12 := gocv.NewMat()
 	defer sigma12.Close()
 
-	err = gocv.Multiply(origSub, origSub, &sigma1Sq)
+	temp1 := gocv.NewMat()
+	defer temp1.Close()
+	temp2 := gocv.NewMat()
+	defer temp2.Close()
+	temp3 := gocv.NewMat()
+	defer temp3.Close()
+
+	err = gocv.Filter2D(origF2, &temp1, -1, kernel, image.Point{X: -1, Y: -1}, 0, gocv.BorderReflect101)
 	if err != nil {
 		return 0.0
 	}
-	err = gocv.Multiply(procSub, procSub, &sigma2Sq)
-	if err != nil {
-		return 0.0
-	}
-	err = gocv.Multiply(origSub, procSub, &sigma12)
+	err = gocv.Subtract(temp1, mu1Sq, &sigma1Sq)
 	if err != nil {
 		return 0.0
 	}
 
-	sigma1SqVal := sigma1Sq.Mean().Val1
-	sigma2SqVal := sigma2Sq.Mean().Val1
-	sigma12Val := sigma12.Mean().Val1
-
-	// Validate variance calculations
-	if math.IsInf(sigma1SqVal, 0) || math.IsNaN(sigma1SqVal) ||
-		math.IsInf(sigma2SqVal, 0) || math.IsNaN(sigma2SqVal) ||
-		math.IsInf(sigma12Val, 0) || math.IsNaN(sigma12Val) {
+	err = gocv.Filter2D(procF2, &temp2, -1, kernel, image.Point{X: -1, Y: -1}, 0, gocv.BorderReflect101)
+	if err != nil {
+		return 0.0
+	}
+	err = gocv.Subtract(temp2, mu2Sq, &sigma2Sq)
+	if err != nil {
 		return 0.0
 	}
 
-	// Calculate SSIM using proper formula
-	numerator := (2*mu1*mu2 + c1) * (2*sigma12Val + c2)
-	denominator := (mu1*mu1 + mu2*mu2 + c1) * (sigma1SqVal + sigma2SqVal + c2)
-
-	// Prevent division by zero
-	if denominator == 0 || math.IsInf(denominator, 0) || math.IsNaN(denominator) {
+	err = gocv.Filter2D(origFProcF, &temp3, -1, kernel, image.Point{X: -1, Y: -1}, 0, gocv.BorderReflect101)
+	if err != nil {
+		return 0.0
+	}
+	err = gocv.Subtract(temp3, mu1Mu2, &sigma12)
+	if err != nil {
 		return 0.0
 	}
 
-	ssim := numerator / denominator
+	// Calculate SSIM map
+	numerator1 := gocv.NewMat()
+	defer numerator1.Close()
+	numerator2 := gocv.NewMat()
+	defer numerator2.Close()
+	denominator1 := gocv.NewMat()
+	defer denominator1.Close()
+	denominator2 := gocv.NewMat()
+	defer denominator2.Close()
+
+	// Numerator: (2*mu1*mu2 + C1) * (2*sigma12 + C2)
+	mu1Mu2Times2 := gocv.NewMat()
+	defer mu1Mu2Times2.Close()
+	sigma12Times2 := gocv.NewMat()
+	defer sigma12Times2.Close()
+
+	mu1Mu2.MultiplyFloat(2.0)
+	mu1Mu2.CopyTo(&mu1Mu2Times2)
+	numerator1.SetTo(gocv.NewScalar(c1, 0, 0, 0))
+	err = gocv.Add(mu1Mu2Times2, numerator1, &numerator1)
+	if err != nil {
+		return 0.0
+	}
+
+	sigma12.MultiplyFloat(2.0)
+	sigma12.CopyTo(&sigma12Times2)
+	numerator2.SetTo(gocv.NewScalar(c2, 0, 0, 0))
+	err = gocv.Add(sigma12Times2, numerator2, &numerator2)
+	if err != nil {
+		return 0.0
+	}
+
+	numerator := gocv.NewMat()
+	defer numerator.Close()
+	err = gocv.Multiply(numerator1, numerator2, &numerator)
+	if err != nil {
+		return 0.0
+	}
+
+	// Denominator: (mu1^2 + mu2^2 + C1) * (sigma1^2 + sigma2^2 + C2)
+	err = gocv.Add(mu1Sq, mu2Sq, &denominator1)
+	if err != nil {
+		return 0.0
+	}
+	denominator1.AddFloat(c1)
+
+	err = gocv.Add(sigma1Sq, sigma2Sq, &denominator2)
+	if err != nil {
+		return 0.0
+	}
+	denominator2.AddFloat(c2)
+
+	denominator := gocv.NewMat()
+	defer denominator.Close()
+	err = gocv.Multiply(denominator1, denominator2, &denominator)
+	if err != nil {
+		return 0.0
+	}
+
+	// Calculate final SSIM
+	ssimMap := gocv.NewMat()
+	defer ssimMap.Close()
+	err = gocv.Divide(numerator, denominator, &ssimMap)
+	if err != nil {
+		return 0.0
+	}
+
+	// Calculate mean SSIM value
+	meanSSIM := ssimMap.Mean()
+	ssim := meanSSIM.Val1
 
 	// Bounds checking and numerical stability
 	if math.IsInf(ssim, 0) || math.IsNaN(ssim) {
 		return 0.0
 	}
 
-	// Clamp to valid range
+	// Clamp to valid range [0, 1]
 	if ssim > 1.0 {
 		ssim = 1.0
 	}

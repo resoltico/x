@@ -170,13 +170,6 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
 
 	// Apply 2D Otsu thresholding with memory management
 	binaryResult := t.apply2DOtsuCorrect(grayscale, guided)
-	defer func() {
-		// Only close if we're scaling back, otherwise return as-is
-		if scale != 1.0 && !binaryResult.Empty() {
-			defer binaryResult.Close()
-		}
-	}()
-
 	if binaryResult.Empty() {
 		t.debugImage.LogAlgorithmStep("2D Otsu", "ERROR: Binarization failed")
 		return gocv.NewMat()
@@ -184,17 +177,19 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
 
 	// Post-processing with morphological operations
 	processed := t.applyMorphologicalOps(binaryResult, morphKernelSize)
-	defer func() {
-		if scale != 1.0 && !processed.Empty() {
-			defer processed.Close()
-		}
-	}()
+	binaryResult.Close() // Close intermediate result
+
+	if processed.Empty() {
+		t.debugImage.LogAlgorithmStep("2D Otsu", "ERROR: Morphological operations failed")
+		return gocv.NewMat()
+	}
 
 	// Scale back to original size if needed
 	var result gocv.Mat
 	if scale != 1.0 {
 		result = gocv.NewMat()
 		err := gocv.Resize(processed, &result, image.Point{X: src.Cols(), Y: src.Rows()}, 0, 0, gocv.InterpolationLinear)
+		processed.Close() // Close scaled result
 		if err != nil {
 			t.debugImage.LogError(err)
 			result.Close()

@@ -185,11 +185,7 @@ func (l *Lanczos4Transform) applyLanczos4(src gocv.Mat, scale float64) gocv.Mat 
 
 	// Apply post-processing using GoCV blur with memory management
 	final := l.applyPostFilter(result)
-	defer func() {
-		if !result.Empty() {
-			result.Close()
-		}
-	}()
+	result.Close() // Close intermediate result
 
 	l.debugImage.LogMatInfo("final_result", final)
 	l.debugImage.LogAlgorithmStep("Lanczos4", "Scaling completed successfully")
@@ -293,7 +289,7 @@ func (l *Lanczos4Transform) iterativeLanczos4(src gocv.Mat, targetWidth, targetH
 	currentWidth, currentHeight := current.Cols(), current.Rows()
 
 	step := 0
-	maxSteps := 15 // Reduced max steps for better performance
+	maxSteps := 15 // Limit max steps for better performance
 
 	// Use more aggressive downscaling steps
 	scalingFactor := 0.6 // Scale down by 40% each step instead of 50%
