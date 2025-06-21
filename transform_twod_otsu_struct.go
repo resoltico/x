@@ -9,6 +9,7 @@ import (
 type TwoDOtsu struct {
 	ThreadSafeTransformation
 	debugImage *DebugImage
+	debugPerf  *DebugPerformance
 
 	paramMutex       sync.RWMutex
 	windowRadius     int
@@ -24,12 +25,13 @@ type TwoDOtsu struct {
 func NewTwoDOtsu(config *DebugConfig) *TwoDOtsu {
 	return &TwoDOtsu{
 		debugImage:       NewDebugImage(config),
+		debugPerf:        NewDebugPerformance(config),
 		windowRadius:     5,
 		epsilon:          0.02,
 		morphKernelSize:  3,
 		noiseReduction:   true,
 		useIntegralImage: true,
-		adaptiveRegions:  4, // Try reducing to 2 to lower processing complexity
+		adaptiveRegions:  4,
 	}
 }
 

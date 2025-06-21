@@ -14,18 +14,20 @@ import (
 
 // DebugConfig controls which debug modules are enabled
 type DebugConfig struct {
-	GUI      bool
-	Image    bool
-	Pipeline bool
-	Render   bool
+	GUI         bool
+	Image       bool
+	Pipeline    bool
+	Render      bool
+	Performance bool // New performance debugging module
 }
 
 // Global debug configuration - centralized control
 var debugConfig = DebugConfig{
-	GUI:      true, // Toggle GUI debugging
-	Image:    true, // Toggle image debugging
-	Pipeline: true, // Toggle pipeline debugging
-	Render:   true, // Toggle render debugging
+	GUI:         true, // Toggle GUI debugging
+	Image:       true, // Toggle image debugging
+	Pipeline:    true, // Toggle pipeline debugging
+	Render:      true, // Toggle render debugging
+	Performance: true, // Toggle performance debugging - CRITICAL for hang detection
 }
 
 func main() {
@@ -173,13 +175,18 @@ func main() {
 		log.Printf("=====================================")
 	})
 
-	// Startup logging
+	// Startup logging with performance debugging status
 	log.Printf("=== STARTING IMAGE RESTORATION SUITE ===")
 	log.Printf("Debug configuration:")
 	log.Printf("  GUI debugging: %t", debugConfig.GUI)
 	log.Printf("  Image debugging: %t", debugConfig.Image)
 	log.Printf("  Pipeline debugging: %t", debugConfig.Pipeline)
 	log.Printf("  Render debugging: %t", debugConfig.Render)
+	log.Printf("  Performance debugging: %t", debugConfig.Performance)
+	if debugConfig.Performance {
+		log.Printf("  HANG DETECTION: ENABLED with 30s threshold")
+		log.Printf("  PERFORMANCE MONITORING: ACTIVE")
+	}
 	log.Printf("========================================")
 
 	myWindow.ShowAndRun()

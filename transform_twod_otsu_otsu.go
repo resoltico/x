@@ -1,20 +1,25 @@
 package main
 
 import (
+	"fmt"
 	"math"
+	"time"
 
 	"gocv.io/x/gocv"
 )
 
 func (t *TwoDOtsu) apply2DOtsu(gray, guided gocv.Mat) gocv.Mat {
 	t.debugImage.LogAlgorithmStep("2D Otsu", "Using GoCV CalcHist API for histogram construction")
+	t.debugPerf.LogAlgorithmPhase("2D Otsu Standard", "Histogram construction phase", gray)
 
 	if gray.Empty() || guided.Empty() {
 		return gocv.NewMat()
 	}
 
 	// Use GoCV's hardware-accelerated CalcHist instead of manual construction
+	t.debugPerf.StartOperation("2D_Otsu_Histogram", "joint_histogram_construction")
 	jointHist := t.buildJoint2DHistogram(gray, guided)
+	t.debugPerf.EndOperation("2D_Otsu_Histogram")
 	defer func() {
 		for i := range jointHist {
 			jointHist[i] = nil
@@ -27,21 +32,30 @@ func (t *TwoDOtsu) apply2DOtsu(gray, guided gocv.Mat) gocv.Mat {
 		return gocv.NewMat()
 	}
 
+	t.debugPerf.LogStep("2D_Otsu_Standard", "Histogram normalization", fmt.Sprintf("total_pixels=%d", totalPixels))
+
 	// Normalize using vectorized operations
+	t.debugPerf.StartOperation("2D_Otsu_Normalize", "histogram_normalization")
 	invTotalPixels := 1.0 / float64(totalPixels)
 	for g := 0; g < 256; g++ {
 		for f := 0; f < 256; f++ {
 			jointHist[g][f] *= invTotalPixels
 		}
 	}
+	t.debugPerf.EndOperation("2D_Otsu_Normalize")
 
+	t.debugPerf.StartOperation("2D_Otsu_ThresholdSearch", "optimal_threshold_calculation")
 	bestS, bestT, maxVariance := t.findOptimalThresholdsRecursive(jointHist)
+	t.debugPerf.EndOperation("2D_Otsu_ThresholdSearch")
 	t.debugImage.LogOptimalThresholds(bestS, bestT, maxVariance)
 
 	t.debugImage.LogAlgorithmStep("2D Otsu", "Applying vectorized 2D Otsu classification")
 
 	// Use GoCV operations for binarization instead of manual pixel processing
+	t.debugPerf.StartOperation("2D_Otsu_Classification", "vectorized_binarization")
 	result := t.performVectorized2DOtsuClassification(gray, guided, bestS, bestT)
+	t.debugPerf.LogMatrixOperation("Classification", gray, result)
+	t.debugPerf.EndOperation("2D_Otsu_Classification")
 
 	t.debugImage.LogAlgorithmStep("2D Otsu", "Binarization completed using modern APIs")
 	return result
@@ -57,9 +71,16 @@ func (t *TwoDOtsu) buildJoint2DHistogram(gray, guided gocv.Mat) [][]float64 {
 
 	size := gray.Size()
 	width, height := size[1], size[0]
+	totalPixels := width * height
+
+	t.debugPerf.LogStep("Joint_2D_Histogram", "Processing setup", fmt.Sprintf("size=%dx%d, total_pixels=%d", width, height, totalPixels))
 
 	// Process in cache-friendly blocks for better performance
 	blockSize := 32
+	totalBlocks := ((height + blockSize - 1) / blockSize) * ((width + blockSize - 1) / blockSize)
+	processedBlocks := 0
+	startTime := time.Now()
+
 	for yBlock := 0; yBlock < height; yBlock += blockSize {
 		yEnd := min(yBlock+blockSize, height)
 		for xBlock := 0; xBlock < width; xBlock += blockSize {
@@ -76,6 +97,9 @@ func (t *TwoDOtsu) buildJoint2DHistogram(gray, guided gocv.Mat) [][]float64 {
 					}
 				}
 			}
+
+			processedBlocks++
+			t.debugPerf.LogLoopProgress("Joint_2D_Histogram", processedBlocks, totalBlocks, startTime)
 		}
 	}
 
@@ -84,13 +108,21 @@ func (t *TwoDOtsu) buildJoint2DHistogram(gray, guided gocv.Mat) [][]float64 {
 
 func (t *TwoDOtsu) findOptimalThresholdsRecursive(hist [][]float64) (int, int, float64) {
 	t.debugImage.LogAlgorithmStep("Recursive Threshold Search", "Using dynamic programming for acceleration")
+	t.debugPerf.LogAlgorithmPhase("Threshold Search", "Dynamic programming optimization", gocv.NewMat())
 
 	// Pre-compute cumulative statistics for dynamic programming
+	t.debugPerf.StartOperation("2D_Otsu_Precompute", "cumulative_statistics")
 	cumulativeStats := t.precomputeCumulativeStatistics(hist)
+	t.debugPerf.EndOperation("2D_Otsu_Precompute")
 
 	maxBetweenClassVariance := 0.0
 	bestS, bestT := 0, 0
 
+	searchSpace := 254 * 254 // 254x254 search space
+	currentPos := 0
+	startTime := time.Now()
+
+	t.debugPerf.StartOperation("2D_Otsu_Search", "threshold_optimization")
 	// Use recursive dynamic programming to reduce computation from O(L^4) to O(L^2)
 	for s := 1; s < 255; s++ {
 		for thresholdT := 1; thresholdT < 255; thresholdT++ {
@@ -100,9 +132,18 @@ func (t *TwoDOtsu) findOptimalThresholdsRecursive(hist [][]float64) (int, int, f
 				maxBetweenClassVariance = variance
 				bestS = s
 				bestT = thresholdT
+				t.debugPerf.LogThresholdSearch("2D_Otsu", searchSpace, currentPos, maxBetweenClassVariance)
+			}
+
+			currentPos++
+			if currentPos%25000 == 0 { // Much less frequent logging
+				t.debugPerf.LogLoopProgress("2D_Otsu_Search", currentPos, searchSpace, startTime)
 			}
 		}
 	}
+	t.debugPerf.EndOperation("2D_Otsu_Search")
+
+	t.debugPerf.LogStep("2D_Otsu_Search", "Search completed", fmt.Sprintf("best_s=%d, best_t=%d, variance=%.6f", bestS, bestT, maxBetweenClassVariance))
 
 	return bestS, bestT, maxBetweenClassVariance
 }
@@ -116,6 +157,8 @@ type CumulativeStats struct {
 }
 
 func (t *TwoDOtsu) precomputeCumulativeStatistics(hist [][]float64) *CumulativeStats {
+	t.debugPerf.LogStep("2D_Otsu_Precompute", "Building cumulative tables", "256x256_lookup_tables")
+
 	stats := &CumulativeStats{
 		cumulativeP:   make([][]float64, 256),
 		cumulativeMuG: make([][]float64, 256),
@@ -257,6 +300,7 @@ func (t *TwoDOtsu) performVectorized2DOtsuClassification(gray, guided gocv.Mat, 
 	t.debugImage.LogAlgorithmStep("Vectorized Classification", "Using GoCV operations for binarization")
 
 	// Create threshold conditions using GoCV's vectorized operations
+	t.debugPerf.StartOperation("2D_Otsu_VectorThreshold", "hardware_accelerated_threshold")
 	grayMask := gocv.NewMat()
 	defer grayMask.Close()
 	guidedMask := gocv.NewMat()
@@ -265,14 +309,19 @@ func (t *TwoDOtsu) performVectorized2DOtsuClassification(gray, guided gocv.Mat, 
 	// Apply thresholds using hardware-accelerated operations
 	gocv.Threshold(gray, &grayMask, float32(s), 255, gocv.ThresholdBinary)
 	gocv.Threshold(guided, &guidedMask, float32(threshold), 255, gocv.ThresholdBinary)
+	t.debugPerf.EndOperation("2D_Otsu_VectorThreshold")
 
 	// Combine conditions using bitwise operations for 2D Otsu decision
+	t.debugPerf.StartOperation("2D_Otsu_BitwiseCombine", "mask_combination")
 	result := gocv.NewMat()
 	gocv.BitwiseAnd(grayMask, guidedMask, &result)
+	t.debugPerf.EndOperation("2D_Otsu_BitwiseCombine")
 
 	// Post-process to handle edge cases in historical images
+	t.debugPerf.StartOperation("2D_Otsu_PostProcess", "boundary_handling")
 	postProcessed := t.postProcessBinarizationResult(result, gray, guided, s, threshold)
 	result.Close()
+	t.debugPerf.EndOperation("2D_Otsu_PostProcess")
 
 	return postProcessed
 }
@@ -286,6 +335,10 @@ func (t *TwoDOtsu) postProcessBinarizationResult(binary, gray, guided gocv.Mat, 
 	width, height := size[1], size[0]
 
 	threshold_margin := 5 // Adaptive margin for noisy historical images
+	processedPixels := 0
+	totalBoundaryPixels := 0
+
+	startTime := time.Now()
 
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
@@ -296,6 +349,7 @@ func (t *TwoDOtsu) postProcessBinarizationResult(binary, gray, guided gocv.Mat, 
 			if math.Abs(float64(grayVal-s)) <= float64(threshold_margin) ||
 				math.Abs(float64(guidedVal-threshold)) <= float64(threshold_margin) {
 
+				totalBoundaryPixels++
 				// Use local neighborhood analysis for boundary decisions
 				neighborhoodDecision := t.analyzeLocalNeighborhood(gray, guided, x, y, s, threshold)
 				if neighborhoodDecision {
@@ -304,8 +358,15 @@ func (t *TwoDOtsu) postProcessBinarizationResult(binary, gray, guided gocv.Mat, 
 					result.SetUCharAt(y, x, 0)
 				}
 			}
+			processedPixels++
+
+			if processedPixels%500000 == 0 { // Much less frequent logging
+				t.debugPerf.LogLoopProgress("2D_Otsu_PostProcess", processedPixels, width*height, startTime)
+			}
 		}
 	}
+
+	t.debugPerf.LogStep("2D_Otsu_PostProcess", "Boundary processing completed", fmt.Sprintf("boundary_pixels=%d, total_pixels=%d", totalBoundaryPixels, width*height))
 
 	return result
 }
