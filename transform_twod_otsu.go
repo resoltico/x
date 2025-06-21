@@ -13,7 +13,7 @@ import (
 	"gocv.io/x/gocv"
 )
 
-// TwoDOtsu implements 2D Otsu thresholding algorithm with proper memory management
+// TwoDOtsu implements 2D Otsu thresholding algorithm with memory management
 type TwoDOtsu struct {
 	ThreadSafeTransformation
 	debugImage *DebugImage
@@ -112,7 +112,7 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
 	morphKernelSize := t.morphKernelSize
 	t.paramMutex.RUnlock()
 
-	// Scale input if needed with proper memory management
+	// Scale input if needed with memory management
 	var workingImage gocv.Mat
 	if scale != 1.0 {
 		newWidth := int(float64(src.Cols()) * scale)
@@ -159,7 +159,7 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
 	t.debugImage.LogMatInfo("grayscale", grayscale)
 
 	// Apply guided filter
-	guided := t.applyGuidedFilterCorrect(grayscale, windowRadius, epsilon)
+	guided := t.applyGuidedFilter(grayscale, windowRadius, epsilon)
 	defer guided.Close()
 
 	if guided.Empty() {
@@ -169,7 +169,7 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
 	}
 
 	// Apply 2D Otsu thresholding with memory management
-	binaryResult := t.apply2DOtsuCorrect(grayscale, guided)
+	binaryResult := t.apply2DOtsu(grayscale, guided)
 	if binaryResult.Empty() {
 		t.debugImage.LogAlgorithmStep("2D Otsu", "ERROR: Binarization failed")
 		return gocv.NewMat()
@@ -204,9 +204,9 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
 	return result
 }
 
-// Guided filter with correct covariance computation and memory management
-func (t *TwoDOtsu) applyGuidedFilterCorrect(src gocv.Mat, windowRadius int, epsilon float64) gocv.Mat {
-	t.debugImage.LogAlgorithmStep("GuidedFilter", "Starting guided filter with correct covariance")
+// Guided filter with covariance computation and memory management
+func (t *TwoDOtsu) applyGuidedFilter(src gocv.Mat, windowRadius int, epsilon float64) gocv.Mat {
+	t.debugImage.LogAlgorithmStep("GuidedFilter", "Starting guided filter with covariance")
 
 	if src.Empty() {
 		return gocv.NewMat()
@@ -345,8 +345,8 @@ func (t *TwoDOtsu) applyGuidedFilterCorrect(src gocv.Mat, windowRadius int, epsi
 	return result
 }
 
-// 2D Otsu algorithm with proper between-class scatter matrix and memory management
-func (t *TwoDOtsu) apply2DOtsuCorrect(gray, guided gocv.Mat) gocv.Mat {
+// 2D Otsu algorithm with between-class scatter matrix and memory management
+func (t *TwoDOtsu) apply2DOtsu(gray, guided gocv.Mat) gocv.Mat {
 	t.debugImage.LogAlgorithmStep("2D Otsu", "Constructing 2D histogram")
 
 	if gray.Empty() || guided.Empty() {
@@ -388,7 +388,7 @@ func (t *TwoDOtsu) apply2DOtsuCorrect(gray, guided gocv.Mat) gocv.Mat {
 	}
 
 	// Find optimal thresholds using 2D Otsu algorithm
-	bestS, bestT, maxVariance := t.findOptimalThresholdsCorrect(hist)
+	bestS, bestT, maxVariance := t.findOptimalThresholds(hist)
 	t.debugImage.LogOptimalThresholds(bestS, bestT, maxVariance)
 
 	// Apply thresholding
@@ -428,8 +428,8 @@ func (t *TwoDOtsu) apply2DOtsuCorrect(gray, guided gocv.Mat) gocv.Mat {
 	return result
 }
 
-// 2D Otsu optimal threshold finding using proper between-class scatter matrix
-func (t *TwoDOtsu) findOptimalThresholdsCorrect(hist [][]float64) (int, int, float64) {
+// 2D Otsu optimal threshold finding using between-class scatter matrix
+func (t *TwoDOtsu) findOptimalThresholds(hist [][]float64) (int, int, float64) {
 	maxBetweenClassVariance := 0.0
 	bestS, bestT := 0, 0
 
@@ -447,8 +447,8 @@ func (t *TwoDOtsu) findOptimalThresholdsCorrect(hist [][]float64) (int, int, flo
 	// Exhaustive search for optimal thresholds
 	for s := 1; s < 255; s++ {
 		for thresholdT := 1; thresholdT < 255; thresholdT++ {
-			// Calculate proper between-class scatter matrix trace
-			variance := t.calculateBetweenClassScatterCorrect(hist, s, thresholdT, totalMeanG, totalMeanF)
+			// Calculate between-class scatter matrix trace
+			variance := t.calculateBetweenClassScatter(hist, s, thresholdT, totalMeanG, totalMeanF)
 			if variance > maxBetweenClassVariance {
 				maxBetweenClassVariance = variance
 				bestS = s
@@ -461,7 +461,7 @@ func (t *TwoDOtsu) findOptimalThresholdsCorrect(hist [][]float64) (int, int, flo
 }
 
 // Between-class scatter matrix trace calculation for 2D Otsu
-func (t *TwoDOtsu) calculateBetweenClassScatterCorrect(hist [][]float64, s, thresholdT int, totalMeanG, totalMeanF float64) float64 {
+func (t *TwoDOtsu) calculateBetweenClassScatter(hist [][]float64, s, thresholdT int, totalMeanG, totalMeanF float64) float64 {
 	// Calculate statistics for 4 regions based on diagonal separation
 	var w [4]float64   // weights (probabilities)
 	var muG [4]float64 // mean gray values

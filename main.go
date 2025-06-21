@@ -77,7 +77,7 @@ func main() {
 
 	myWindow.SetContent(content)
 
-	// Cleanup and memory leak detection with proper Mat cleanup
+	// Cleanup and memory leak detection with Mat cleanup
 	myWindow.SetOnClosed(func() {
 		log.Printf("=== APPLICATION SHUTDOWN INITIATED ===")
 		log.Printf("Performing cleanup...")
@@ -90,7 +90,7 @@ func main() {
 
 		startCleanupTime := time.Now()
 
-		// Pipeline cleanup with proper Mat resource management
+		// Pipeline cleanup with Mat resource management
 		if ui != nil && ui.pipeline != nil {
 			log.Printf("Closing image pipeline...")
 			ui.pipeline.Close()
@@ -134,7 +134,7 @@ func main() {
 		// Memory leak detection and reporting
 		if finalCount > 0 {
 			log.Printf("⚠️  WARNING: MEMORY LEAKS DETECTED!")
-			log.Printf("   %d Mat(s) were not properly closed", finalCount)
+			log.Printf("   %d Mat(s) were not cleaned up", finalCount)
 			log.Printf("   This indicates missing defer mat.Close() calls")
 			log.Printf("   Check MatProfile for details: http://localhost:6060/debug/pprof/gocv.io/x/gocv.Mat")
 
@@ -145,10 +145,10 @@ func main() {
 			}
 		} else {
 			log.Printf("✅ SUCCESS: No memory leaks detected")
-			log.Printf("   All OpenCV Mats properly closed")
+			log.Printf("   All OpenCV Mats cleaned up")
 
 			if memoryChange == 0 {
-				log.Printf("   🎯 PERFECT: Mat allocation/deallocation perfectly balanced")
+				log.Printf("   🎯 BALANCE: Mat allocation/deallocation perfectly balanced")
 			} else if memoryChange < 0 {
 				log.Printf("   🧹 CLEANUP: %d pre-existing Mat(s) were cleaned up", -memoryChange)
 			}

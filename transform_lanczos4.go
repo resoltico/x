@@ -12,7 +12,7 @@ import (
 	"gocv.io/x/gocv"
 )
 
-// Lanczos4Transform implements Lanczos4 interpolation with proper memory management
+// Lanczos4Transform implements Lanczos4 interpolation with memory management
 type Lanczos4Transform struct {
 	debugImage   *DebugImage
 	scaleFactor  float64
@@ -324,7 +324,7 @@ func (l *Lanczos4Transform) iterativeLanczos4(src gocv.Mat, targetWidth, targetH
 			break
 		}
 
-		// Proper cleanup of previous iteration
+		// Cleanup of previous iteration
 		current.Close()
 		current = temp
 		currentWidth, currentHeight = nextWidth, nextHeight

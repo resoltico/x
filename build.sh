@@ -28,6 +28,10 @@ if [ $? -eq 0 ]; then
     echo ""
     echo "To build without profiling (production):"
     echo "  go build -ldflags='-s -w' -o ${BINARY_NAME} ."
+    echo ""
+    echo "Memory profiler endpoints available when running:"
+    echo "- Main pprof: http://localhost:6060/debug/pprof/"
+    echo "- Mat profile: http://localhost:6060/debug/pprof/gocv.io/x/gocv.Mat"
 else
     echo "❌ Build failed"
     exit 1
