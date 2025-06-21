@@ -1,0 +1,516 @@
+[2:01:09 AM] % ./image-restoration-suite
+2025/06/22 02:01:11 Starting pprof server on :6060
+2025/06/22 02:01:11 Memory profiler available at: http://localhost:6060/debug/pprof/
+2025/06/22 02:01:11 Mat-specific profiling at: http://localhost:6060/debug/pprof/gocv.io/x/gocv.Mat
+2025/06/22 02:01:11 === MEMORY TRACKING INITIALIZED ===
+2025/06/22 02:01:11 Initial MatProfile count: 0
+2025/06/22 02:01:11 Go version: go1.24.4
+2025/06/22 02:01:11 GOMAXPROCS: 8
+2025/06/22 02:01:11 === STARTING IMAGE RESTORATION SUITE ===
+2025/06/22 02:01:11 Debug configuration:
+2025/06/22 02:01:11   GUI debugging: true
+2025/06/22 02:01:11   Image debugging: true
+2025/06/22 02:01:11   Pipeline debugging: true
+2025/06/22 02:01:11   Render debugging: true
+2025/06/22 02:01:11 ========================================
+2025/06/22 02:01:14 [GUI DEBUG] Button clicked: OPEN IMAGE
+2025/06/22 02:01:20 [GUI DEBUG] File operation: open - Ut feritur ferit.png
+2025/06/22 02:01:20 [GUI DEBUG] Image Info - Size: 1400x995, Channels: 3
+2025/06/22 02:01:20 [PIPELINE DEBUG] Clearing all transformations
+2025/06/22 02:01:20 [PIPELINE DEBUG] SetOriginalImage called
+2025/06/22 02:01:20 [PIPELINE DEBUG] MatProfile count at start: 5
+2025/06/22 02:01:20 [PIPELINE DEBUG] SetOriginalImage: cloning original image
+2025/06/22 02:01:20 [PIPELINE DEBUG] SetOriginalImage: creating processed image
+2025/06/22 02:01:20 [PIPELINE DEBUG] SetOriginalImage: creating preview image
+2025/06/22 02:01:20 [PIPELINE DEBUG] Image 'original': 1400x995, 3 channels, type 16, size 4179000 bytes
+2025/06/22 02:01:20 [GUI DEBUG] Image loaded successfully
+2025/06/22 02:01:20 [GUI DEBUG] UI Event: updateImageDisplay called
+2025/06/22 02:01:20 [GUI DEBUG] UI Event: updateImageDisplay: converting original image
+2025/06/22 02:01:20 [GUI DEBUG] Image conversion successful: original
+2025/06/22 02:01:20 [RENDER DEBUG] Image 'original' properties: bounds=(0,0,1400,995), size=1400x995
+2025/06/22 02:01:20 [RENDER DEBUG] Image 'original' format: RGBA
+2025/06/22 02:01:20 [RENDER DEBUG] Image 'original' RGBA sample 0 at (5,5): (255,255,255,255)
+2025/06/22 02:01:20 [RENDER DEBUG] Image 'original' RGBA sample 1 at (700,497): (255,255,255,255)
+2025/06/22 02:01:20 [RENDER DEBUG] Image 'original' RGBA sample 2 at (1395,990): (255,255,255,255)
+2025/06/22 02:01:20 [GUI DEBUG] Image conversion successful: preview
+2025/06/22 02:01:20 [RENDER DEBUG] Image 'preview' properties: bounds=(0,0,1400,995), size=1400x995
+2025/06/22 02:01:20 [RENDER DEBUG] Image 'preview' format: RGBA
+2025/06/22 02:01:20 [RENDER DEBUG] Image 'preview' RGBA sample 0 at (5,5): (255,255,255,255)
+2025/06/22 02:01:20 [RENDER DEBUG] Image 'preview' RGBA sample 1 at (700,497): (255,255,255,255)
+2025/06/22 02:01:20 [RENDER DEBUG] Image 'preview' RGBA sample 2 at (1395,990): (255,255,255,255)
+2025/06/22 02:01:20 [GUI DEBUG] Canvas refreshed: originalImage
+2025/06/22 02:01:20 [GUI DEBUG] Canvas refreshed: previewImage
+2025/06/22 02:01:20 [GUI DEBUG] UI Event: updateImageDisplay: completed successfully
+2025/06/22 02:01:20 [GUI DEBUG] Quality metrics update: PSNR=0.00, SSIM=0.0000, hasTransformations=false
+2025/06/22 02:01:21 [GUI DEBUG] List 'available transformations' selection: ID=1, Name='Lanczos4 Scaling'
+2025/06/22 02:01:21 [PIPELINE DEBUG] processImage called
+2025/06/22 02:01:21 [PIPELINE DEBUG] MatProfile count at start: 7
+2025/06/22 02:01:21 [PIPELINE DEBUG] processImage: creating new processed image
+2025/06/22 02:01:21 [PIPELINE DEBUG] processImage: applying 1 transformations
+2025/06/22 02:01:21 [IMAGE DEBUG] Lanczos4 - Starting full resolution scaling
+2025/06/22 02:01:21 [IMAGE DEBUG] Lanczos4 - Input: 1400x995, scale: 2.00
+2025/06/22 02:01:21 [IMAGE DEBUG] Color conversion: BGR -> Grayscale
+2025/06/22 02:01:21 [IMAGE DEBUG] Mat 'input_working': 1400x995, channels=1, type=0, elemSize=1
+2025/06/22 02:01:21 [IMAGE DEBUG] Lanczos4 PreFilter - Applying adaptive Gaussian blur
+2025/06/22 02:01:21 [IMAGE DEBUG] Applied filter: GaussianBlur with params: [kernel=5x5 sigma=0.83]
+2025/06/22 02:01:21 [IMAGE DEBUG] Lanczos4 - Target dimensions: 2800x1990
+2025/06/22 02:01:21 [IMAGE DEBUG] Lanczos4 PostFilter - Applying bilateral filter for artifact reduction
+2025/06/22 02:01:21 [IMAGE DEBUG] Applied filter: BilateralFilter with params: [d=9 sigmaColor=100.0 sigmaSpace=100.0]
+2025/06/22 02:01:21 [IMAGE DEBUG] Mat 'final_result': 2800x1990, channels=1, type=0, elemSize=1
+2025/06/22 02:01:21 [IMAGE DEBUG] Lanczos4 - Scaling completed successfully
+2025/06/22 02:01:21 [PIPELINE DEBUG] Operation 'transformation_0_Lanczos4 Scaling' took 50.208625ms
+2025/06/22 02:01:21 [PIPELINE DEBUG] Transformation 'Lanczos4 Scaling' applied in 50.208625ms
+2025/06/22 02:01:21 [PIPELINE DEBUG]   Before: 1400x995, 3 channels
+2025/06/22 02:01:21 [PIPELINE DEBUG]   After:  2800x1990, 1 channels
+2025/06/22 02:01:21 [PIPELINE DEBUG] processImage: completed successfully
+2025/06/22 02:01:21 [PIPELINE DEBUG] MatProfile count at completion: 7
+2025/06/22 02:01:21 [PIPELINE DEBUG] Operation 'processImage' took 51.740084ms
+2025/06/22 02:01:21 [PIPELINE DEBUG] Pipeline Stats:
+2025/06/22 02:01:21 [PIPELINE DEBUG]   Original size: 1400x995
+2025/06/22 02:01:21 [PIPELINE DEBUG]   Processed size: 2800x1990
+2025/06/22 02:01:21 [PIPELINE DEBUG]   Number of transformations: 1
+2025/06/22 02:01:21 [PIPELINE DEBUG]   Total processing time: 50.208625ms
+2025/06/22 02:01:21 [PIPELINE DEBUG]   Current MatProfile count: 7
+2025/06/22 02:01:21 [PIPELINE DEBUG] Memory - Go Alloc: 68.16 MB, TotalAlloc: 146.60 MB, Sys: 111.52 MB, NumGC: 10, MatProfile: 7 Mats
+2025/06/22 02:01:21 [PIPELINE DEBUG] processImage called
+2025/06/22 02:01:21 [PIPELINE DEBUG] MatProfile count at start: 7
+2025/06/22 02:01:21 [IMAGE DEBUG] Lanczos4 Preview - Starting preview scaling
+2025/06/22 02:01:21 [IMAGE DEBUG] Lanczos4 - Input: 1400x995, scale: 2.00
+2025/06/22 02:01:21 [IMAGE DEBUG] Color conversion: BGR -> Grayscale
+2025/06/22 02:01:21 [IMAGE DEBUG] Mat 'input_working': 1400x995, channels=1, type=0, elemSize=1
+2025/06/22 02:01:21 [IMAGE DEBUG] Lanczos4 PreFilter - Applying adaptive Gaussian blur
+2025/06/22 02:01:21 [IMAGE DEBUG] Applied filter: GaussianBlur with params: [kernel=5x5 sigma=0.83]
+2025/06/22 02:01:21 [IMAGE DEBUG] Lanczos4 - Target dimensions: 2800x1990
+2025/06/22 02:01:21 [IMAGE DEBUG] Lanczos4 PostFilter - Applying bilateral filter for artifact reduction
+2025/06/22 02:01:21 [IMAGE DEBUG] Applied filter: BilateralFilter with params: [d=9 sigmaColor=100.0 sigmaSpace=100.0]
+2025/06/22 02:01:21 [IMAGE DEBUG] Mat 'final_result': 2800x1990, channels=1, type=0, elemSize=1
+2025/06/22 02:01:21 [IMAGE DEBUG] Lanczos4 - Scaling completed successfully
+2025/06/22 02:01:21 [IMAGE DEBUG] Lanczos4 Preview - Preview scaling completed
+2025/06/22 02:01:21 [PIPELINE DEBUG] Operation 'preview_transformation_0_Lanczos4 Scaling' took 32.301458ms
+2025/06/22 02:01:21 [PIPELINE DEBUG] Transformation 'Lanczos4 Scaling (preview)' applied in 32.301458ms
+2025/06/22 02:01:21 [PIPELINE DEBUG]   Before: 1400x995, 3 channels
+2025/06/22 02:01:21 [PIPELINE DEBUG]   After:  2800x1990, 1 channels
+2025/06/22 02:01:21 [PIPELINE DEBUG] Operation 'processPreview' took 32.832792ms
+2025/06/22 02:01:21 [PIPELINE DEBUG] Pipeline Stats:
+2025/06/22 02:01:21 [PIPELINE DEBUG]   Original size: 1400x995
+2025/06/22 02:01:21 [PIPELINE DEBUG]   Processed size: 2800x1990
+2025/06/22 02:01:21 [PIPELINE DEBUG]   Number of transformations: 1
+2025/06/22 02:01:21 [PIPELINE DEBUG]   Total processing time: 82.510083ms
+2025/06/22 02:01:21 [PIPELINE DEBUG]   Current MatProfile count: 7
+2025/06/22 02:01:21 [GUI DEBUG] Applied Transformation: Lanczos4 Scaling with params: map[originalDPI:150 scaleFactor:2 targetDPI:300 useIterative:false]
+2025/06/22 02:01:21 [GUI DEBUG] Transformation 'Lanczos4 Scaling' applied successfully
+2025/06/22 02:01:21 [GUI DEBUG] UI Event: updateImageDisplay called
+2025/06/22 02:01:21 [GUI DEBUG] UI Event: updateImageDisplay: converting original image
+2025/06/22 02:01:21 [GUI DEBUG] Image conversion successful: original
+2025/06/22 02:01:21 [RENDER DEBUG] Image 'original' properties: bounds=(0,0,1400,995), size=1400x995
+2025/06/22 02:01:21 [RENDER DEBUG] Image 'original' format: RGBA
+2025/06/22 02:01:21 [RENDER DEBUG] Image 'original' RGBA sample 0 at (5,5): (255,255,255,255)
+2025/06/22 02:01:21 [RENDER DEBUG] Image 'original' RGBA sample 1 at (700,497): (255,255,255,255)
+2025/06/22 02:01:21 [RENDER DEBUG] Image 'original' RGBA sample 2 at (1395,990): (255,255,255,255)
+2025/06/22 02:01:21 [GUI DEBUG] Image format change 'preview': 3 channels -> 1 channels
+2025/06/22 02:01:21 [RENDER DEBUG] Converting grayscale to color using GoCV API
+2025/06/22 02:01:21 [RENDER DEBUG] SUCCESS: GoCV conversion completed
+2025/06/22 02:01:21 [GUI DEBUG] Image conversion successful: preview
+2025/06/22 02:01:21 [RENDER DEBUG] Image 'preview' properties: bounds=(0,0,2800,1990), size=2800x1990
+2025/06/22 02:01:21 [RENDER DEBUG] Image 'preview' format: RGBA
+2025/06/22 02:01:21 [RENDER DEBUG] Image 'preview' RGBA sample 0 at (5,5): (255,255,255,255)
+2025/06/22 02:01:21 [RENDER DEBUG] Image 'preview' RGBA sample 1 at (1400,995): (255,255,255,255)
+2025/06/22 02:01:21 [RENDER DEBUG] Image 'preview' RGBA sample 2 at (2795,1985): (255,255,255,255)
+2025/06/22 02:01:21 [GUI DEBUG] Canvas refreshed: originalImage
+2025/06/22 02:01:21 [GUI DEBUG] Canvas refreshed: previewImage
+2025/06/22 02:01:21 [GUI DEBUG] UI Event: updateImageDisplay: completed successfully
+2025/06/22 02:01:21 [GUI DEBUG] List 'available transformations' unselected/cleared
+2025/06/22 02:01:21 [GUI DEBUG] Quality metrics update: PSNR=0.00, SSIM=0.0000, hasTransformations=true
+2025/06/22 02:01:44 [GUI DEBUG] List 'available transformations' selection: ID=0, Name='2D Otsu'
+2025/06/22 02:01:44 [PIPELINE DEBUG] processImage called
+2025/06/22 02:01:44 [PIPELINE DEBUG] MatProfile count at start: 7
+2025/06/22 02:01:44 [PIPELINE DEBUG] processImage: creating new processed image
+2025/06/22 02:01:44 [PIPELINE DEBUG] processImage: applying 2 transformations
+2025/06/22 02:01:44 [IMAGE DEBUG] Lanczos4 - Starting full resolution scaling
+2025/06/22 02:01:44 [IMAGE DEBUG] Lanczos4 - Input: 1400x995, scale: 2.00
+2025/06/22 02:01:44 [IMAGE DEBUG] Color conversion: BGR -> Grayscale
+2025/06/22 02:01:44 [IMAGE DEBUG] Mat 'input_working': 1400x995, channels=1, type=0, elemSize=1
+2025/06/22 02:01:44 [IMAGE DEBUG] Lanczos4 PreFilter - Applying adaptive Gaussian blur
+2025/06/22 02:01:44 [IMAGE DEBUG] Applied filter: GaussianBlur with params: [kernel=5x5 sigma=0.83]
+2025/06/22 02:01:44 [IMAGE DEBUG] Lanczos4 - Target dimensions: 2800x1990
+2025/06/22 02:01:44 [IMAGE DEBUG] Lanczos4 PostFilter - Applying bilateral filter for artifact reduction
+2025/06/22 02:01:44 [IMAGE DEBUG] Applied filter: BilateralFilter with params: [d=9 sigmaColor=100.0 sigmaSpace=100.0]
+2025/06/22 02:01:44 [IMAGE DEBUG] Mat 'final_result': 2800x1990, channels=1, type=0, elemSize=1
+2025/06/22 02:01:44 [IMAGE DEBUG] Lanczos4 - Scaling completed successfully
+2025/06/22 02:01:44 [PIPELINE DEBUG] Operation 'transformation_0_Lanczos4 Scaling' took 50.227291ms
+2025/06/22 02:01:44 [PIPELINE DEBUG] Transformation 'Lanczos4 Scaling' applied in 50.227291ms
+2025/06/22 02:01:44 [PIPELINE DEBUG]   Before: 1400x995, 3 channels
+2025/06/22 02:01:44 [PIPELINE DEBUG]   After:  2800x1990, 1 channels
+2025/06/22 02:01:44 [IMAGE DEBUG] 2D Otsu - Starting binarization (scale: 1.00)
+2025/06/22 02:01:44 [IMAGE DEBUG] Mat 'grayscale': 2800x1990, channels=1, type=0, elemSize=1
+2025/06/22 02:01:44 [IMAGE DEBUG] Historical Noise Reduction - Applying bilateral filter for salt-and-pepper noise
+2025/06/22 02:01:44 [IMAGE DEBUG] Applied filter: HistoricalNoiseReduction with params: [bilateral+median]
+2025/06/22 02:01:44 [IMAGE DEBUG] Adaptive Regional 2D Otsu - Processing 4 regions
+2025/06/22 02:01:44 [IMAGE DEBUG] GuidedFilter - Starting guided filter with covariance
+2025/06/22 02:01:44 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/22 02:01:44 [IMAGE DEBUG] 2D Otsu Integral - Using CalcHist API and integral image acceleration
+2025/06/22 02:01:44 [IMAGE DEBUG] 2D Histogram - Building histogram using fast vectorized operations
+2025/06/22 02:01:44 [IMAGE DEBUG] Integral Image Optimization - Using summed area tables for acceleration
+2025/06/22 02:01:44 [IMAGE DEBUG] Optimal thresholds found: s=163, t=163, variance=3732.462235
+2025/06/22 02:01:44 [IMAGE DEBUG] Vectorized Binarization - Using GoCV operations for acceleration
+2025/06/22 02:01:44 [IMAGE DEBUG] Vectorized Binarization - Vectorized operations completed
+2025/06/22 02:01:44 [IMAGE DEBUG] 2D Otsu Integral - Binarization with integral image completed
+2025/06/22 02:01:44 [IMAGE DEBUG] GuidedFilter - Starting guided filter with covariance
+2025/06/22 02:01:44 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/22 02:01:44 [IMAGE DEBUG] 2D Otsu Integral - Using CalcHist API and integral image acceleration
+2025/06/22 02:01:44 [IMAGE DEBUG] 2D Histogram - Building histogram using fast vectorized operations
+2025/06/22 02:01:44 [IMAGE DEBUG] Integral Image Optimization - Using summed area tables for acceleration
+2025/06/22 02:01:44 [IMAGE DEBUG] Optimal thresholds found: s=139, t=139, variance=12101.255016
+2025/06/22 02:01:44 [IMAGE DEBUG] Vectorized Binarization - Using GoCV operations for acceleration
+2025/06/22 02:01:44 [IMAGE DEBUG] Vectorized Binarization - Vectorized operations completed
+2025/06/22 02:01:44 [IMAGE DEBUG] 2D Otsu Integral - Binarization with integral image completed
+2025/06/22 02:01:44 [IMAGE DEBUG] GuidedFilter - Starting guided filter with covariance
+2025/06/22 02:01:44 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/22 02:01:44 [IMAGE DEBUG] 2D Otsu Integral - Using CalcHist API and integral image acceleration
+2025/06/22 02:01:44 [IMAGE DEBUG] 2D Histogram - Building histogram using fast vectorized operations
+2025/06/22 02:01:44 [IMAGE DEBUG] Integral Image Optimization - Using summed area tables for acceleration
+2025/06/22 02:01:44 [IMAGE DEBUG] Optimal thresholds found: s=153, t=153, variance=7691.810297
+2025/06/22 02:01:44 [IMAGE DEBUG] Vectorized Binarization - Using GoCV operations for acceleration
+2025/06/22 02:01:44 [IMAGE DEBUG] Vectorized Binarization - Vectorized operations completed
+2025/06/22 02:01:44 [IMAGE DEBUG] 2D Otsu Integral - Binarization with integral image completed
+2025/06/22 02:01:44 [IMAGE DEBUG] GuidedFilter - Starting guided filter with covariance
+2025/06/22 02:01:44 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/22 02:01:44 [IMAGE DEBUG] 2D Otsu Integral - Using CalcHist API and integral image acceleration
+2025/06/22 02:01:44 [IMAGE DEBUG] 2D Histogram - Building histogram using fast vectorized operations
+2025/06/22 02:01:44 [IMAGE DEBUG] Integral Image Optimization - Using summed area tables for acceleration
+2025/06/22 02:01:44 [IMAGE DEBUG] Optimal thresholds found: s=169, t=169, variance=2870.549091
+2025/06/22 02:01:44 [IMAGE DEBUG] Vectorized Binarization - Using GoCV operations for acceleration
+2025/06/22 02:01:44 [IMAGE DEBUG] Vectorized Binarization - Vectorized operations completed
+2025/06/22 02:01:44 [IMAGE DEBUG] 2D Otsu Integral - Binarization with integral image completed
+2025/06/22 02:01:44 [IMAGE DEBUG] GuidedFilter - Starting guided filter with covariance
+2025/06/22 02:01:44 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/22 02:01:44 [IMAGE DEBUG] 2D Otsu Integral - Using CalcHist API and integral image acceleration
+2025/06/22 02:01:44 [IMAGE DEBUG] 2D Histogram - Building histogram using fast vectorized operations
+2025/06/22 02:01:44 [IMAGE DEBUG] Integral Image Optimization - Using summed area tables for acceleration
+2025/06/22 02:01:44 [IMAGE DEBUG] Optimal thresholds found: s=134, t=134, variance=13821.811118
+2025/06/22 02:01:44 [IMAGE DEBUG] Vectorized Binarization - Using GoCV operations for acceleration
+2025/06/22 02:01:44 [IMAGE DEBUG] Vectorized Binarization - Vectorized operations completed
+2025/06/22 02:01:44 [IMAGE DEBUG] 2D Otsu Integral - Binarization with integral image completed
+2025/06/22 02:01:44 [IMAGE DEBUG] GuidedFilter - Starting guided filter with covariance
+2025/06/22 02:01:44 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/22 02:01:44 [IMAGE DEBUG] 2D Otsu Integral - Using CalcHist API and integral image acceleration
+2025/06/22 02:01:44 [IMAGE DEBUG] 2D Histogram - Building histogram using fast vectorized operations
+2025/06/22 02:01:44 [IMAGE DEBUG] Integral Image Optimization - Using summed area tables for acceleration
+2025/06/22 02:01:44 [IMAGE DEBUG] Optimal thresholds found: s=114, t=114, variance=9406.541589
+2025/06/22 02:01:44 [IMAGE DEBUG] Vectorized Binarization - Using GoCV operations for acceleration
+2025/06/22 02:01:44 [IMAGE DEBUG] Vectorized Binarization - Vectorized operations completed
+2025/06/22 02:01:44 [IMAGE DEBUG] 2D Otsu Integral - Binarization with integral image completed
+2025/06/22 02:01:44 [IMAGE DEBUG] GuidedFilter - Starting guided filter with covariance
+2025/06/22 02:01:44 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/22 02:01:44 [IMAGE DEBUG] 2D Otsu Integral - Using CalcHist API and integral image acceleration
+2025/06/22 02:01:44 [IMAGE DEBUG] 2D Histogram - Building histogram using fast vectorized operations
+2025/06/22 02:01:45 [IMAGE DEBUG] Integral Image Optimization - Using summed area tables for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Optimal thresholds found: s=139, t=139, variance=4387.150108
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Using GoCV operations for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Vectorized operations completed
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Binarization with integral image completed
+2025/06/22 02:01:45 [IMAGE DEBUG] GuidedFilter - Starting guided filter with covariance
+2025/06/22 02:01:45 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Using CalcHist API and integral image acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Histogram - Building histogram using fast vectorized operations
+2025/06/22 02:01:45 [IMAGE DEBUG] Integral Image Optimization - Using summed area tables for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Optimal thresholds found: s=143, t=143, variance=9979.202038
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Using GoCV operations for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Vectorized operations completed
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Binarization with integral image completed
+2025/06/22 02:01:45 [IMAGE DEBUG] GuidedFilter - Starting guided filter with covariance
+2025/06/22 02:01:45 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Using CalcHist API and integral image acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Histogram - Building histogram using fast vectorized operations
+2025/06/22 02:01:45 [IMAGE DEBUG] Integral Image Optimization - Using summed area tables for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Optimal thresholds found: s=137, t=137, variance=11757.498520
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Using GoCV operations for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Vectorized operations completed
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Binarization with integral image completed
+2025/06/22 02:01:45 [IMAGE DEBUG] GuidedFilter - Starting guided filter with covariance
+2025/06/22 02:01:45 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Using CalcHist API and integral image acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Histogram - Building histogram using fast vectorized operations
+2025/06/22 02:01:45 [IMAGE DEBUG] Integral Image Optimization - Using summed area tables for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Optimal thresholds found: s=145, t=145, variance=4354.263085
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Using GoCV operations for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Vectorized operations completed
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Binarization with integral image completed
+2025/06/22 02:01:45 [IMAGE DEBUG] GuidedFilter - Starting guided filter with covariance
+2025/06/22 02:01:45 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Using CalcHist API and integral image acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Histogram - Building histogram using fast vectorized operations
+2025/06/22 02:01:45 [IMAGE DEBUG] Integral Image Optimization - Using summed area tables for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Optimal thresholds found: s=120, t=120, variance=9085.072310
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Using GoCV operations for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Vectorized operations completed
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Binarization with integral image completed
+2025/06/22 02:01:45 [IMAGE DEBUG] GuidedFilter - Starting guided filter with covariance
+2025/06/22 02:01:45 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Using CalcHist API and integral image acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Histogram - Building histogram using fast vectorized operations
+2025/06/22 02:01:45 [IMAGE DEBUG] Integral Image Optimization - Using summed area tables for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Optimal thresholds found: s=137, t=137, variance=12102.915190
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Using GoCV operations for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Vectorized operations completed
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Binarization with integral image completed
+2025/06/22 02:01:45 [IMAGE DEBUG] GuidedFilter - Starting guided filter with covariance
+2025/06/22 02:01:45 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Using CalcHist API and integral image acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Histogram - Building histogram using fast vectorized operations
+2025/06/22 02:01:45 [IMAGE DEBUG] Integral Image Optimization - Using summed area tables for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Optimal thresholds found: s=159, t=159, variance=7178.531692
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Using GoCV operations for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Vectorized operations completed
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Binarization with integral image completed
+2025/06/22 02:01:45 [IMAGE DEBUG] GuidedFilter - Starting guided filter with covariance
+2025/06/22 02:01:45 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Using CalcHist API and integral image acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Histogram - Building histogram using fast vectorized operations
+2025/06/22 02:01:45 [IMAGE DEBUG] Integral Image Optimization - Using summed area tables for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Optimal thresholds found: s=140, t=140, variance=8907.046596
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Using GoCV operations for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Vectorized operations completed
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Binarization with integral image completed
+2025/06/22 02:01:45 [IMAGE DEBUG] GuidedFilter - Starting guided filter with covariance
+2025/06/22 02:01:45 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Using CalcHist API and integral image acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Histogram - Building histogram using fast vectorized operations
+2025/06/22 02:01:45 [IMAGE DEBUG] Integral Image Optimization - Using summed area tables for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Optimal thresholds found: s=152, t=152, variance=7459.389237
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Using GoCV operations for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Vectorized operations completed
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Binarization with integral image completed
+2025/06/22 02:01:45 [IMAGE DEBUG] GuidedFilter - Starting guided filter with covariance
+2025/06/22 02:01:45 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Using CalcHist API and integral image acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Histogram - Building histogram using fast vectorized operations
+2025/06/22 02:01:45 [IMAGE DEBUG] Integral Image Optimization - Using summed area tables for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Optimal thresholds found: s=168, t=168, variance=3083.654788
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Using GoCV operations for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Vectorized operations completed
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Binarization with integral image completed
+2025/06/22 02:01:45 [IMAGE DEBUG] Adaptive Regional 2D Otsu - Regional processing completed
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu - Completed successfully
+2025/06/22 02:01:45 [PIPELINE DEBUG] Operation 'transformation_1_2D Otsu' took 591.297458ms
+2025/06/22 02:01:45 [PIPELINE DEBUG] Transformation '2D Otsu' applied in 591.297458ms
+2025/06/22 02:01:45 [PIPELINE DEBUG]   Before: 2800x1990, 1 channels
+2025/06/22 02:01:45 [PIPELINE DEBUG]   After:  2800x1990, 1 channels
+2025/06/22 02:01:45 [PIPELINE DEBUG] processImage: completed successfully
+2025/06/22 02:01:45 [PIPELINE DEBUG] MatProfile count at completion: 39
+2025/06/22 02:01:45 [PIPELINE DEBUG] Operation 'processImage' took 642.723334ms
+2025/06/22 02:01:45 [PIPELINE DEBUG] Pipeline Stats:
+2025/06/22 02:01:45 [PIPELINE DEBUG]   Original size: 1400x995
+2025/06/22 02:01:45 [PIPELINE DEBUG]   Processed size: 2800x1990
+2025/06/22 02:01:45 [PIPELINE DEBUG]   Number of transformations: 2
+2025/06/22 02:01:45 [PIPELINE DEBUG]   Total processing time: 724.034832ms
+2025/06/22 02:01:45 [PIPELINE DEBUG]   Current MatProfile count: 39
+2025/06/22 02:01:45 [PIPELINE DEBUG] Memory - Go Alloc: 57.19 MB, TotalAlloc: 443.66 MB, Sys: 207.65 MB, NumGC: 15, MatProfile: 39 Mats
+2025/06/22 02:01:45 [PIPELINE DEBUG] processImage called
+2025/06/22 02:01:45 [PIPELINE DEBUG] MatProfile count at start: 39
+2025/06/22 02:01:45 [IMAGE DEBUG] Lanczos4 Preview - Starting preview scaling
+2025/06/22 02:01:45 [IMAGE DEBUG] Lanczos4 - Input: 1400x995, scale: 2.00
+2025/06/22 02:01:45 [IMAGE DEBUG] Color conversion: BGR -> Grayscale
+2025/06/22 02:01:45 [IMAGE DEBUG] Mat 'input_working': 1400x995, channels=1, type=0, elemSize=1
+2025/06/22 02:01:45 [IMAGE DEBUG] Lanczos4 PreFilter - Applying adaptive Gaussian blur
+2025/06/22 02:01:45 [IMAGE DEBUG] Applied filter: GaussianBlur with params: [kernel=5x5 sigma=0.83]
+2025/06/22 02:01:45 [IMAGE DEBUG] Lanczos4 - Target dimensions: 2800x1990
+2025/06/22 02:01:45 [IMAGE DEBUG] Lanczos4 PostFilter - Applying bilateral filter for artifact reduction
+2025/06/22 02:01:45 [IMAGE DEBUG] Applied filter: BilateralFilter with params: [d=9 sigmaColor=100.0 sigmaSpace=100.0]
+2025/06/22 02:01:45 [IMAGE DEBUG] Mat 'final_result': 2800x1990, channels=1, type=0, elemSize=1
+2025/06/22 02:01:45 [IMAGE DEBUG] Lanczos4 - Scaling completed successfully
+2025/06/22 02:01:45 [IMAGE DEBUG] Lanczos4 Preview - Preview scaling completed
+2025/06/22 02:01:45 [PIPELINE DEBUG] Operation 'preview_transformation_0_Lanczos4 Scaling' took 27.885916ms
+2025/06/22 02:01:45 [PIPELINE DEBUG] Transformation 'Lanczos4 Scaling (preview)' applied in 27.885916ms
+2025/06/22 02:01:45 [PIPELINE DEBUG]   Before: 1400x995, 3 channels
+2025/06/22 02:01:45 [PIPELINE DEBUG]   After:  2800x1990, 1 channels
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu - Starting binarization (scale: 0.50)
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu - Scaled to 1400x995
+2025/06/22 02:01:45 [IMAGE DEBUG] Mat 'grayscale': 1400x995, channels=1, type=0, elemSize=1
+2025/06/22 02:01:45 [IMAGE DEBUG] Historical Noise Reduction - Applying bilateral filter for salt-and-pepper noise
+2025/06/22 02:01:45 [IMAGE DEBUG] Applied filter: HistoricalNoiseReduction with params: [bilateral+median]
+2025/06/22 02:01:45 [IMAGE DEBUG] Adaptive Regional 2D Otsu - Processing 4 regions
+2025/06/22 02:01:45 [IMAGE DEBUG] GuidedFilter - Starting guided filter with covariance
+2025/06/22 02:01:45 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Using CalcHist API and integral image acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Histogram - Building histogram using fast vectorized operations
+2025/06/22 02:01:45 [IMAGE DEBUG] Integral Image Optimization - Using summed area tables for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Optimal thresholds found: s=168, t=168, variance=3474.650144
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Using GoCV operations for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Vectorized operations completed
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Binarization with integral image completed
+2025/06/22 02:01:45 [IMAGE DEBUG] GuidedFilter - Starting guided filter with covariance
+2025/06/22 02:01:45 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Using CalcHist API and integral image acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Histogram - Building histogram using fast vectorized operations
+2025/06/22 02:01:45 [IMAGE DEBUG] Integral Image Optimization - Using summed area tables for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Optimal thresholds found: s=137, t=137, variance=11299.695246
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Using GoCV operations for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Vectorized operations completed
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Binarization with integral image completed
+2025/06/22 02:01:45 [IMAGE DEBUG] GuidedFilter - Starting guided filter with covariance
+2025/06/22 02:01:45 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Using CalcHist API and integral image acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Histogram - Building histogram using fast vectorized operations
+2025/06/22 02:01:45 [IMAGE DEBUG] Integral Image Optimization - Using summed area tables for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Optimal thresholds found: s=152, t=152, variance=7063.129044
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Using GoCV operations for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Vectorized operations completed
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Binarization with integral image completed
+2025/06/22 02:01:45 [IMAGE DEBUG] GuidedFilter - Starting guided filter with covariance
+2025/06/22 02:01:45 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Using CalcHist API and integral image acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Histogram - Building histogram using fast vectorized operations
+2025/06/22 02:01:45 [IMAGE DEBUG] Integral Image Optimization - Using summed area tables for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Optimal thresholds found: s=173, t=173, variance=2640.081951
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Using GoCV operations for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Vectorized operations completed
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Binarization with integral image completed
+2025/06/22 02:01:45 [IMAGE DEBUG] GuidedFilter - Starting guided filter with covariance
+2025/06/22 02:01:45 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Using CalcHist API and integral image acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Histogram - Building histogram using fast vectorized operations
+2025/06/22 02:01:45 [IMAGE DEBUG] Integral Image Optimization - Using summed area tables for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Optimal thresholds found: s=136, t=136, variance=12817.571728
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Using GoCV operations for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Vectorized operations completed
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Binarization with integral image completed
+2025/06/22 02:01:45 [IMAGE DEBUG] GuidedFilter - Starting guided filter with covariance
+2025/06/22 02:01:45 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Using CalcHist API and integral image acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Histogram - Building histogram using fast vectorized operations
+2025/06/22 02:01:45 [IMAGE DEBUG] Integral Image Optimization - Using summed area tables for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Optimal thresholds found: s=111, t=111, variance=8667.301557
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Using GoCV operations for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Vectorized operations completed
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Binarization with integral image completed
+2025/06/22 02:01:45 [IMAGE DEBUG] GuidedFilter - Starting guided filter with covariance
+2025/06/22 02:01:45 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Using CalcHist API and integral image acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Histogram - Building histogram using fast vectorized operations
+2025/06/22 02:01:45 [IMAGE DEBUG] Integral Image Optimization - Using summed area tables for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Optimal thresholds found: s=138, t=138, variance=3935.904530
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Using GoCV operations for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Vectorized operations completed
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Binarization with integral image completed
+2025/06/22 02:01:45 [IMAGE DEBUG] GuidedFilter - Starting guided filter with covariance
+2025/06/22 02:01:45 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Using CalcHist API and integral image acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Histogram - Building histogram using fast vectorized operations
+2025/06/22 02:01:45 [IMAGE DEBUG] Integral Image Optimization - Using summed area tables for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Optimal thresholds found: s=145, t=145, variance=8898.436368
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Using GoCV operations for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Vectorized operations completed
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Binarization with integral image completed
+2025/06/22 02:01:45 [IMAGE DEBUG] GuidedFilter - Starting guided filter with covariance
+2025/06/22 02:01:45 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Using CalcHist API and integral image acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Histogram - Building histogram using fast vectorized operations
+2025/06/22 02:01:45 [IMAGE DEBUG] Integral Image Optimization - Using summed area tables for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Optimal thresholds found: s=141, t=141, variance=10571.005545
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Using GoCV operations for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Vectorized operations completed
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Binarization with integral image completed
+2025/06/22 02:01:45 [IMAGE DEBUG] GuidedFilter - Starting guided filter with covariance
+2025/06/22 02:01:45 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Using CalcHist API and integral image acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Histogram - Building histogram using fast vectorized operations
+2025/06/22 02:01:45 [IMAGE DEBUG] Integral Image Optimization - Using summed area tables for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Optimal thresholds found: s=134, t=134, variance=3537.125063
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Using GoCV operations for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Vectorized operations completed
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Binarization with integral image completed
+2025/06/22 02:01:45 [IMAGE DEBUG] GuidedFilter - Starting guided filter with covariance
+2025/06/22 02:01:45 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Using CalcHist API and integral image acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Histogram - Building histogram using fast vectorized operations
+2025/06/22 02:01:45 [IMAGE DEBUG] Integral Image Optimization - Using summed area tables for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Optimal thresholds found: s=120, t=120, variance=8325.148484
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Using GoCV operations for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Vectorized operations completed
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Binarization with integral image completed
+2025/06/22 02:01:45 [IMAGE DEBUG] GuidedFilter - Starting guided filter with covariance
+2025/06/22 02:01:45 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Using CalcHist API and integral image acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Histogram - Building histogram using fast vectorized operations
+2025/06/22 02:01:45 [IMAGE DEBUG] Integral Image Optimization - Using summed area tables for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Optimal thresholds found: s=140, t=140, variance=11031.854187
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Using GoCV operations for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Vectorized operations completed
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Binarization with integral image completed
+2025/06/22 02:01:45 [IMAGE DEBUG] GuidedFilter - Starting guided filter with covariance
+2025/06/22 02:01:45 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Using CalcHist API and integral image acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Histogram - Building histogram using fast vectorized operations
+2025/06/22 02:01:45 [IMAGE DEBUG] Integral Image Optimization - Using summed area tables for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Optimal thresholds found: s=164, t=164, variance=6689.730487
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Using GoCV operations for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Vectorized operations completed
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Binarization with integral image completed
+2025/06/22 02:01:45 [IMAGE DEBUG] GuidedFilter - Starting guided filter with covariance
+2025/06/22 02:01:45 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Using CalcHist API and integral image acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Histogram - Building histogram using fast vectorized operations
+2025/06/22 02:01:45 [IMAGE DEBUG] Integral Image Optimization - Using summed area tables for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Optimal thresholds found: s=135, t=135, variance=8054.780755
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Using GoCV operations for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Vectorized operations completed
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Binarization with integral image completed
+2025/06/22 02:01:45 [IMAGE DEBUG] GuidedFilter - Starting guided filter with covariance
+2025/06/22 02:01:45 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Using CalcHist API and integral image acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Histogram - Building histogram using fast vectorized operations
+2025/06/22 02:01:45 [IMAGE DEBUG] Integral Image Optimization - Using summed area tables for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Optimal thresholds found: s=153, t=153, variance=6516.755846
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Using GoCV operations for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Vectorized operations completed
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Binarization with integral image completed
+2025/06/22 02:01:45 [IMAGE DEBUG] GuidedFilter - Starting guided filter with covariance
+2025/06/22 02:01:45 [IMAGE DEBUG] Applied filter: GuidedFilter with params: [radius=5 epsilon=0.020]
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Using CalcHist API and integral image acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Histogram - Building histogram using fast vectorized operations
+2025/06/22 02:01:45 [IMAGE DEBUG] Integral Image Optimization - Using summed area tables for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Optimal thresholds found: s=174, t=174, variance=2827.401799
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Using GoCV operations for acceleration
+2025/06/22 02:01:45 [IMAGE DEBUG] Vectorized Binarization - Vectorized operations completed
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu Integral - Binarization with integral image completed
+2025/06/22 02:01:45 [IMAGE DEBUG] Adaptive Regional 2D Otsu - Regional processing completed
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu - Scaled back to original size
+2025/06/22 02:01:45 [IMAGE DEBUG] 2D Otsu - Completed successfully
+2025/06/22 02:01:45 [PIPELINE DEBUG] Operation 'preview_transformation_1_2D Otsu' took 159.75075ms
+2025/06/22 02:01:45 [PIPELINE DEBUG] Transformation '2D Otsu (preview)' applied in 159.75075ms
+2025/06/22 02:01:45 [PIPELINE DEBUG]   Before: 2800x1990, 1 channels
+2025/06/22 02:01:45 [PIPELINE DEBUG]   After:  2800x1990, 1 channels
+2025/06/22 02:01:45 [PIPELINE DEBUG] Operation 'processPreview' took 188.270917ms
+2025/06/22 02:01:45 [PIPELINE DEBUG] Pipeline Stats:
+2025/06/22 02:01:45 [PIPELINE DEBUG]   Original size: 1400x995
+2025/06/22 02:01:45 [PIPELINE DEBUG]   Processed size: 2800x1990
+2025/06/22 02:01:45 [PIPELINE DEBUG]   Number of transformations: 2
+2025/06/22 02:01:45 [PIPELINE DEBUG]   Total processing time: 911.671498ms
+2025/06/22 02:01:45 [PIPELINE DEBUG]   Current MatProfile count: 71
+2025/06/22 02:01:45 [GUI DEBUG] Applied Transformation: 2D Otsu with params: map[adaptiveRegions:4 epsilon:0.02 morphKernelSize:3 noiseReduction:true useIntegralImage:true windowRadius:5]
+2025/06/22 02:01:45 [GUI DEBUG] Transformation '2D Otsu' applied successfully
+2025/06/22 02:01:45 [GUI DEBUG] UI Event: updateImageDisplay called
+2025/06/22 02:01:45 [GUI DEBUG] UI Event: updateImageDisplay: converting original image
+2025/06/22 02:01:45 [GUI DEBUG] Image conversion successful: original
+2025/06/22 02:01:45 [RENDER DEBUG] Image 'original' properties: bounds=(0,0,1400,995), size=1400x995
+2025/06/22 02:01:45 [RENDER DEBUG] Image 'original' format: RGBA
+2025/06/22 02:01:45 [RENDER DEBUG] Image 'original' RGBA sample 0 at (5,5): (255,255,255,255)
+2025/06/22 02:01:45 [RENDER DEBUG] Image 'original' RGBA sample 1 at (700,497): (255,255,255,255)
+2025/06/22 02:01:45 [RENDER DEBUG] Image 'original' RGBA sample 2 at (1395,990): (255,255,255,255)
+2025/06/22 02:01:45 [GUI DEBUG] Image format change 'preview': 3 channels -> 1 channels
+2025/06/22 02:01:45 [RENDER DEBUG] Converting grayscale to color using GoCV API
+2025/06/22 02:01:45 [RENDER DEBUG] SUCCESS: GoCV conversion completed
+2025/06/22 02:01:45 [GUI DEBUG] Image conversion successful: preview
+2025/06/22 02:01:45 [RENDER DEBUG] Image 'preview' properties: bounds=(0,0,2800,1990), size=2800x1990
+2025/06/22 02:01:45 [RENDER DEBUG] Image 'preview' format: RGBA
+2025/06/22 02:01:45 [RENDER DEBUG] Image 'preview' RGBA sample 0 at (5,5): (255,255,255,255)
+2025/06/22 02:01:45 [RENDER DEBUG] Image 'preview' RGBA sample 1 at (1400,995): (255,255,255,255)
+2025/06/22 02:01:45 [RENDER DEBUG] Image 'preview' RGBA sample 2 at (2795,1985): (0,0,0,255)
+2025/06/22 02:01:45 [GUI DEBUG] Canvas refreshed: originalImage
+2025/06/22 02:01:45 [GUI DEBUG] Canvas refreshed: previewImage
+2025/06/22 02:01:45 [GUI DEBUG] UI Event: updateImageDisplay: completed successfully
+2025/06/22 02:01:45 [GUI DEBUG] List 'available transformations' unselected/cleared
+2025/06/22 02:01:45 [GUI DEBUG] Quality metrics update: PSNR=0.00, SSIM=0.0000, hasTransformations=true
+zsh: killed     ./image-restoration-suite
+[2:05:49 AM] % 

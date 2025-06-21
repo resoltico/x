@@ -5,9 +5,12 @@ func (t *TwoDOtsu) GetParameters() map[string]interface{} {
 	defer t.paramMutex.RUnlock()
 
 	return map[string]interface{}{
-		"windowRadius":    t.windowRadius,
-		"epsilon":         t.epsilon,
-		"morphKernelSize": t.morphKernelSize,
+		"windowRadius":     t.windowRadius,
+		"epsilon":          t.epsilon,
+		"morphKernelSize":  t.morphKernelSize,
+		"noiseReduction":   t.noiseReduction,
+		"useIntegralImage": t.useIntegralImage,
+		"adaptiveRegions":  t.adaptiveRegions,
 	}
 }
 
@@ -28,6 +31,17 @@ func (t *TwoDOtsu) SetParameters(params map[string]interface{}) {
 	if kernel, ok := params["morphKernelSize"].(int); ok {
 		if kernel >= 1 && kernel <= 15 && kernel%2 == 1 {
 			t.morphKernelSize = kernel
+		}
+	}
+	if noise, ok := params["noiseReduction"].(bool); ok {
+		t.noiseReduction = noise
+	}
+	if integral, ok := params["useIntegralImage"].(bool); ok {
+		t.useIntegralImage = integral
+	}
+	if regions, ok := params["adaptiveRegions"].(int); ok {
+		if regions >= 1 && regions <= 8 {
+			t.adaptiveRegions = regions
 		}
 	}
 }

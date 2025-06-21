@@ -84,9 +84,67 @@ func (t *TwoDOtsu) createParameterUI() *fyne.Container {
 		}
 	}
 
+	noiseReductionCheck := widget.NewCheck("Enable Historical Noise Reduction", func(checked bool) {
+		t.paramMutex.Lock()
+		oldValue := t.noiseReduction
+		t.noiseReduction = checked
+		t.paramMutex.Unlock()
+
+		t.debugImage.LogAlgorithmStep("2D Otsu Parameters", fmt.Sprintf("Noise reduction changed: %t -> %t", oldValue, checked))
+		if t.onParameterChanged != nil {
+			t.onParameterChanged()
+		}
+	})
+
+	t.paramMutex.RLock()
+	noiseReductionCheck.SetChecked(t.noiseReduction)
+	t.paramMutex.RUnlock()
+
+	integralImageCheck := widget.NewCheck("Use Integral Image Acceleration", func(checked bool) {
+		t.paramMutex.Lock()
+		oldValue := t.useIntegralImage
+		t.useIntegralImage = checked
+		t.paramMutex.Unlock()
+
+		t.debugImage.LogAlgorithmStep("2D Otsu Parameters", fmt.Sprintf("Integral image acceleration changed: %t -> %t", oldValue, checked))
+		if t.onParameterChanged != nil {
+			t.onParameterChanged()
+		}
+	})
+
+	t.paramMutex.RLock()
+	integralImageCheck.SetChecked(t.useIntegralImage)
+	t.paramMutex.RUnlock()
+
+	adaptiveRegionsLabel := widget.NewLabel("Adaptive Regions (1-8):")
+	adaptiveRegionsEntry := widget.NewEntry()
+
+	t.paramMutex.RLock()
+	adaptiveRegionsEntry.SetText(fmt.Sprintf("%d", t.adaptiveRegions))
+	t.paramMutex.RUnlock()
+
+	adaptiveRegionsEntry.OnSubmitted = func(text string) {
+		if value, err := strconv.Atoi(text); err == nil && value >= 1 && value <= 8 {
+			t.paramMutex.Lock()
+			oldValue := t.adaptiveRegions
+			t.adaptiveRegions = value
+			t.paramMutex.Unlock()
+
+			t.debugImage.LogAlgorithmStep("2D Otsu Parameters", fmt.Sprintf("Adaptive regions changed: %d -> %d", oldValue, value))
+			if t.onParameterChanged != nil {
+				t.onParameterChanged()
+			}
+		} else {
+			t.debugImage.LogAlgorithmStep("2D Otsu Parameters", fmt.Sprintf("Invalid adaptive regions: %s (must be 1-8)", text))
+		}
+	}
+
 	return container.NewVBox(
 		radiusLabel, radiusEntry,
 		epsilonLabel, epsilonEntry,
 		kernelLabel, kernelEntry,
+		noiseReductionCheck,
+		integralImageCheck,
+		adaptiveRegionsLabel, adaptiveRegionsEntry,
 	)
 }

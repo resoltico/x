@@ -25,6 +25,9 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
 	windowRadius := t.windowRadius
 	epsilon := t.epsilon
 	morphKernelSize := t.morphKernelSize
+	noiseReduction := t.noiseReduction
+	useIntegralImage := t.useIntegralImage
+	adaptiveRegions := t.adaptiveRegions
 	t.paramMutex.RUnlock()
 
 	var workingImage gocv.Mat
@@ -71,15 +74,36 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
 
 	t.debugImage.LogMatInfo("grayscale", grayscale)
 
-	guided := t.applyGuidedFilter(grayscale, windowRadius, epsilon)
-	defer guided.Close()
-
-	if guided.Empty() {
-		t.debugImage.LogAlgorithmStep("2D Otsu", "ERROR: Guided filter failed")
-		guided = grayscale.Clone()
+	// Apply noise reduction for historical images if enabled
+	var denoisedGray gocv.Mat
+	if noiseReduction {
+		denoisedGray = t.applyHistoricalNoiseReduction(grayscale)
+		defer denoisedGray.Close()
+	} else {
+		denoisedGray = grayscale.Clone()
+		defer denoisedGray.Close()
 	}
 
-	binaryResult := t.apply2DOtsu(grayscale, guided)
+	// Choose between adaptive regional processing or global processing
+	var binaryResult gocv.Mat
+	if adaptiveRegions > 1 {
+		binaryResult = t.applyAdaptiveRegional2DOtsu(denoisedGray, adaptiveRegions, windowRadius, epsilon, useIntegralImage)
+	} else {
+		guided := t.applyGuidedFilter(denoisedGray, windowRadius, epsilon)
+		defer guided.Close()
+
+		if guided.Empty() {
+			t.debugImage.LogAlgorithmStep("2D Otsu", "ERROR: Guided filter failed")
+			guided = denoisedGray.Clone()
+		}
+
+		if useIntegralImage {
+			binaryResult = t.apply2DOtsuWithIntegralImage(denoisedGray, guided)
+		} else {
+			binaryResult = t.apply2DOtsu(denoisedGray, guided)
+		}
+	}
+
 	if binaryResult.Empty() {
 		t.debugImage.LogAlgorithmStep("2D Otsu", "ERROR: Binarization failed")
 		return gocv.NewMat()
@@ -109,5 +133,78 @@ func (t *TwoDOtsu) applyWithScale(src gocv.Mat, scale float64) gocv.Mat {
 	}
 
 	t.debugImage.LogAlgorithmStep("2D Otsu", "Completed successfully")
+	return result
+}
+
+func (t *TwoDOtsu) applyHistoricalNoiseReduction(src gocv.Mat) gocv.Mat {
+	t.debugImage.LogAlgorithmStep("Historical Noise Reduction", "Applying bilateral filter for salt-and-pepper noise")
+
+	// Use bilateral filter to preserve edges while reducing noise
+	bilateralFiltered := gocv.NewMat()
+	err := gocv.BilateralFilter(src, &bilateralFiltered, 9, 75.0, 75.0)
+	if err != nil {
+		t.debugImage.LogError(err)
+		bilateralFiltered.Close()
+		return src.Clone()
+	}
+
+	// Apply median blur to further reduce salt-and-pepper noise
+	medianFiltered := gocv.NewMat()
+	err = gocv.MedianBlur(bilateralFiltered, &medianFiltered, 3)
+	bilateralFiltered.Close()
+	if err != nil {
+		t.debugImage.LogError(err)
+		medianFiltered.Close()
+		return src.Clone()
+	}
+
+	t.debugImage.LogFilter("HistoricalNoiseReduction", "bilateral+median")
+	return medianFiltered
+}
+
+func (t *TwoDOtsu) applyAdaptiveRegional2DOtsu(src gocv.Mat, regions int, windowRadius int, epsilon float64, useIntegralImage bool) gocv.Mat {
+	t.debugImage.LogAlgorithmStep("Adaptive Regional 2D Otsu", fmt.Sprintf("Processing %d regions", regions))
+
+	size := src.Size()
+	width, height := size[1], size[0]
+	result := gocv.NewMatWithSize(height, width, gocv.MatTypeCV8U)
+
+	regionWidth := width / regions
+	regionHeight := height / regions
+
+	for i := 0; i < regions; i++ {
+		for j := 0; j < regions; j++ {
+			x1 := i * regionWidth
+			y1 := j * regionHeight
+			x2 := min((i+1)*regionWidth, width)
+			y2 := min((j+1)*regionHeight, height)
+
+			if x2 <= x1 || y2 <= y1 {
+				continue
+			}
+
+			roi := src.Region(image.Rect(x1, y1, x2, y2))
+			guided := t.applyGuidedFilter(roi, windowRadius, epsilon)
+
+			var regionResult gocv.Mat
+			if useIntegralImage {
+				regionResult = t.apply2DOtsuWithIntegralImage(roi, guided)
+			} else {
+				regionResult = t.apply2DOtsu(roi, guided)
+			}
+
+			roi.Close()
+			guided.Close()
+
+			if !regionResult.Empty() {
+				resultROI := result.Region(image.Rect(x1, y1, x2, y2))
+				regionResult.CopyTo(&resultROI)
+				resultROI.Close()
+			}
+			regionResult.Close()
+		}
+	}
+
+	t.debugImage.LogAlgorithmStep("Adaptive Regional 2D Otsu", "Regional processing completed")
 	return result
 }
